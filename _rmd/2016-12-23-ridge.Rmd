@@ -13,8 +13,6 @@ ll <- c('dplyr','magrittr','tidyr','ggplot2','cowplot','ggrepel','GGally','broom
 sapply(ll,function(l) require(l,character.only = T))
 # Load the data
 load('C:/Users/erikinwest/Documents/Computational/R/craigslist_rent/vt_ols_data.RData')
-# Increase the cowplot text size
-theme_set(theme_cowplot(font_size=20))
 ```
 
 ### Introduction and motivation
@@ -49,7 +47,7 @@ data.frame(ols.error=ols.error %>% raise_to_power(2) %>% sum,
 
 Using this generated data as an example, we can see that we get the lowest mean squared error on the held-out data when we shrink all of the coefficient parameters by 16%. 
 
-```{r optimalshrink,echo=F,fig.width=6.5,fig.height=5.5}
+```{r optimalshrink,echo=F,fig.width=4.5,fig.height=4.0}
 sr <- seq(0.7,1,0.01)
 ssr <- rep(NA,length(sr))
 for (j in 1:length(sr)) {
@@ -97,7 +95,7 @@ for (k in 1:length(lam)) {
   gcv[k] <- ( (y20 - y.hat)/ (1-diag(H)/nrow(H)) ) %>% raise_to_power(2) %>% mean
 }
 ```
-```{r gcv,echo=F,,fig.width=6.5,fig.height=5.5}
+```{r gcv,echo=F,,fig.width=4.5,fig.height=4.0}
 # Optimal lambda around 0.04
 dat.lam <- data.frame(lam,gcv)
 lam1 <- ggplot(dat.lam,aes(x=lam,y=gcv)) + geom_point(size=3) + 
@@ -228,7 +226,8 @@ conic.dat <- calculateEllipse(x=ep[1],y=ep[2],a=ep[3],b=ep[4],
                 angle=ep[5]*(180/pi),steps=50) %>% tbl_df %>% set_colnames(c('x','y'))
 ```
 
-```{r contour_plot,echo=F}
+```{r contour_plot,echo=F,fig.width=7.5,fig.height=7}
+# Increase the cowplot text size
 # Plot
 gg.cont <-
 ggplot(B,aes(x=b1,y=b2,z=z)) + 
@@ -249,7 +248,7 @@ ggplot(B,aes(x=b1,y=b2,z=z)) +
   geom_point(data=data.frame(x=beta.ridge[1],y=beta.ridge[2]),aes(x=x,y=y),color='blue',size=4,inherit.aes=F) +
   geom_text_repel(data=data.frame(x=beta.ridge[1],y=beta.ridge[2]),aes(x=x,y=y,label='Ridge'),
                   color='blue',size=7,inherit.aes = F,nudge_y = 0.2)
-gg.cont
+gg.cont + theme_cowplot(font_size = 20)
 ```
 
 
