@@ -97,7 +97,7 @@ gg.toy <- plot_grid(gg.toyA,gg.toyB,ncol=2,labels=c('A','B'))
 # # Read CEL files into an AffyBatch
 # raw.data <- ReadAffy()
 # # Use rma normalization
-# norm.data <- affy::mas5(raw.data)
+# norm.data <- affy::mas5(raw.data,sc=500)
 # # Save for later
 # setwd(dir)
 # save(raw.data,norm.data,file='norm_data.RData')

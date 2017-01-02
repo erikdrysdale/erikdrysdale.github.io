@@ -226,7 +226,7 @@ conic.dat <- calculateEllipse(x=ep[1],y=ep[2],a=ep[3],b=ep[4],
                 angle=ep[5]*(180/pi),steps=50) %>% tbl_df %>% set_colnames(c('x','y'))
 ```
 
-```{r contour_plot,echo=F,fig.width=7.5,fig.height=7,dpi=200}
+```{r contour_plot,echo=F,fig.width=6.5,fig.height=6,dpi=200}
 # Increase the cowplot text size
 # Plot
 gg.cont <-
@@ -240,7 +240,7 @@ ggplot(B,aes(x=b1,y=b2,z=z)) +
        subtitle='') +
   geom_text(data=data.frame(x=0,y=0),inherit.aes = F,parse=T,
             aes(x=x,y=y,label="beta[1]^2 * '+' * beta[2]^2 * '=0.' * 5^2"),size=7) +
-  geom_text(data=data.frame(x=0.25,y=-0.75),aes(x=x,y=y),inherit.aes=F,color='blue',size=7,
+  geom_text(data=data.frame(x=0.25,y=-0.75),aes(x=x,y=y),inherit.aes=F,color='blue',size=6,
             label='Blue lines show contour plots for a given SSR') +
   ggtitle('Constrained optimization problem') +
   background_grid('xy','none') +
