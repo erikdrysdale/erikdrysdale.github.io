@@ -3,7 +3,7 @@ title: 'Batch effects'
 output: html_document
 fontsize: 12pt
 published: false
-status: process
+status: no_process
 mathjax: true
 ---
 
@@ -12,12 +12,14 @@ mathjax: true
 ll <- c('tidyverse','magrittr','forcats','stringr','cowplot','scales','reshape2','broom','ggrepel')
 sapply(ll,function(l) require(l,character.only = T))
 # Load the data and attach
-load('rmd_data_batch.Rdata')
+load('extra_batch_effects/rmd_data_batch.Rdata')
 attach(rmd.list)
 # Assign the names...
 for (k in 1:length(rmd.list)) {
   assign(names(rmd.list)[k],rmd.list[[names(rmd.list)[k]]])
 }
+# Increase the cowplot text size
+theme_set(theme_cowplot(font_size=16))
 ```
 
 ### Introduction

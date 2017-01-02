@@ -26,8 +26,12 @@ for (k in ll) {
 }
 
 # Set up directory
-dir <- 'C:/Users/erikinwest/Documents/bioeconometrician/github/erikdrysdale.github.io/_rmd/extra_batch_effects/'
-setwd(dir)
+dir1 <- 'C:/Users/erikinwest/Documents/bioeconometrician/github/erikdrysdale.github.io/_rmd/'
+dir2 <- 'C:/Users/erikinwest/Documents/bioeconometrician/github/erikdrysdale.github.io/_rmd/extra_batch_effects/'
+setwd(dir2)
+
+# Increase the cowplot text size
+theme_set(theme_cowplot(font_size=20))
 
 ############################################################
 ###### ----- STEP 0: CREATE MOTIVATING EXAMPLE ----- #######
@@ -76,10 +80,9 @@ gg.toyB <- ggplot(yHist,aes(x=val,y=..density..)) +
   geom_histogram(bins=36,color='black',aes(fill=gender),show.legend = F) + 
   labs(x='Mean Y-chr gene expression',y='Density',subtitle='For 208 participants') +
   geom_vline(xintercept = 0,linetype=2) +
-  geom_text(data=yLab,aes(x=x,y=y,label=label,color=label),inherit.aes = F,show.legend = F)
+  geom_text(data=yLab,aes(x=x,y=y,label=label,color=label),inherit.aes = F,show.legend = F,size=6)
 
 gg.toy <- plot_grid(gg.toyA,gg.toyB,ncol=2,labels=c('A','B'))
-
 
 # save_plot('toy.png',gg.toy)
 
@@ -217,9 +220,9 @@ gg.volc1 <-
   geom_vline(xintercept = c(-0.5,0.5),color=c1,linetype=2) +
   labs(x='Mean difference',y='-log10(p-value)',subtitle='Gene-wise t-test between Caucasian/Asian') +
   scale_color_manual(name='',values=c('grey',c1)) +
-  geom_text_repel(data=fourT,aes(label=Symbols),nudge_y = 7) +
-  geom_text(data=spielSig,inherit.aes=F,aes(x=x,y=y,label=label),color=c1,size=5) + 
-  geom_text(data=data.frame(x=3,y=sidak+3),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c1)
+  geom_text_repel(data=fourT,aes(label=Symbols),nudge_y = 7,size=7) +
+  geom_text(data=spielSig,inherit.aes=F,aes(x=x,y=y,label=label),color=c1,size=7) + 
+  geom_text(data=data.frame(x=3,y=sidak+3),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c1,size=7)
 
 # Put four gene expression data into long format
 long1 <- GSE.exprs[which(GSE.info$Symbols %in% fourT$Symbols),] %>% t %>%
@@ -266,8 +269,8 @@ gg.volc2 <-
   geom_vline(xintercept = c(-0.5,0.5),color=c2,linetype=2) +
   labs(x='Mean difference',y='-log10(p-value)',subtitle='Caucasians 2002 vs 2003') +
   scale_color_manual(name='',values=c('grey',c2)) +
-  geom_text(data=caucSig,inherit.aes=F,aes(x=x,y=y,label=label),color=c2,size=5) +
-  geom_text(data=data.frame(x=2,y=sidak-1),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c2)
+  geom_text(data=caucSig,inherit.aes=F,aes(x=x,y=y,label=label),color=c2,size=7) +
+  geom_text(data=data.frame(x=1.5,y=sidak-1),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c2,size=7)
 
 
 #### ---- VOLCANOS FOR ASIAN 2004-6 vs CAUCASIAN 2004-6 ---- ####
@@ -292,8 +295,8 @@ gg.volc3 <-
   geom_vline(xintercept = c(-0.5,0.5),color=c3,linetype=2) +
   labs(x='Mean difference',y='-log10(p-value)',subtitle='Caucasians vs Asian 2004-6') +
   scale_color_manual(name='',values=c('grey',c3)) +
-  geom_text(data=asianSig,inherit.aes=F,aes(x=x,y=y,label=label),color=c3,size=5) +
-  geom_text(data=data.frame(x=3,y=sidak+2),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c3)
+  geom_text(data=asianSig,inherit.aes=F,aes(x=x,y=y,label=label),color=c3,size=7) +
+  geom_text(data=data.frame(x=3,y=sidak+2),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c3,size=7)
 
 #### ---- MC Simulations ---- ####
 
@@ -361,7 +364,7 @@ ggplot(vrk3.asian.batches,aes(x=diffDate,y=mu)) +
   theme(axis.title.x=element_blank(),axis.text.x=element_text(angle=60,hjust=1,size=10)) +
   scale_x_continuous(breaks=vrk3.x$diffDate,labels=format(vrk3.x$Date,'%d-%b-%y')) + 
   geom_hline(yintercept=vrk3.white$mu,color='blue',linetype=2) +
-  geom_text(data=vrk3.white,inherit.aes=F,aes(x=260,y=mu,label=Year),color='blue',nudge_y=0.2)
+  geom_text(data=vrk3.white,inherit.aes=F,aes(x=260,y=mu,label=Year),color='blue',nudge_y=0.2,size=7)
 
 ###################################################
 ###### ----- STEP 3: EX-ANTE SPOTTING ----- #######
@@ -438,7 +441,7 @@ gg.combat <-
   geom_vline(xintercept = c(-0.5,0.5),color=c4,linetype=2) +
   labs(x='Mean difference',y='-log10(p-value)',subtitle='ComBat adjusted data (Caucasian vs Asian)') +
   scale_color_manual(name='',values=c('grey',c4)) +
-  geom_text(data=data.frame(x=0,y=sidak-0.5),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c4)
+  geom_text(data=data.frame(x=0,y=sidak-0.5),inherit.aes = F,aes(x=x,y=y,label='Sidák'),color=c4,size=7)
 
 # Robustness check by gender
 chrY.idx <- which(GSE.info$Chromosome=='chrY')
@@ -497,7 +500,13 @@ rmd.list <-
        gg.combat=gg.combat,c4=c4,
        gg.gender=gg.gender)
 
-save(rmd.list,file='rmd_data.RData')
-load('rmd_data.RData')
+save(rmd.list,file='rmd_data_batch.RData')
+
+# load('rmd_data_batch.RData')
+
+
+# rmd.list[['gg.toy']] <- gg.toy
+
+
 
 # attach(rmd.list)

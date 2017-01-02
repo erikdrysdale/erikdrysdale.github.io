@@ -18,6 +18,8 @@
 # path_site = getwd();dir_rmd = "_rmd";dir_md = "_posts"
 # url_images = "figures/";out_ext='.md';in_ext='.rmd';recursive=FALSE
 
+rm(list=ls())
+
 rmd2md <- function( path_site = getwd(),
                     dir_rmd = "_rmd",
                     dir_md = "_posts",                              
@@ -87,7 +89,8 @@ rmd2md <- function( path_site = getwd(),
           #andy I could try to make figures bigger
           #but that might make not work so well on mobile
           opts_chunk$set(fig.width  = 8.5,
-                        fig.height = 7.5)
+                        fig.height = 7.5,
+                        dpi=300)
           
           try(knit(text=content, output=outFile,encoding = "UTF-8"), silent=FALSE)
           

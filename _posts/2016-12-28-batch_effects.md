@@ -18,7 +18,7 @@ For my Advanced Biostatistics course this semester I [I gave a presentation](htt
  
 The uses of DNA microarrays in scientific research are numerous, including gene expression profiling (to help determine the etiology of diseases such as cancer) and comparative genomic hybridization (comparing the genome content for closely related organisms). To provide a toy example, we could use the sex-chromosome expression differences to determine if a cell comes from a male or female. Using the [GSE5859 data set](https://github.com/genomicsclass/GSE5859) (which will be used again later), Figure 2A shows the normalized gene expression levels for 12 individuals and 21 Y-Chromosome genes. The data suggests that the six left-hand side persons (each column is a person[^2]) are females because they have a lower-than-average expression for Y-chromosome genes. If we take the average expression values across all 208 persons which make up our sample, normalize the results, and plot the histogram, we can easily identify the gender of the individual samples (Figure 2B).
  
-![plot of chunk toy_example](/figures/toy_example-1.png)
+![ggplot element text size 60](/figures/toy_example-1.png)
  
 ### Batch effects: an applied example
  
@@ -103,7 +103,7 @@ GSE.meta %>% head(4)
  
 In Figure 3 we can see that Caucasian people were sequenced in earlier years, whereas Asian individuals were sequenced in later years. The strong correlation between the biological variables of interest (ethnicity) and non-biological factors (lab/sequencing date) exposes this data set to the risk of batch effects.
  
-![plot of chunk eth_date](/figures/eth_date-1.png)
+![ggplot element text size 60](/figures/eth_date-1.png)
  
 ### Spurios findings?
  
@@ -113,7 +113,7 @@ To identify genes which are differentially expressed we can use a gene-wise t-te
  
 While I wasn't able to determine which individuals were excluded, in the [Supplementary Table 1](http://www.nature.com/ng/journal/v39/n2/suppinfo/ng1955_S1.html) they provided a list of the 1000+ genes which were differentially expressed between the groups as well as the summary statistics for each gene. This allowed me to check that my expression values for these 1000+ genes were similar even though I had more individuals and used the `affy::mas5` adjustment procedure. As Figure 4 shows, the average expression per gene is largely similar, suggesting that the rest of our analysis will closely match the paper's. We drop six observations which are extreme outliers as measured by their [Cook's distance](https://en.wikipedia.org/wiki/Cook's_distance).
  
-![plot of chunk gw_scat](/figures/gw_scat-1.png)
+![ggplot element text size 60](/figures/gw_scat-1.png)
  
 We then run gene-wise t-tests (for efficient implementation use `genefilter::rowttests`) comparing the mean expression between Caucasians and Asians, where we define statistical significance at the Sidak cutoff and biological significance at a gene expression difference of 0.5 in $log_2$ (hence $\approx 41\%$).  Figure 5A, a [Volcano plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics)), visualizes the results of the gene-wise t-tests. We see that 1225 genes are differentially expressed (out of the 8746-6=8740 possible genes using the complete data set). In interpreting their result, the authors state that:
  
@@ -121,7 +121,7 @@ We then run gene-wise t-tests (for efficient implementation use `genefilter::row
  
 On the Volcano plot, I have pointed out four of the eight genes which [the paper highlights](http://www.nature.com/ng/journal/v39/n2/suppinfo/ng1955_S1.html) as being differentially expressed due to "regulatory mechanisms". The expression value for these genes is shown in the adjacent Figure 5B. It is easy to see why the t-test would have an extremely small p-value when comparing the mean of Caucasian/Asian gene expression.
  
-![plot of chunk spiel_volc](/figures/spiel_volc-1.png)
+![ggplot element text size 60](/figures/spiel_volc-1.png)
  
 **However**, the highlighted genes in Figure 5B also suggest an issue of batch effects. There appears to be a shift in expression values over time independent of the ethnicity. Had this phenomenon been noted, several robustness checks could have been employed to check for batch effects:
  
@@ -131,7 +131,7 @@ On the Volcano plot, I have pointed out four of the eight genes which [the paper
  
 In Figure 6A we see that 85 genes are differentially between Caucasians in 2002 compared to 2003 (based on our threshold criteria[^3]), fewer than 1225 overall, but suggests that *at a minimum* around 7% of the genes that had statistically significant differences were driven by the year of sequencing, rather than true biological variation. When we repeat the Caucasian versus Asian gene-wise expression tests but for only the samples sequenced in 2004-6, we see that only 139 are differentially expressed, which is only 11% of the total we found when using all the Caucasian individuals! However, this is not evidence of batch effects in and of itself, because only 16 Caucasians were sequenced in 2004 and onward so we have lower power for our tests. To compensate for this, we can randomly sample 16 Caucasians that were sequenced in 2002-3, record the number of significant genes and then compare this to the 139 result. Figure 6C shows that while the average number of genes differentially expressed was 757, this is much closer to the full sample number (1225) compared to the 2004-6 number (139). Therefore we can be fairly confident that most of the differentially expressed genes are due to batch effects. As a final robustness check, we can look into the variation within the Asian category. Figure 6D shows us that there is significant variation for the VRK3 gene we saw in Figure 5B, with the average expression depending heavily on the batch date, with some batches having expression values within the Caucasian range.
  
-![plot of chunk other_volc](/figures/other_volc-1.png)
+![ggplot element text size 60](/figures/other_volc-1.png)
  
 ### Checking for batch effects *ex ante*
  
@@ -178,7 +178,7 @@ X <- E.m %*% sqrt(Lambda.m)
  
 After plotting the results of $X$ in Figure 7B we can see that the Caucasian/Asian groups form independent clusters, suggesting genetic dissimilarity between the two groups. However, we also see that the sequence years also form their own clusters independent of ethnicity highlighting the problem of batch effects!
  
-![plot of chunk mds](/figures/mds-1.png)
+![ggplot element text size 60](/figures/mds-1.png)
  
 ### Combating batch effects with ComBat
  
@@ -198,7 +198,7 @@ combat.tt <- rowttests(combat_edata,ethnicity2)
  
 After repeating the gene-wise t-tests with the ComBat-adjusted data, there are now no differentially expressed genes between the two ethnic groups, as Figure 8A shows below. This finding casts doubt on the Spielman paper, but is unsurprising as we have seen evidence of batch effects throughout this analysis and the problems with this paper have been [noted previously](http://www.nature.com/nrg/journal/v11/n10/full/nrg2825.html)! Note that even though ComBat is considered one of the [best adjustment procedures](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0017238), its implementation will inevitably scramble some of true biological signals found in the data. However, the loss of information is likely to be small. In Figure 8B I show that even after applying the ComBat procedure, there were roughly the same number of differentially expressed genes found on the sex chromosome between the genders.[^4]
  
-![plot of chunk combat](/figures/combat-1.png)
+![ggplot element text size 60](/figures/combat-1.png)
  
 I hope this summary of batch effects has been useful! Links to the R and Python code needed to replicate the analysis and figures can be found on my GitHub page [here](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_batch_effects). To paraphrase Smokey the Bear:
  

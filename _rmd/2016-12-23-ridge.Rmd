@@ -3,7 +3,7 @@ title: 'Ridge regression'
 output: html_document
 fontsize: 12pt
 published: false
-status: no_process
+status: process
 mathjax: true
 ---
 
@@ -11,10 +11,10 @@ mathjax: true
 # Call in the packages 
 ll <- c('dplyr','magrittr','tidyr','ggplot2','cowplot','ggrepel','GGally','broom','stringr','scales','conicfit')
 sapply(ll,function(l) require(l,character.only = T))
-# Set working directory
-dir <- "C:/Users/erikinwest/Documents/bioeconometrician/github/bioeconometrician.github.io/_rmd/"
-# setwd(dir)
+# Load the data
 load('C:/Users/erikinwest/Documents/Computational/R/craigslist_rent/vt_ols_data.RData')
+# Increase the cowplot text size
+theme_set(theme_cowplot(font_size=20))
 ```
 
 ### Introduction and motivation
@@ -236,19 +236,19 @@ ggplot(B,aes(x=b1,y=b2,z=z)) +
   geom_polygon(data=gamma,aes(x=x,y=y),fill='red',color='black',alpha=0.25,inherit.aes = F) + 
   geom_point(data=data.frame(x=beta[1],y=beta[2]),aes(x=x,y=y),color='red',size=4,inherit.aes = F) +
   geom_text_repel(data=data.frame(x=beta[1],y=beta[2]),aes(x=x,y=y,label='OLS'),
-                  color='red',size=4,inherit.aes = F,nudge_y = 0.2) +
+                  color='red',size=7,inherit.aes = F,nudge_y = 0.2) +
   labs(x=expression(beta[1]),y=expression(beta[2]),
        subtitle='') +
   geom_text(data=data.frame(x=0,y=0),inherit.aes = F,parse=T,
-            aes(x=x,y=y,label="beta[1]^2 * '+' * beta[2]^2 * '=0.' * 5^2"),size=5) +
-  geom_text(data=data.frame(x=0.5,y=-0.75),aes(x=x,y=y),inherit.aes=F,color='blue',size=3,
+            aes(x=x,y=y,label="beta[1]^2 * '+' * beta[2]^2 * '=0.' * 5^2"),size=7) +
+  geom_text(data=data.frame(x=0.25,y=-0.75),aes(x=x,y=y),inherit.aes=F,color='blue',size=7,
             label='Blue lines show contour plots for a given SSR') +
   ggtitle('Constrained optimization problem') +
   background_grid('xy','none') +
   geom_path(data=conic.dat,aes(x=x,y=y),inherit.aes=F,color='blue') + 
   geom_point(data=data.frame(x=beta.ridge[1],y=beta.ridge[2]),aes(x=x,y=y),color='blue',size=4,inherit.aes=F) +
   geom_text_repel(data=data.frame(x=beta.ridge[1],y=beta.ridge[2]),aes(x=x,y=y,label='Ridge'),
-                  color='blue',size=4,inherit.aes = F,nudge_y = 0.2)
+                  color='blue',size=7,inherit.aes = F,nudge_y = 0.2)
 gg.cont
 ```
 
