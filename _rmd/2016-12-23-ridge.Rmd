@@ -3,7 +3,7 @@ title: 'Ridge regression'
 output: html_document
 fontsize: 12pt
 published: false
-status: process
+status: no_process
 mathjax: true
 ---
 
@@ -47,7 +47,7 @@ data.frame(ols.error=ols.error %>% raise_to_power(2) %>% sum,
 
 Using this generated data as an example, we can see that we get the lowest mean squared error on the held-out data when we shrink all of the coefficient parameters by 16%. 
 
-```{r optimalshrink,echo=F,fig.width=4.5,fig.height=4.0}
+```{r optimalshrink,echo=F,fig.width=4.5,fig.height=4,dpi=150}
 sr <- seq(0.7,1,0.01)
 ssr <- rep(NA,length(sr))
 for (j in 1:length(sr)) {
@@ -95,7 +95,7 @@ for (k in 1:length(lam)) {
   gcv[k] <- ( (y20 - y.hat)/ (1-diag(H)/nrow(H)) ) %>% raise_to_power(2) %>% mean
 }
 ```
-```{r gcv,echo=F,,fig.width=4.5,fig.height=4.0}
+```{r gcv,echo=F,,fig.width=5,fig.height=4.0,dpi=150}
 # Optimal lambda around 0.04
 dat.lam <- data.frame(lam,gcv)
 lam1 <- ggplot(dat.lam,aes(x=lam,y=gcv)) + geom_point(size=3) + 

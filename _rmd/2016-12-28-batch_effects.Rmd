@@ -97,7 +97,7 @@ GSE.meta %>% head(4)
 
 In Figure 3 we can see that Caucasian people were sequenced in earlier years, whereas Asian individuals were sequenced in later years. The strong correlation between the biological variables of interest (ethnicity) and non-biological factors (lab/sequencing date) exposes this data set to the risk of batch effects.
 
-```{r eth_date,echo=F,fig.height=3,fig.width=5}
+```{r eth_date,echo=F,fig.height=3,fig.width=5,dpi=150}
 gg.seqYear
 ```
 
@@ -203,7 +203,7 @@ combat.tt <- rowttests(combat_edata,ethnicity2)
 
 After repeating the gene-wise t-tests with the ComBat-adjusted data, there are now no differentially expressed genes between the two ethnic groups, as Figure 8A shows below. This finding casts doubt on the Spielman paper, but is unsurprising as we have seen evidence of batch effects throughout this analysis and the problems with this paper have been [noted previously](http://www.nature.com/nrg/journal/v11/n10/full/nrg2825.html)! Note that even though ComBat is considered one of the [best adjustment procedures](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0017238), its implementation will inevitably scramble some of true biological signals found in the data. However, the loss of information is likely to be small. In Figure 8B I show that even after applying the ComBat procedure, there were roughly the same number of differentially expressed genes found on the sex chromosome between the genders.[^4]
 
-```{r combat,echo=F,warning=F,fig.height=7,fig.width=13}
+```{r combat,echo=F,warning=F,fig.height=12,fig.width=16}
 plot_grid(ggplot() + draw_label('Figure 8: ComBat',fontface = 'bold',size=18),
           plot_grid(gg.combat,gg.gender,ncol=2,labels=LETTERS[1:2]),ncol=1,rel_heights=c(1,5))
 ```
