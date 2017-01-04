@@ -9,9 +9,9 @@ mathjax: true
 
 ### Introduction
 
-Micro RNAs (miRNAs) are a small RNA molecule, around 22 base pairs long[[1]], that are able to regulate gene expression by silencing specific RNAs. While these molecules were first discovered in the 1990s, but their biological significance wasn't fully appreciated until the early 2000s when they were found in *C. elegans* and *Drosophola*, the workhorse species for geneticists. Since then hundreds of miRNAs have been found in human genomes along with the discovery that a given miRNA can affect hundreds of other genes (i.e. they can bind with many types of RNA). Many cancer researchers [are also interested](https://www.youtube.com/watch?v=Yuvtrho7ehg&t=1516s) in miRNAs due to their ability to inhibit tumor suppressor genes and act as effective oncogenes. Based on the data I downloaded from [miRCancer](http://mircancer.ecu.edu/), the cancer research community is averaging around two miRNA papers per day over the last several years.
+Micro RNAs (miRNAs) are a small RNA molecule, around 22 base pairs long[[^1]], that are able to regulate gene expression by silencing specific RNAs. While these molecules were first discovered in the 1990s, their biological significance wasn't fully appreciated until the early 2000s when they were found in *C. elegans* and *Drosophola*, the workhorse species of geneticists. Since then hundreds of miRNAs have been found in human genomes along with the discovery that a given miRNA can affect hundreds of other genes (i.e. they can bind with many types of RNA). Many cancer researchers [are also interested](https://www.youtube.com/watch?v=Yuvtrho7ehg&t=1516s) in miRNAs due to their ability to inhibit tumor suppressor genes and act as effective oncogenes. Based on the data I downloaded from [miRCancer](http://mircancer.ecu.edu/), the cancer research community is averaging around two miRNA papers per day over the last several years.
 
-<p align="center"> <img src="/figures/papers.png" width="90%"> </p>
+<p align="center"> <img src="/figures/papers.png" width="80%"> </p>
 
 In a recent Andrew Ng talk, [Applying Deep Learning](https://www.youtube.com/watch?v=F1ka6a13S9I), he suggests that one way to become a better machine learning (ML) practitioner is to download existing studies, replicate the results, and see if you improve on anything. While a systems biology approach to modelling miRNA interactions will be the most successful in the long run, traditional ML techniques such as classification and dimensionality reduction will still have a role to play in this field. Because cell samples will usually contain more features (miRNA molecule types) than observations, predictive modelling will help to overcome the "large p, small n" problems stemming from these datasets.  
 
@@ -24,7 +24,7 @@ num_both
 {% endhighlight %}
 
 {% highlight text %}
-## species  miR-302a   let-7g    ...     miR-20b  miR-138  miR-376b
+## # species  miR-302a   let-7g    ...     miR-20b  miR-138  miR-376b
 ## 0     human   0.00000  0.00134    ...     0.01869      0.0   0.00000
 ## 1     human   0.00000  0.00000    ...     0.02920      0.0   0.000000
 ## ..      ...       ...      ...    ...         ...      ...       ...
@@ -32,27 +32,27 @@ num_both
 ## 239   mouse   0.00000  0.00000    ...     0.00000      0.0   0.00000
 {% endhighlight %}
 
-We can visualize the miRNA expression dataset using a heatmap as Figure 2 shows below. As each column is a miRNA type, we see that only a few molecules are expressed at a high level, and those that are tend to do so across multiple tissue types. However, most miRNA expression levels are close to "off".
+The miRNA expression dataset can be visualized using a heatmap as Figure 2 shows below. As each column is a miRNA type, one can see that only a few molecules are expressed at a high level, and those that are tend to do so across multiple tissue types. However, most miRNA expression levels are close to "off".
 
 <p align="center"> Figure 2: miRNA heatmap </p>
-<p align="center"> <img src="/figures/heatmap.png" width="80%"> </p>
+<p align="center"> <img src="/figures/heatmap.png" width="70%"> </p>
 
-Figure 3 below shows a close-up view of nine miRNAs with the highest average expression levels. We see that their distribution of values across tissues is similar for humans and mice. While this points to our common ancestry with the little guys[[^2]], it also presents a problem for classification as we will need *some* features to be differential expressed between our two species if we want to successfully classify our observations[[^3]].
+Figure 3 below shows a close-up view of nine miRNAs with the highest average expression levels. The distribution of values for these molecules is similar for humans and mice across tissues. While this points to our common ancestry with the little guys[[^2]], it also presents a problem for classification as we will need *some* features to be differential expressed between our two species if we want to successfully classify our observations[[^3]].
 
 <p align="center"> Figure 3: Nine miRNA types with highest expression </p>
 <p align="center"> <img src="/figures/nine_miRNA.png" width="90%"> </p>
 
 ### Species classification: set up
 
-In the development of our classification rule, model parameters are determined on a "training set" and then their performance is evaluated on a "test set". We randomly select 75% of the data to make up the training set, leaving 60 observations for validation. Partitioning data into these sets is crucial for developing a model with is robust to overfitting. Models that perform extremely well on training data may do horribly on test data due their parameters "tuning to the noise" of the training data, while failing to "learn" to true patterns of the underlying data generating process.
+In developing a classification rule, model parameters are determined on a "training set" and then evaluated on a "test set". We randomly select 75% of the data to make up the training set, leaving 60 observations for validation. Partitioning data into these sets is crucial for developing a model with is robust to overfitting. Models that perform extremely well on training data may do poorly on test data due to their parameters "tuning to the noise" of the training data, while failing to "learn" the true patterns of the underlying data generating process.
 
-In this dataset, human samples outnumber mice almost 3:1, and therefore bootstrapped samples from the mouse observations in the training data are generated to ensure an equal weighting of training performance between the two species as there is no reason to believe the classifier should be biased to either species. This process is similar to [bagging](https://en.wikipedia.org/wiki/Bootstrap_aggregating), or bootstrap aggregating, in ensemble methods. The training dataset is of dimension 248x252, meaning we have more variables than there are observations, making this a classic "large p, small n" problem susceptible to overfitting without some intelligent intervention.
+In this dataset, human samples outnumber mice almost 3:1, and therefore bootstrapped samples from the mouse observations in the training data are generated to ensure an equal weighting of training performance between the two species as there is no reason to believe the classifier should be biased toward either specie. This process is redolent of [bagging](https://en.wikipedia.org/wiki/Bootstrap_aggregating), or bootstrap aggregating, in ensemble methods. The training dataset is of dimension 248x252, meaning we have more variables than there are observations, making this a classic "large p, small n" problem susceptible to overfitting without some intelligent intervention.
 
 ### Model class #1: discriminant analysis
 
 An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data $X$ is structured as a multivariate Gaussian distribution conditional for $k$ different categories:
 
-$f_k(X)\sim \frac{1}{(2n)^\pi |\Sigma|^\frac{1}{2}} \exp \Big(-\frac{1}{2} (X-\mu_k)'\Sigma^{-1}_l (X-\mu_k) \Big)$
+$f_k(X)\sim \frac{1}{(2n)^\pi |\Sigma|^\frac{1}{2}} \exp \Big(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_l (X-\mu_k) \Big)$
 
 In QDA, the covariance matrices are allowed to differ ($\Sigma_k$) between categories. In our context, we are saying that the probability of observing a given vector of features (of length 253 as noted above) can be evaluated under two distributions, whose moments are estimated from the data. A classification rule can be developed where the category whose distribution suggests a higher likelihood is chosen.
 
