@@ -52,11 +52,11 @@ In this dataset, human samples outnumber mice almost 3:1, and therefore bootstra
 
 An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data $X$ is structured as a multivariate Gaussian distribution conditional for $k$ different categories:
 
-$f_k(X)\sim \frac{1}{(2n)^\pi |\Sigma|^\frac{1}{2}} \exp \Big(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_l (X-\mu_k) \Big)$
+$f_k(X)\sim \frac{1}{(2n)^\pi \|\Sigma\|^\frac{1}{2}} \exp \Big(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_k (X-\mu_k) \Big)$
 
 In QDA, the covariance matrices are allowed to differ ($\Sigma_k$) between categories. In our context, we are saying that the probability of observing a given vector of features (of length 253 as noted above) can be evaluated under two distributions, whose moments are estimated from the data. A classification rule can be developed where the category whose distribution suggests a higher likelihood is chosen.
 
-We can use the `sklearn` module in Python to quickly evaluate model performance. A naive LDA is used as a motivating example:
+The `sklearn` module in Python to quickly evaluate model performance. A naive LDA is used as a motivating example:
 
 {% highlight python %}
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -102,7 +102,7 @@ print('Training accuracy is %0.1f%% and test accuracy is %0.1f%%' %
 ## Training accuracy is 99.0% and test accuracy is 87.0%
 {% endhighlight %}
 
-Good improvement. While training sample accuracy declined by 1%, test set accuracy (what is ultimately cared about) rose to 87%. As the confusion matrix shows below, almost all of the human labels are properly predicted, and mice are now at a coin toss.
+Good improvement! While training sample accuracy declined by 1%, test set accuracy (which is what is ultimately cared about) rose to 87%. As the confusion matrix shows below, almost all of the human labels are properly predicted, and mice are now at a coin toss.
 
 <p align="center"> <img src="/figures/con2.png" width="40%"></p>
 
@@ -112,7 +112,7 @@ Good improvement. While training sample accuracy declined by 1%, test set accura
 
 [^1]: The average human genome has more than 3 billion, to put this number in perspective.
 
-[^2]: Our shared ancestor with mice was about [100 million years ago](https://en.wikipedia.org/wiki/Timeline_of_human_evolution).
+[^2]: Our last common ancestor with mice was about [100 million years ago](https://en.wikipedia.org/wiki/Timeline_of_human_evolution).
 
 [^3]: However there may be non-linear combinations of the data within these nine genes that would be able to successfully differentiate the species.
 
