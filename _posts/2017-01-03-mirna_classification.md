@@ -50,7 +50,7 @@ In this dataset, human samples outnumber mice almost 3:1, and therefore bootstra
 
 ### Model class #1: discriminant analysis
 
-An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data $X$ is structured as a multivariate Gaussian distribution conditional for $k$ different categories: $f_k(X)\sim \frac{1}{(2n)^\pi \|\Sigma\|^{0.5} \exp \Big\(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_k (X-\mu_k) \Big\)$
+An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data $X$ is structured as a multivariate Gaussian distribution conditional for $k$ different categories: $f_k(X)\sim \frac{1}{(2n)^\pi \|\Sigma\|^{1/2}} \exp \Big\(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_k (X-\mu_k) \Big\)$
 
 In QDA, the covariance matrices are allowed to differ ($\Sigma_k$) between categories. In our context, we are saying that the probability of observing a given vector of features (of length 253 as noted above) can be evaluated under two distributions, whose moments are estimated from the data. A classification rule can be developed where the category whose distribution suggests a higher likelihood is chosen.
 
