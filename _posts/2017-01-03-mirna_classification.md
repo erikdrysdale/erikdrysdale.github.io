@@ -1,5 +1,5 @@
 ---
-title: 'DRAFT: miRNA data for species classification'
+title: 'miRNA data for species classification'
 output: html_document
 fontsize: 12pt
 published: true
@@ -7,7 +7,7 @@ status: publish
 mathjax: true
 ---
 
-#### Introduction
+## Introduction
 
 Micro RNAs (miRNAs) are a small RNA molecule, around 22 base pairs long[[^1]], that are able to regulate gene expression by silencing specific RNAs. While these molecules were first discovered in the 1990s, their biological significance wasn't fully appreciated until the early 2000s when they were found in *C. elegans* and *Drosophola*, the workhorse species of geneticists. Since then hundreds of miRNAs have been found in human genomes along with the discovery that a given miRNA can affect hundreds of other genes (i.e. they can bind with many types of RNA). Many cancer researchers [are also interested](https://www.youtube.com/watch?v=Yuvtrho7ehg&t=1516s) in miRNAs due to their ability to inhibit tumor suppressor genes and act as effective oncogenes. Based on the data I downloaded from [miRCancer](http://mircancer.ecu.edu/), the cancer research community is averaging around two miRNA papers per day over the last several years.
 
@@ -16,7 +16,7 @@ Micro RNAs (miRNAs) are a small RNA molecule, around 22 base pairs long[[^1]], t
 
 In a recent Andrew Ng talk, [Applying Deep Learning](https://www.youtube.com/watch?v=F1ka6a13S9I), he suggests that one way to become a better machine learning (ML) practitioner is to download existing studies, replicate the results, and see if you improve on anything. While a systems biology approach to modelling miRNA interactions will be the most successful in the long run, traditional ML techniques such as classification and dimensionality reduction will still have a role to play in this field. Because cell samples will usually contain more features (miRNA molecule types) than observations, predictive modelling will help to overcome the "large p, small n" problems stemming from these datasets.  
 
-#### Data: miRNA expression by species
+## Data: miRNA expression by species
 
 After reading [this ML project paper](http://cs229.stanford.edu/proj2013/RainesQuistGippetti-Machine_Learning_as_a_Tool_for_MicroRNA_Analysis.pdf), I downloaded the miRNA expression data for various tissues in humans and mice [here](http://www.microrna.org/microrna/getDownloads.do). The dataset contained 172 and 68 tissue samples for the two species, respectively, with 516 and 400 miRNA types for each. However, only 253 miRNAs were shared across the species so the dataset used in the modelling exercise was of this rank. The goal for the rest of this post is to use this dataset to develop a classification algorithm that will be able to successfully predict the species for a given sample. We begin by exploring the dataset, which has a numeric values for each miRNA type (miR-302a for example) in the columns, with a given row representing a sample from a specific tissue (liver for example).
 
@@ -38,18 +38,18 @@ The miRNA expression dataset can be visualized using a heatmap as Figure 2 shows
 <p align="center"> <font size="5"> Figure 2: miRNA heatmap </font> </p>
 <p align="center"> <img src="/figures/heatmap.png" width="85%"> </p>
 
-Figure 3 below shows a close-up view of nine miRNAs with the highest average expression levels. The distribution of values for these molecules is similar for humans and mice across tissues. While this points to our common ancestry with the little guys[[^2]], it also presents a problem for classification as we will need *some* features to be differential expressed between our two species if we want to successfully classify our observations[[^3]].
+Figure 3 below shows a close-up view of nine miRNAs with the highest average expression levels. The distribution of values for these molecules is similar for humans and mice across tissues. While this points to our common ancestry with the little guys[[^2]], it also presents a problem for classification as we will need *some* features to be differential expressed between our two species in order to successfully classify our observations[[^3]].
 
 <p align="center"> <font size="5"> Figure 3: Nine miRNA types with highest expression </font> </p>
 <p align="center"> <img src="/figures/nine_miRNA.png" width="75%"> </p>
 
-#### Species classification: set up
+## Species classification: set up
 
-In developing a classification rule, model parameters are determined on a "training set" and then evaluated on a "test set". We randomly select 75% of the data to make up the training set, leaving 60 observations for validation. Partitioning data into these sets is crucial for developing a model which robust to overfitting. Models that perform extremely well on training data may do poorly on test data due to their parameters "tuning to the noise" of the training data, while failing to "learn" the true patterns of the underlying data generating process.
+In developing a classification rule, model parameters are determined on a "training set" and then evaluated on a "test set". We randomly select 75% of the data to make up the training set, leaving 60 observations for validation. Partitioning data into these sets is crucial for developing a model which is robust to overfitting. Models that perform extremely well on training data may do poorly on test data due to their parameters "tuning to the noise" of the training data, while failing to "learn" the true patterns of the underlying data generating process.
 
-In this dataset, human samples outnumber mice almost 3:1, and therefore bootstrapped samples from the mouse observations in the training data are generated to ensure an equal weighting of training performance between the two species as there is no reason to believe the classifier should be biased toward either animal. This process is redolent of [bagging](https://en.wikipedia.org/wiki/Bootstrap_aggregating), or bootstrap aggregating, in ensemble methods. The training dataset is of dimension 248x252, meaning we have more variables than there are observations, making this a classic "large p, small n" problem susceptible to overfitting without some intelligent intervention.
+In this dataset, human samples outnumber mice almost 3:1, and therefore bootstrapped samples from the mouse observations in the training data are generated to ensure an equal weighting of training performance between the two species, as there is no reason to believe the classifier should be biased toward either animal. The training dataset is of dimension 248x252, meaning there are more variables than observations, making this a classic "large p, small n" problem susceptible to overfitting without some intelligent intervention.
 
-#### Discriminant function analysis
+## Discriminant function analysis
 
 An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data $X$ is structured as a multivariate Gaussian distribution conditional for $k$ different categories: $f_k(X)\sim \frac{1}{(2n)^\pi \|\Sigma\|^{1/2}} \exp \Big\(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_k (X-\mu_k) \Big\)$.
 
@@ -112,7 +112,7 @@ print('Training accuracy is %0.1f%% and test accuracy is %0.1f%%' %
 
 Good improvement! While training sample accuracy declined to 94%, the test set accuracy (which is what is ultimately cared about) rose to 90%. As the confusion matrix shows in [Figure 4B](#fig4), we are now predicting 75% of the mouse labels accurately.
 
-#### QDA and regularization
+## QDA and regularization
 
 There are still techniques in the ML toolkit to improve test set performance: (i) use a new model, and (ii) use regularization (i.e. any technique which penalizes model complexity). Unlike LDA, QDA allows for non-linear relationships to be expressed. Additionally, as there was a 4% gap between the training/test set performance with LDA, this suggests that we can continue to move along the [variance/ bias](https://en.wikipedia.org/wiki/Bias%E2%80%93variance_tradeoff) tradeoff curve.
 
@@ -157,21 +157,21 @@ As [Figure 4D](#fig4) shows, almost all of the human examples are classified cor
 <p align="center" id="fig4"><font size="5"> Figure 4: Discriminant function analysis models</font></p>
 <p align="center"> <img src="/figures/confusion_matrix.png" width="90%"></p>
 
-#### A better model yet?
+## A better model yet?
 
-Another popular classifier is the Support Vector Machines (SVM), which transforms the data in such a way that a hyperplane can separate the two categories. An initial test of a SVM with a linear kernel yielded poor results, so the non-linear radial basis function (RBF) kernel was used (also known as the Gaussian kernel). The RBF is parameterized by a single variable $\gamma$, in addition to selecting the penalty $C$ for the error term. A brute-force grid search approach was taken on a 5-fold CV split of the training data. However the in-sample accuracy was never able to exceed 90%, as Figure 5 shows, and the test sample accuracy lagged the LDA/QDA.
+Another popular classifier is a Support Vector Machine (SVM), which transforms the data in such a way that a hyperplane can separate the two categories. An initial test of a SVM with a linear kernel yielded poor results, so the non-linear radial basis function (RBF) kernel was used (also known as the Gaussian kernel). The RBF is parameterized by a single variable $\gamma$, in addition to selecting the penalty value $C$ for the error term. A brute-force grid search approach was taken on a 5-fold CV split of the training data. However the in-sample accuracy was never able to exceed 90%, as Figure 5 shows, and the test sample accuracy lagged the LDA/QDA models.
 
 <p align="center" id="fig4"><font size="5"> Figure 5: SVM - CV error by parameter search </font></p>
-<p align="center"> <img src="/figures/brute.png" width="90%"></p>
+<p align="center"> <img src="/figures/brute.png" width="80%"></p>
 
-#### Summary
+## Summary
 
 While other classifiers exist which could employed to see if the 93% accuracy could be exceeded, this post has covered enough ground to highlight two important concepts:
 
 1. The ML toolkit of filtering + wrapping + regularization + model selection is able to significantly improve prediciton accuracy
 2. miRNA datasets contain enough biological signals to be able to classify species with high accuracy
 
-While correctly predicting the difference between humans and mice is in some sense trivial, the exercise highlights the value of miRNA datasets for other and more important questions in biology including determining the disease state of cells. As more and more miRNA sequencing data becomes available, ML models will be become more powerful and able to provide biologically relevant insights.
+While correctly predicting the difference between humans and mice is in some sense trivial, the exercise highlights the value of miRNA datasets for other and more important questions in biology including determining the disease state of cells. As more and more miRNA sequencing data becomes available, ML models will become more powerful and able to provide stronger insights into biological problems.
 
 * * *
 
