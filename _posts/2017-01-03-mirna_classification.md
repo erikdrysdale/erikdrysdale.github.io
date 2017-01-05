@@ -20,7 +20,7 @@ In a recent Andrew Ng talk, [Applying Deep Learning](https://www.youtube.com/wat
 
 After reading [this ML project paper](http://cs229.stanford.edu/proj2013/RainesQuistGippetti-Machine_Learning_as_a_Tool_for_MicroRNA_Analysis.pdf), I downloaded the miRNA expression data for various tissues in humans and mice [here](http://www.microrna.org/microrna/getDownloads.do). The dataset contained 172 and 68 tissue samples for the two species, respectively, with 516 and 400 miRNA types for each. However, only 253 miRNAs were shared across the species so the dataset used in the modelling exercise was of this rank. The goal for the rest of this post is to use this dataset to develop a classification algorithm that will be able to successfully predict the species for a given sample. We begin by exploring the dataset, which has a numeric values for each miRNA type (miR-302a for example) in the columns, with a given row representing a sample from a specific tissue (liver for example).
 
-{% highlight r %}
+{% highlight python %}
 num_both
 {% endhighlight %}
 
@@ -57,9 +57,9 @@ In QDA, the covariance matrices are allowed to differ ($\Sigma_k$) between categ
 
 The `sklearn` module in Python is used throughout this post - the details of which can be found [here](http://scikit-learn.org/stable/). A naive LDA is used as a motivating example:
 
-{% highlight r %}
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+{% highlight python %}
 # Vanilla LDA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 lda_fit = LinearDiscriminantAnalysis(solver='svd').fit(X_train,y_train)
 train_acc = lda_fit.score(X_train,y_train)
 test_acc = lda_fit.score(X_test,y_test)
@@ -80,27 +80,25 @@ The goals are now twofold: (i) improve the model accuracy beyond 75%, and (ii) i
 
 In binary classification, the distribution of features needs to differ, in some way, between the two groups to have a good classifier. Filtering methods remove any variables that appear "uninteresting" by simple metrics such as t-tests. To combine a filtering and a wrapper method simultaneously, we will use a p-value cutoff of 1% to reduce our variable space and define an ordering of interesting variables[[^5]], and then sequentially add features in order of the p-value score and test model accuracy using 10-fold cross-validation on the training data. It is important that we do **not** compare feature choice accuracy on the test set as this will allow the problem of overfitting to reemerge as the parameters would now be tuning to the noise contained in the test set.  The purpose of the test set is that it is an independent sample of the data, and its information content must remain hidden until the final testing procedure.
 
-{% highlight r %}
-# Run t-tests across columns
+{% highlight python %}
+# LDA with feature selection
 tt = X_train.apply(lambda x: stats.ttest_ind(x[y_train==1],
     x[y_train!=1],equal_var=False).pvalue,axis=0).dropna()
-# Find order of p-values below cut-off
 p_cut = 0.01
 tt_order = tt[tt<p_cut].sort_values().index
 tt_score = np.repeat(np.NAN,tt_order.size)
+
 # Run algorithm
 for k in range(len(tt_order)):
     # Get cross-validation fit
     tt_cv = cross_validation.cross_val_score(lda,
             X_train[tt_order[range(k+1)]],y_train,cv=10).mean()
     tt_score[k] = tt_cv
-# Number of features
 n_tt = pd.Series(np.where(tt_score==tt_score.max())[0])
 n_tt = n_tt[0]
 print('Select the first %i features' % n_tt)
 X_train2 = X_train[tt_order[0:n_tt]]
 X_test2 = X_test[tt_order[0:n_tt]]
-# Fit
 lda_fit2 = lda.fit(X_train2,y_train)
 train_acc = lda_fit2.score(X_train2,y_train)
 test_acc = lda_fit2.score(X_test2,y_test)
@@ -121,33 +119,25 @@ There are still techniques in the ML toolkit to improve test set performance: (i
 
 The optimal regularization parameter is determined by using 10-fold cross validation on the training data. While multiple values of the regularization parameter achieve 92% CV accuracy, as [Figure 4C](#fig4) shows, the largest one is chosen to reduce the chances of overfitting.
 
-{% highlight r %}
-# Use the X_train2 to determine if an optimal shrinking parameter exists
+{% highlight python %}
+# QDA with regularization
 X_train3 = X_train2.reset_index().drop('index',axis=1)
 X_test3 = X_test2
-# Range of shrinkage values
 shrink_par = np.arange(0,0.01,0.0001)/100000
 shrink_acc = np.repeat(np.NaN,shrink_par.size*10).reshape([shrink_par.size,10])
-# Cross k-folds index
 from sklearn.cross_validation import KFold
 kf = KFold(n=X_train2.shape[0],n_folds=10)
 for row in range(len(shrink_par)):
-    # Get shrinkage param and model
     sp = shrink_par[row]
     qda_shrink = QuadraticDiscriminantAnalysis(reg_param=sp)
-    # Get cross-validation model accuracy
     col = 0
     for train_i, test_i in kf:
         # Get accuracy
         acc = qda_shrink.fit(X_train3.loc[train_i],
                        y_train[train_i]).score(X_train3.loc[test_i],y_train[test_i])
-        # Store
         shrink_acc[row,col] = acc
-        # Update
         col += 1
-# Get the average CV score
 av_cv = pd.DataFrame(shrink_acc).apply(lambda x: np.mean(x),axis=1)
-# Get the shrinkage parameter
 reg_par_qda = shrink_par[max(np.where(av_cv==max(av_cv))[0])]
 {% endhighlight %}
 
