@@ -70,12 +70,12 @@ print('Training accuracy is %0.1f%% and test accuracy is %0.1f%%' %
 ## Training accuracy is 100.0% and test accuracy is 75.0%
 {% endhighlight %}
 
-While the training accuracy is 100% (!) the test set accuracy falls to 75%[[^4]]. Because there are more variables than observations, the model parameters are able to "perfectly" represent the training data. Also note that while the test accuracy for predicting humans was 85%, conditional mouse accuracy is a low 38.5%, as the confusion matrix shows in [Figure 4](#fig4) below.
+While the training accuracy is 100% (!) the test set accuracy falls to 75%[[^4]]. Because there are more variables than observations, the model parameters are able to "perfectly" represent the training data. Also note that while the test accuracy for predicting humans was 85%, conditional mouse accuracy is a low 38.5%, as the confusion matrix shows in [Figure 4A](#fig4) below.
 
 The goals are now twofold: (i) improve the model accuracy beyond 75%, and (ii) improve the relative mouse predicting accuracy to better than a coin toss. To reduce the problem of overfitting, the discriminant analysis models will take advantage of [two concepts in machine learning](http://www.jmlr.org/papers/volume3/guyon03a/guyon03a.pdf).
 
-1. **Filter methods**: use characteristics of the data to select feature subsets .
-2. **Wrapper methods**: use training set model performance to select features.
+1. **Filter methods**: use characteristics of the data to select feature subsets
+2. **Wrapper methods**: use training set model performance to select features
 
 In binary classification, the distribution of features needs to differ, in some way, between the two groups to have a good classifier. Filtering methods remove any variables that appear "uninteresting" by simple metrics such as t-tests. To combine a filtering and a wrapper method simultaneously, we will use a p-value cutoff of 1% to reduce our variable space and define an ordering of interesting variables[[^5]], and then sequentially add features in order of the p-value score and test model accuracy using 10-fold cross-validation on the training data. It is important that we do **not** compare feature choice accuracy on the test set as this will allow the problem of overfitting to reemerge as the parameters would now be tuning to the noise contained in the test set.  The purpose of the test set is that it is an independent sample of the data, and its information content must remain hidden until the final testing procedure.
 
@@ -97,7 +97,6 @@ for k in range(len(tt_order)):
 n_tt = pd.Series(np.where(tt_score==tt_score.max())[0])
 n_tt = n_tt[0]
 print('Select the first %i features' % n_tt)
-
 X_train2 = X_train[tt_order[0:n_tt]]
 X_test2 = X_test[tt_order[0:n_tt]]
 # Fit
@@ -113,11 +112,52 @@ print('Training accuracy is %0.1f%% and test accuracy is %0.1f%%' %
 ## Training accuracy is 94.0% and test accuracy is 90.0%
 {% endhighlight %}
 
-Good improvement! While training sample accuracy declined to 94%, the test set accuracy (which is what is ultimately cared about) rose to 90%. As the confusion matrix shows in [Figure 4](#fig4), we are now predicting most of the mouse labels accurately. However, our test set performance is still slightly better than our test set accuracy. This suggests that out of sample performance can be increased further by further trading off between [variance and bias](https://en.wikipedia.org/wiki/Bias%E2%80%93variance_tradeoff). One way to do this is by shrinking our parameters, a crude method of  [regularization](https://en.wikipedia.org/wiki/Regularization_(mathematics)).
+Good improvement! While training sample accuracy declined to 94%, the test set accuracy (which is what is ultimately cared about) rose to 90%. As the confusion matrix shows in [Figure 4B](#fig4), we are now predicting most of the mouse labels accurately.
 
-<p align="center" id="fig4"> Figure 4: Classification accuracy  </p>
-<p align="center"> <img src="/figures/confusion_matrix.png"></p>
+### QDA and regularization
 
+There are still techniques in the ML toolkit to improve test set performance: (i) use a new model, and (ii) use regularization (i.e. any technique which penalizes model complexity). Unlike LDA, QDA allows for non-linear relationships to be expressed. Additionally, as there was a 4% gap between the training/test set performance with LDA, this suggests that we can continue to move along the [variance/ bias](https://en.wikipedia.org/wiki/Bias%E2%80%93variance_tradeoff) tradeoff curve.
+
+The optimal regularization parameter is determined by using 10-fold cross validation on the training data. While multiple values of the regularization parameter achieve 92% CV accuracy, as [Figure 4C](#fig4) shows, the largest one is chosen to reduce the chances of overfitting.
+
+{% highlight python %}
+# Use the X_train2 to determine if an optimal shrinking parameter exists
+X_train3 = X_train2.reset_index().drop('index',axis=1)
+X_test3 = X_test2
+# Range of shrinkage values
+shrink_par = np.arange(0,0.01,0.0001)/100000
+shrink_acc = np.repeat(np.NaN,shrink_par.size*10).reshape([shrink_par.size,10])
+# Cross k-folds index
+from sklearn.cross_validation import KFold
+kf = KFold(n=X_train2.shape[0],n_folds=10)
+for row in range(len(shrink_par)):
+    # Get shrinkage param and model
+    sp = shrink_par[row]
+    qda_shrink = QuadraticDiscriminantAnalysis(reg_param=sp)
+    # Get cross-validation model accuracy
+    col = 0
+    for train_i, test_i in kf:
+        # Get accuracy
+        acc = qda_shrink.fit(X_train3.loc[train_i],
+                       y_train[train_i]).score(X_train3.loc[test_i],y_train[test_i])
+        # Store
+        shrink_acc[row,col] = acc
+        # Update
+        col += 1
+# Get the average CV score
+av_cv = pd.DataFrame(shrink_acc).apply(lambda x: np.mean(x),axis=1)
+# Get the shrinkage parameter
+reg_par_qda = shrink_par[max(np.where(av_cv==max(av_cv))[0])]
+{% endhighlight %}
+
+{% highlight text %}
+Training accuracy is 96.0% and test accuracy is 93.0%
+{% endhighlight %}
+
+As [Figure 4D](#fig4) shows, almost all of the human examples are classified correctly, but the relative mouse accuracy remains unchanged.
+
+<p align="center" id="fig4"><font size="6"> Figure 4: Discriminant Analysis Models</font></p>
+<p align="center"> <img src="/figures/confusion_matrix.png" width="90%"></p>
 
 
 * * *
@@ -130,4 +170,4 @@ Good improvement! While training sample accuracy declined to 94%, the test set a
 
 [^4]: Using leave-one-out cross-validation achieves an accuracy of 72%, and a better conditional accuracy between the species of 76% and 61%, respectively.
 
-[^5]: This value was chosen as it reduced our feature space to 63 features, which is about 25% the size of observations.
+[^5]: At threshold, the number of variables is reduced to 63.
