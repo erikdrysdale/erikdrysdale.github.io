@@ -9,8 +9,8 @@ mathjax: true
 
 ```{r,echo=F,message=FALSE,warning=FALSE,results='hide'}
 # Call in the CRAN packages
-ll <- c('tidyverse','magrittr','forcats','stringr','cowplot','scales','reshape2','broom','ggrepel',
-        'survival','smcure','GGally')
+ll <- c('tidyverse','magrittr','cowplot','scales','ggrepel','GGally',
+        'survival','smcure','survminer')
 sapply(ll,function(l) require(l,character.only = T))
 # Load the data and attach
 # load('extra_batch_effects/rmd_data_batch.Rdata')
@@ -21,7 +21,7 @@ sapply(ll,function(l) require(l,character.only = T))
 # }
 ```
 
-Checking the robustness of modelling assumptions in time-to-event models, i.e. [survival analysis](https://en.wikipedia.org/wiki/Survival_analysis) in a clinical setting, can be done through a range of residual-based tests [Cox-Snell, Martingale, Deviance, and Schoenfeld](http://www.math.ucsd.edu/~rxu/math284/slect9.pdf). The advantages of each of these approaches has been studied in detail for classical Cox regression models, where :
+Checking the robustness of modelling assumptions in time-to-event models, i.e. [survival analysis](https://en.wikipedia.org/wiki/Survival_analysis) in a clinical setting, can be done through a range of residual-based tests [Cox-Snell, Martingale, Deviance, and Schoenfeld](http://www.math.ucsd.edu/~rxu/math284/slect9.pdf). The advantages of each of these approaches has been studied in detail for classical Cox regression models. However, Cox regression models assume that 
 
 
 
