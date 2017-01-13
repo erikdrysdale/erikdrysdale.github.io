@@ -9,14 +9,14 @@ mathjax: true
 
 ```{r,echo=F,message=FALSE,warning=FALSE,results='hide'}
 # Call in the CRAN packages
-ll <- c('tidyverse','magrittr','cowplot','scales','ggrepel','GGally')
+ll <- c('tidyverse','magrittr','cowplot','scales','ggrepel','GGally','forcats','stringr')
         # 'survival','smcure','survminer')
 sapply(ll,function(l) require(l,character.only = T))
 ```
 
 ## Introduction
 
-Understanding the dynamics of survival times in clinical settings is important to both medical practitioners and patients. In statistics, time-to-event (or duration) analysis models a continuous random variable $T$, which represents the the length of a state. If the state is being alive, then the time to event is mortality, and we refer to it as [survival anaylsis](https://en.wikipedia.org/wiki/Survival_analysis). If $t$ is a given realization of $T$, then we are conceptually interested in modelling $P_\theta(T>t\|X)$, indexed by some parametric distribution $\theta$ and conditional of some baseline covariates $X$. If a patient has a "state" of some form of cancer, then survival analysis answers the question: what is the probability that life expectancy will exceed $t$ months given your baseline features $X$ (age, gender, genotype, etc) and underlying biological dynamics $\theta$[[^1]].
+Understanding the dynamics of survival times in clinical settings is important to both medical practitioners and patients. In statistics, time-to-event analysis models a continuous random variable $T$, which represents the duration of a state. If the state is "being alive", then the time to event is mortality, and we refer to it as [survival anaylsis](https://en.wikipedia.org/wiki/Survival_analysis). If $t$ is a given realization of $T$, then we are conceptually interested in modelling $P_\theta(T>t\|X)$, indexed by some parametric distribution $\theta$ and conditional of some baseline covariates $X$. If a patient has a baseline state of being alive with cancer, then survival analysis answers the question: what is the probability that life expectancy will exceed $t$ months given your baseline features $X$ (age, gender, genotype, etc) and underlying biological dynamics $\theta$[[^1]].
 
 If $T$ is a continuous random variable, then it has a CDF and PDF of course, but in survival analysis we are also interested in two other functions (dropping the subscripts/conditional variables for notational simplicity):
 
@@ -41,14 +41,15 @@ ggplot(dat1,aes(x=t,y=val,color=dist)) + geom_line(size=2,show.legend=F) +
   labs(x='Time') + ggtitle('Survival analysis functions') + theme(axis.title.y=element_blank())
 ```
 
-We can see that survival function is rapidly approach 0, meaning that the probability of living longer than $t>2$ is virtually zero. However, we also note that the hazard function is flat at $h(t)=2$. This is note a coincidence, as the exponential function is known to give a constant hazard function, meaning that given you have made it to some point $t_1$ the probablity of mortality in the next moment is going to be the same as someone who made it to $t_2$, which is another way of saying the exponential distribution is [memoryless](https://en.wikipedia.org/wiki/Memorylessness).
+We can see that survival function is rapidly approach 0 as time increases, with the probability of living longer than $t>2$ virtually at zero. However, we also note that the hazard function is flat at $h(t)=2$. This is note a coincidence, as the exponential function is known to give a constant hazard function, meaning that **given that you have made it to some point** $t_1$ or $t_2$, the probability of mortality in the next moment is going to be the same as for both cases, which is another way of saying the exponential distribution is [memoryless](https://en.wikipedia.org/wiki/Memorylessness).
 
-As a constant hazard rate is a strong modelling assumption, alternative distributions for the duration measure are often used in the literature including the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution) which permits an increasing, descreasing, or constant hazard rate depending on $\alpha$:
+As a constant hazard rate is a strong modelling assumption, alternative distributions for the duration measure are often used in the literature including the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution) which permits an increasing, decreasing, or constant hazard rate depending on $\alpha$:
 
-*$T \sim$ Weibull distribution$
+$T \sim$ Weibull distribution
+
 1. $F(t\|\theta,\alpha)=1-\exp[-(\theta t)^\alpha]$
 2. $S(t\|\theta,\alpha)=\exp[-(\theta t)^\alpha]$
-3. $h(t)=\alpha\theta^\alpha t^{\alpha-1}$
+3. $h(t\|\theta,\alpha)=\alpha\theta^\alpha t^{\alpha-1}$
 
 Let's see how the Weibull hazard function looks for different parameterizations of $\alpha$ with $\theta=1$.
 
@@ -65,16 +66,89 @@ ggplot(data.frame(t=seq(0.01,5,0.1)),aes(x=t)) + theme_cowplot(font_size=10) +
   labs(x='Time') + theme(axis.title.y=element_blank()) + 
   geom_text(data=tmap,aes(x=x,y=y,label=lab,color=lab),inherit.aes=F,parse=T,show.legend=F,size=2.5) + 
   ggtitle('Weibull hazard function')
-
 ```
 
 ## A distribution with covariates
 
-<!-- Now we're ready to simulate some data and estimate the parameters with maximum likelihood. We'll use a Weibull($\theta=1,\alpha=1.5$) distribution to generate $i=15$ observations and find the set of parameters which maximizes the log-likelihood: -->
+If $\theta$ parameterizes our distribution, then to introduce covariates which influence survival times we can simply rewrite $X\beta=\theta$ such that each individual $i$ and $j$ will have a different hazard rate if their baseline covariates differ[[^2]]. We can model the log likelihood as:
 
-<!-- $l(t|\theta,\alpha)=\sum_{i=1}^15 \log h(t_i|\$  -->
+$$\begin{aligned}
+l(\boldsymbol t \| \beta,\alpha) &=\sum_{i=1}^n \log f(t_i \| X_i,\beta,\alpha ) \\
+&= \sum_{i=1}^n \log h(t_i \| X_i,\beta,\alpha ) + \sum_{i=1}^n \log S(t_i \| X_i,\beta,\alpha )
+\end{aligned}$$
+
+We will generate a simple example with 20 individuals, using a Weibull distribution with $\alpha=1.5$, and an intercept and dummy covariates. The dummy variable can be thought of as a receiving a treatment or not.
+
+```{r}
+set.seed(1)
+n <- 20 # Number of patients
+alpha <- 1.5
+X <- data.frame(patient=str_c('id',1:n),iota=rep(1,n),treatment=sample(c(0,1),n,replace=T))
+beta <- c(1,2)
+# Generate observed survival times
+t.obs <- rweibull(n,shape=1.5,scale=(as.matrix(X[,c('iota','treatment')])%*%beta))
+X.obs <- cbind(t.obs,X)
+```
+
+Let's look at the distribution of our survival times. In figure A below we see that while some people who didn't receive the treatment lived longer than those who did, **on average**, receiving the treatment increased survival times from around $t=1$ to $t=3$. This was result was engineered by setting the coefficients to $\beta=[1,2]^T$. Figure B, known as a Kaplan-Meier (KM) plot, shows a non-parametric estimate of survival times. Every time there is a step downwards, this represents the death of a patient. KM plots are popular do their the visual interpretability, as one can ask (1) what share of the treatment group is alive after 4 units of time, or (2) at what time have half of the patients died?
+
+```{r surv_dist,fig.height=2.0,fig.width=4.0,echo=F}
+cp <- 6
+# Get average survival times
+mu1 <- group_by(X.obs,treatment) %>% summarise(mu=mean(t.obs))
+# Plot
+p1 <- 
+ggplot(X.obs,aes(y=t.obs,x=fct_reorder(patient,t.obs),color=factor(treatment))) + 
+  coord_flip() + geom_point() + theme_cowplot(font_size=cp) + 
+  scale_color_discrete(name='',labels=c('No Treatment','Received Treatment')) + 
+  geom_linerange(aes(ymin=0,ymax=t.obs)) +
+  labs(y='Survival time',x='Patients',subtitle='Lines show average survival times') +
+  theme(axis.ticks.y=element_blank(),axis.text.y=element_blank(),legend.position=c(0.7,0.35)) +
+  geom_hline(data=mu1,aes(yintercept=mu,color=factor(treatment)),show.legend=F,linetype=2)
+# KM plot
+km.dat <- X.obs %>% tbl_df %>% mutate(time=round(t.obs,1)) %>% arrange(treatment,time) %>%
+    group_by(treatment) %>% mutate(at.risk=(length(treatment):1)/length(treatment)) %>%
+    mutate(at.risk=lead(at.risk,1),at.risk=ifelse(is.na(at.risk),0,at.risk))
+km.dat <- do.call('rbind',split(km.dat,km.dat$treatment) %>% 
+                    lapply(.,function(rr)  rbind(mutate(rr[1,],at.risk=1,time=0),rr) ))
+p2 <-
+ggplot(km.dat,aes(x=time,y=at.risk,color=factor(treatment))) + geom_step(size=1) + 
+  theme_cowplot(font_size=cp) +
+  scale_color_discrete(name='',labels=c('No Treatment','Received Treatment')) +
+  labs(x='Time',y='Share alive',subtitle='Kaplan-Meier curve') + 
+  theme(legend.position = c(0.65,0.85))
+# Combine
+plot_grid(p1,p2,ncol=2,labels=c('A','B'),label_size = 10)
+
+```
+
+To find the maximum likelihood estimate of the data we can use the `optim` function in base `R` (this is easier than writing a Newton-Raphson algorithm). We see that our parameter estimates are fairly close, especially with only twenty observations.
+
+```{r,echo=T}
+# Log-likelihood
+llik <- function(theta,t,dat) {
+  t1 <- theta[1] # alpha
+  t2 <- theta[2] # beta_0
+  t3 <- theta[3] # beta_1
+  -sum(dweibull(x=t,shape=t1,scale=dat %*% rbind(t2,t3),log=T))
+}
+# Optimize
+mlik <- optim(par=c(1,1,1),fn=llik,dat=cbind(1,X.obs$treatment),t=X.obs$t.obs)$par
+data.frame(Parameters=c('alpha','beta[0]','beta[1]'),
+           True.Value=c(alpha,beta),Maximum.Likelihood=round(mlik,1))
+```
+
+Notice that one can write the hazard function for the Weibull distribution as $h(t_i\|X_i,\beta,\alpha)=g_1(X_i)g_2(t)$, with $g_2$ known as the **baseline hazard function**, so that ratio of two hazard functions between person $i$ and $j$ is going to indepdent of the survival time:
+
+$\frac{h(t_i,X_i)}{h(t_j,X_j)}=\Big(\frac{X_i\beta}{X_j\beta}\Big)^\alpha$
+
+This result, known as the **proportional hazards assumption** allows for the estimates of the parameters contained within $g_1$ to be estimated independently of $g_2$, using a method cause **partial likelihood**, which will not be discussed here, but is the approach used by the [Cox proportional hazazrd model](https://en.wikipedia.org/wiki/Proportional_hazards_model), which is the usually the base model used in survival analysis inference.
+
+<!-- ## Cencoring -->
+
 
 * * *
 
-[^1]: That is, if there were two datasets of survival times, with patient cohorts of breast and pancreatic cancer, respectively, then we would expect that probability of survival would be lower in the latter group, even with the same covariates, simply because pancreatic cancer is known to be a more aggressive cancer.
+[^1]: That is, if there were two data sets of survival times, with patient cohorts of breast and pancreatic cancer, respectively, then we would expect that probability of survival would be lower in the latter group, even with the same covariates, simply because pancreatic cancer is known to be a more aggressive cancer.
 
+[^2]: Note that this is only saying that $f_i\neq f_j$ because $X_i\neq X_j$ which is different than $\beta_i \neq \beta_j$. The former assumes baseline covariates cause differences in expected survival outcomes, whereas the latter is saying that for the same set of covariate values, survival times will differ between individuals. While simple survival models, and the type used in this post, assume that $\beta$ is constant between individuals, this is becoming a more reasonable assumption as the quality of biomedical data sets increases, especially with access to genomic data. For example, if one of the covariates in a breast cancer study is whether a patient received an estrogen receptor inhibitor, than we would expect $\beta$ to differ in its effects depending on the underlying genetic profile of tumor. Whereas if we had access to gene expression for genes such as $her2$ or $brca1$ this should control for the different efficacious of treatment across gene types.
