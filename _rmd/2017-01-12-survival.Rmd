@@ -25,7 +25,7 @@ If $T$ is a continuous random variable, then it has a CDF and PDF of course, but
 
 Visualizing each function in `R` provides a useful way to understand what each function tells us. Assume that $T \sim \text{Exp}(\theta)$ distribution.
 
-```{r surv1,echo=T,fig.height=1,fig.width=1}
+```{r surv1,echo=T,fig.height=1.5,fig.width=1.5}
 # Use theta=2
 F.t <- function(t) { pexp(t,rate=2) }
 f.t <- function(t) { dexp(t,rate=2) }
@@ -37,7 +37,7 @@ dat1 <- data.frame(t=seq(0,2,0.1)) %>%
           gather(dist,val,-t) %>% tbl_df %>% mutate(dist=gsub('t','[t]',dist))
 # Plot
 ggplot(dat1,aes(x=t,y=val,color=dist)) + geom_line(size=2,show.legend=F) +
-  facet_wrap(~dist,scales='free_y',labeller=label_parsed) + theme_cowplot(font_size = 3) +
+  facet_wrap(~dist,scales='free_y',labeller=label_parsed) + theme_cowplot(font_size = 4.5) +
   labs(x='Time') + ggtitle('Survival analysis functions') + theme(axis.title.y=element_blank())
 ```
 
