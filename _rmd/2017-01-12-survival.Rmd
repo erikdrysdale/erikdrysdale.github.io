@@ -14,16 +14,14 @@ ll <- c('tidyverse','magrittr','cowplot','scales','ggrepel','GGally','forcats','
 sapply(ll,function(l) require(l,character.only = T))
 ```
 
-## Introduction
-
-Understanding the dynamics of survival times in clinical settings is important to both medical practitioners and patients. In statistics, time-to-event analysis models a continuous random variable $T$, which represents the duration of a state. If the state is "being alive", then the time to event is mortality, and we refer to it as [survival anaylsis](https://en.wikipedia.org/wiki/Survival_analysis). If $t$ is a given realization of $T$, then we are conceptually interested in modelling $P_\theta(T>t\|X)$, indexed by some parametric distribution $\theta$ and conditional on some baseline covariates $X$. If a patient has a baseline state of being alive with cancer, then survival analysis answers the question: what is the probability that life expectancy will exceed $t$ months given your features $X$ (age, gender, genotype, etc) and underlying biological condition[[^1]].
+Understanding the dynamics of survival times in clinical settings is important to both medical practitioners and patients. In statistics, time-to-event analysis models a continuous random variable $T$, which represents the duration of a state. If the state is "being alive", then the time to event is mortality, and we refer to it as [survival anaylsis](https://en.wikipedia.org/wiki/Survival_analysis). If $t$ is a given realization of $T$, then we are conceptually interested in modelling $P_\theta(T>t\|X)$, indexed by some parametric distribution $\theta$ and conditional on some baseline covariates $X$. If a patient has the state of being alive with cancer, then survival analysis answers the question: what is the probability that life expectancy will exceed $t$ months given your features $X$ (age, gender, genotype, etc) and underlying biological condition[[^1]].
 
 If $T$ is a continuous random variable, then it has a CDF and PDF of course, but in survival analysis we are also interested in two other functions (dropping the subscripts/conditional variables for notational simplicity):
 
 1. **Survival function**: $S(t)=1-F(t)$. Probability of being alive at time $t$. 
-2. **Hazard function**: $h(t)=\frac{f(t)}{S(t)}$. The rate of change of risk, given you are alive at $t$.
+2. **Hazard function**: $h(t)=\frac{f(t)}{S(t)}$. The rate of change of risk, *given* you are alive at $t$.
 
-Visualizing each function in `R` provides a useful way to understand what each function represents. Assume that $T \sim \text{Exp}(\theta)$ distribution.
+Visualizing each term in `R` provides a useful way to understand what each function represents. Assume that $T \sim \text{Exp}(\theta)$ distribution.
 
 ```{r surv1,echo=T,fig.height=2.0,fig.width=2.0}
 # Use theta=2
@@ -41,7 +39,7 @@ ggplot(dat1,aes(x=t,y=val,color=dist)) + geom_line(size=1,show.legend=F) +
   labs(x='Time') + ggtitle('Survival analysis functions') + theme(axis.title.y=element_blank())
 ```
 
-We can see that the survival function rapidly approaches zero as time increases, with the probability of living longer than $t>2$ almost nill. However, the hazard function is flat at $h(t)=2$. This is not unexpected, as the exponential function is known to give a constant hazard function, meaning that **given** that you have made it to some point $t_1$ or $t_2$, the probability of mortality in the next moment is the same for both cases, which is another way of saying the exponential distribution is [memoryless](https://en.wikipedia.org/wiki/Memorylessness).
+We can see that the survival function rapidly approaches zero as time increases, with the probability of living longer than $t>2$ almost nill. However, the hazard function is flat at $h(t)=2$. This is not unexpected, as the exponential distribution is known to give a constant hazard function, meaning that **given** that you have made it to some point $t_1$ or $t_2$, the probability of mortality in the next moment is the same for both cases, which is another way of saying the exponential distribution is [memoryless](https://en.wikipedia.org/wiki/Memorylessness).
 
 As a constant hazard rate is a strong modelling assumption, alternative distributions for the duration measure are often used in the literature including the [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution) which permits an increasing, decreasing, or constant hazard rate depending on $\alpha$:
 
@@ -264,11 +262,11 @@ data.frame(Treatment=c('Yes','No'),Inference=c(mu.treat,mu.notreat),
 ```
 
 While our inference shows that individuals should live longer than what we observe, it seems "too high" compared to the sample mean we would have observed had the observations not been censored. This is due to the problems of [finite sample bias](https://en.wikipedia.org/wiki/Maximum_likelihood_estimation#Higher-order_properties),
-in maximum likelihood estimators. Correcting for this is beyond the scope of this post post. Overall, this post has highlighted the importance of survival models in statistics: (1) they provide a way to estimate the distribution of survival times for different patients using variation in baseline covariates, and (2) they are able to extract information from both censored and uncensored observations to perform inference.
+in maximum likelihood estimators. Correcting for this is beyond the scope of this analysis. Overall, this post has highlighted the importance of survival models in statistics: (1) they provide a way to estimate the distribution of survival times for different patients using variation in baseline covariates, and (2) they are able to extract information from both censored and uncensored observations to perform inference.
 
 
 * * *
 
 [^1]: If there were two data sets of survival times with patient cohorts of breast and pancreatic cancer, then we would expect that probability of survival would be lower in the latter group, even if patients with breast/pancreatic cancer had the same covariate values, simply because pancreatic cancer is known to be a more aggressive cancer.
 
-[^2]: Note that this is only saying that $f_i\neq f_j$ because $X_i\neq X_j$ which is different than $\beta_i \neq \beta_j$. The former assumes baseline covariates cause differences in expected survival outcomes, whereas the latter is saying that for the same set of covariate values, survival times will differ between individuals. While simple survival models, and the type used in this post, assume that $\beta$ is constant between individuals, this is becoming a more reasonable assumption as the quality of biomedical data sets increases, especially with access to genomic data. For example, if one of the covariates in a breast cancer study is whether a patient received an estrogen receptor inhibitor, than we would expect $\beta$ to differ in its effects depending on the underlying genetic profile of tumor. Whereas if we had access to gene expression for genes such as $her2$ or $brca1$ this should control for the different efficacies of treatment across gene types.
+[^2]: Note that this is only saying that $f_i\neq f_j$ because $X_i\neq X_j$ which is different than $\beta_i \neq \beta_j$. The former assumes baseline covariates cause differences in expected survival outcomes, whereas the latter is saying that for the same set of covariate values, survival times will differ between individuals. While simple survival models, and the type used in this post, assume that $\beta$ is the same between individuals, this is becoming a more reasonable assumption as the quality of biomedical data sets increases, especially with access to genomic data. For example, if one of the covariates in a breast cancer study is whether a patient received a selective estrogen receptor modulator, than we would expect $\beta$ to differ in its effects depending on the underlying genetic profile of tumor. Whereas if we had access to gene expression for genes such as $her2$ or $brca1$ this should control for the different efficacies of treatment across gene types.
