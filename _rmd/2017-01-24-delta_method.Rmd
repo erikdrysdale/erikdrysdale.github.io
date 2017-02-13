@@ -3,7 +3,7 @@ title: 'Delta method'
 output: html_document
 fontsize: 12pt
 published: false
-status: process
+status: no_process
 mathjax: true
 ---
 
@@ -62,10 +62,10 @@ As a warm-up, we'll begin with the exponential distribution. While it is a somew
 
 $$
 \begin{aligned}
-L(\lambda\|\textbf{t}) &= \prod_{i=1}^n \Big(  f(t_i\|\theta) \Big)^{\delta_i} \Big(  1-F(t_i\|\theta) \Big)^{1-\delta_i} \\
+L(\lambda|\textbf{t}) &= \prod_{i=1}^n \Big(  f(t_i|\theta) \Big)^{\delta_i} \Big(  1-F(t_i|\theta) \Big)^{1-\delta_i} \\
 &= \prod_{i=1}^n \Big( \lambda e^{-\lambda t_i} \Big)^{\delta_i} \Big( e^{-\lambda t_i} \Big)^{1-\delta_i} \\
 &= \lambda^{\sum_i^n \delta_i } e^{-\lambda \sum_i^n t_i} \\
-l(\lambda\|\textbf{t}) &= \log L(\lambda\|\textbf{t}) \\
+l(\lambda|\textbf{t}) &= \log L(\lambda|\textbf{t}) \\
 &= \sum_i^n \delta_i \log\lambda - \lambda \sum_i^n t_i \\
 U(\lambda) &= \lambda^{-1} \sum_i^n \delta_i - \sum_i^n t_i \\
 I(\lambda) &= \lambda^{-2} \sum_i^n \delta_i
@@ -92,7 +92,7 @@ $$\hat{\alpha}_{\text{MLE}} = g(\hat{\lambda}_{\text{MLE}}) $$
 $$
 \begin{aligned}
 Var(g(\lambda)) &= [g'(\lambda)]^2 Var(\lambda) \\
-SE(g(\lambda)) &= \| g'(\lambda)] \| SE(\lambda) \\
+SE(g(\lambda)) &= | g'(\lambda)] | SE(\lambda) \\
 \end{aligned}
 $$
 
@@ -139,8 +139,8 @@ Solving for the log-likelihood:
 
 $$
 \begin{aligned}
-L(\theta \| \textbf{t}) &= \prod_{i=1}^n f(t_i \| \theta)^{\delta_i} S(t_i \| \theta)^{1-\delta_i} \\
-l(p,\lambda) &= \sum_{i=1}^n \delta_i \log f(t_i \| \theta) + (1-\delta_i) \log S(t_i \| \theta) \\
+L(\theta | \textbf{t}) &= \prod_{i=1}^n f(t_i | \theta)^{\delta_i} S(t_i | \theta)^{1-\delta_i} \\
+l(p,\lambda) &= \sum_{i=1}^n \delta_i \log f(t_i | \theta) + (1-\delta_i) \log S(t_i | \theta) \\
  &= \sum_i \Big\{ \delta_i\Big[\log p + \log \lambda + (p-1) \log t_i \Big] -\lambda t^p_i \Big\}
 \end{aligned}
 $$
