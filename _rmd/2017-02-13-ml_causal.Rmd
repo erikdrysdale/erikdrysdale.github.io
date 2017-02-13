@@ -174,7 +174,7 @@ When $g: \hspace{2mm} \sum_{k=1}^p X_{ik}\beta_k$ this is a completely linear mo
 2. Estimate $\hat{\textbf{y}} = \textbf{d} \hat{\theta} + \hat{g}(\textbf{X})$
 3. Report $\hat{\theta}$ as the causal effect
 
-When $E[\textbf{d}|\textbf{X}]=0$, this strategy is completely fine. However, in the presence of confounding, this strategy will no longer work as:
+When $E ( \textbf{d} \| \textbf{X} )=0$, this strategy is completely fine. However, in the presence of confounding, this strategy will no longer work as:
 
 $$d_i = m(\textbf{X}_i) + v_i, \hspace{1cm} m: \mathbb{R}^p \to \mathbb{R}^1 \neq 0 $$
 
