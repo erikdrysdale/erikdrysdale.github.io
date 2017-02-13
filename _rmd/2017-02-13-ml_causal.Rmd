@@ -160,7 +160,7 @@ If prediction accuracy is the only metric under consideration, then whether a sp
 
 ### Model #1: Double machine learning for causal inference
 
-In a clinical setting one may be interested in estimating a parameter $\theta$ for some treatment variable $d_i$, while controlling for a vector of covariates $\textbf{X}_i=(X_{i1},\dots,X_{ip})$, which are often called "confounders". For the rest of the discussion, it will be assumed that the outcome variable has a partially-linear model form:
+In a clinical setting one may be interested in estimating a parameter $\theta$ for some treatment variable $d_i$, while controlling for a vector of covariates which are often called "confounders". For the rest of the discussion, it will be assumed that the outcome variable has a partially-linear model form:
 
 $$
 \begin{align*}
@@ -168,7 +168,7 @@ $$
 \end{align*}
 $$
 
-When $g(\textbf{X}_i)=\sum_{k=1}^p X_{ik}\beta_k$ this is a completely linear model. However $g(\textbf{X}_i)$ can be non-linear, and approximated by an algorithmic process: random forests, neural networks, LASSO, etc. If $p \gg N$, the classical linear form of $g$ will be insufficient for the reasons discussed above. A mistaken modelling strategy would be to force the two approaches together:
+When $g: \hspace{2mm} \sum_{k=1}^p X_{ik}\beta_k$ this is a completely linear model. However $g$ can be non-linear, and approximated by an algorithmic process: random forests, neural networks, LASSO, etc. If $p \gg N$, the classical linear form of $g$ will be insufficient for the reasons discussed above. A mistaken modelling strategy would be to force the two approaches together:
 
 1. Combine a machine learning algorithm for an over-determined feature set $g(\textbf{X})$ with the simple linear addition of $\textbf{d}$
 2. Estimate $\hat{\textbf{y}} = \textbf{d} \hat{\theta} + \hat{g}(\textbf{X})$
