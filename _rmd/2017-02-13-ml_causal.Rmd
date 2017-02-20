@@ -210,11 +210,11 @@ plot_grid(ggplot() + draw_label('Figure 6: Double machine learning '),
           ncol=1,rel_heights = c(1,7))
 ```
 
-### Model #2: Approximate residual blanacing
+### Model #2: Approximate residual balancing
 
 An alternative formulation of estimating some causal parameter $\theta$ in a partially linear model is to pose the question in terms of what the "average causal effect" of some treatment is. The Rubin Causal Framework (see <span class="citation">(Rosembaum and Rubin 1983)</span> and <span class="citation">(Holland 1986)</span>) considers the causal effect of a treatment to be the difference in outcome had the opposite treatment occurred, *ceteris paribus*. As a treatment can only be assigned once to a given person, the estimate of what *would have occured* must be imputed from the data. In a randomized control trial, the average difference between the (randomly) assigned treatment and non-treatment groups represents an unbiased estimate of the average treatment effect (ATE). In observational studies, treatment assigned will be correlated with other causal variables and hence the difference between the treatment/non-treatment groups (assuming a binary treatment option) will not represent a causal difference. However, if the **unconfoundedness assumption** holds[[^3]], then tools exist to estimate the ATE in an observational study. For data sets which contain detailed medical and personal histories, the unconfoundedness assumption may only be plausible if the treatment variable is conditioned on a large number of features, which may exceed the number of observations.
 
-When a propensity score (the probability of treatment assignment given baseline features) can be estimated, ATE can be inferred from either weighting outcomes by the inverse of the propensity score or matching patients from the different treatment groups that have a similar propensity score and averaging over their differences in outcome. While several approaches have been developed which use machine learning tools to estimate propensity scores or probability weights (see <span class="citation">(McCaffrey and Morral 2004)</span> and <span class="citation">(Zubizarreta and Dylan 2015)</span>)), these methods are not guaranteed to achieve satisfactory performance as $p$ increases as the curse of dimensionality makes it harder to "balance" observations as the feature space increases in rank.
+When a propensity score (the probability of treatment assignment given baseline features) can be estimated, ATE can be inferred from either weighting outcomes by the inverse of the propensity score or matching patients from the different treatment groups that have a similar propensity score and averaging over their differences in outcome. While several approaches have been developed which use machine learning tools to estimate propensity scores or probability weights (see <span class="citation">(McCaffrey and Morral 2004)</span> and <span class="citation">(Zubizarreta and Dylan 2015)</span>), these methods are not guaranteed to achieve satisfactory performance as $p$ increases as the curse of dimensionality makes it harder to "balance" observations as the feature space increases in rank.
 
 The recently-developed **approximate residual balancing (ARB)** method <span class="citation">(Athey Imbens and Wager 2016)</span> provides a robust framework to estimate treatment effects in high dimensional space. It is implemented in a multi-stage process including fitting a regularized linear model, finding weights that approximately balance all the features, and then re-weighting the residuals. Simulations suggest that weights based on the balancing of residuals, as opposed to propensity scores, achieve better results when $p \gg N$.
 
@@ -284,7 +284,7 @@ gg.arb2 + theme_cowplot(font_size=10) + labs(x=expression(hat(tau)),subtitle='Fi
 
 [^1]: A Bayesian believes that model parameters are themselves governed by a probability distribution.
 
-[^2]: The difference between the algorithmic and statistical modelling approaches could be amusingly summarized as whether using your knuckles to determine which months have 31 days is sufficient have "learned" something about the world.
+[^2]: The difference between the algorithmic and statistical modelling approaches could be amusingly summarized as whether using your knuckles to determine which months have 31 days is sufficient to have "learned" something about the world.
 
 [^3]: Conditional on each subject's baseline features treatment assignment is as good as random.
 
