@@ -1,0 +1,10 @@
+---
+title: 'Logistic regression from A to A'
+output: html_document
+fontsize: 12pt
+published: true
+status: process
+mathjax: true
+---
+
+
