@@ -24,6 +24,16 @@ body {
   color: $darkGray;
 }
 
+table {
+  border-collapse: separate;
+  border-spacing: 25px 0;
+  margin: 0px auto;
+}
+
+td {
+  padding: 5px 0;
+}
+
 .container {
   margin: 0 auto;
   max-width: 940px; //makes website flatter!

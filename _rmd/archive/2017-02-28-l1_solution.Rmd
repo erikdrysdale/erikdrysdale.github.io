@@ -3,7 +3,7 @@ title: 'Using quadratic programming to solve L1-norm regularization'
 output: html_document
 fontsize: 12pt
 published: false
-status: process
+status: no_process
 mathjax: true
 ---
   
