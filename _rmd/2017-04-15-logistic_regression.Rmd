@@ -3,8 +3,9 @@ title: 'Logistic regression from A to A'
 output: html_document
 fontsize: 12pt
 published: true
-status: process
+status: no_process
 mathjax: true
 ---
 
+Logistic regression is 
 
