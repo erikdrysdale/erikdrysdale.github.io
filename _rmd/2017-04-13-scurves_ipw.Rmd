@@ -23,7 +23,7 @@ One statistical solution as discussed in Cole and Hernan (2004) is to adjust the
 
 To provide a motivating example with some simulations, consider a theoretical survival curve from an [accelerated failure time model](https://en.wikipedia.org/wiki/Accelerated_failure_time_model): $S(t;x,z)=S_0(t e^{\beta x + \gamma z})$, where $x=1$ encodes a smoker, $z=1$ encodes a male, $\beta$ and $\gamma>0$ but $\text{cor}(x,z) < 0$. In other words, being a smoker and a male "accelerates" the survival path (i.e. one dies faster), but it is assumed that men are less likely to be smokers[[^4]]. The values $\beta,\gamma$ were specifically chosen so that the average survival times between smokers and non-smokers would be comparable. In other words, by having three-quarters of the smokers be female, this toy example provides enough of a confounding relationship to mask the true effect of smoking when seen through the lens of a KM survival curve. Figure 1A displays the result of this confounding, as evidenced by the statistically insignificant [log-rank test](https://en.wikipedia.org/wiki/Log-rank_test) between the two curves. However, if the KM survival curves are stratified by gender, the true effect of smoking reveals itself, and the log-rank test is able to decisively reject the null of no difference between smokers and non-smokers as Figures 1B and 1C show.
 
-\ \ 
+<br>
 
 
 <h3><p align="center">Figure 1: Confounding *in silico* </p></h3>
@@ -40,7 +40,7 @@ The statistical solution as proposed by Cole and Hernan (2004) is a three-step p
 2. Estimate a weighted Cox PH model with only one treatment variable.
 3. Adjust the KM survival curves with the estimated Cox PH coefficients.
 
-To provide a more formal description of IPWs, consider a sample of $N$ individuals and for the $i^{th}$ person denote $x_i$ as a **discrete** treatment option (the example below is binary, but it can be multinomial), $t_i$ and $\delta_i$ as the observed time and a censoring indicator, $\bzi$ as a $p$-vector of baseline features (possibly confounders), and $w_i$ as the inverse of the probability of receiving person $i$'s treatment $x_i$ conditional on the observed covariate vector $\bzi$. The inverse probability weight $w_i$ can be thought of as the inverse of the conditional marginal density of $X|Z$: $[f_{X|Z}(x_i|\bzi)]^{-1}$. While $w_i$ is of course unknown, it can be estimated parametrically, $\hat{w}_i$, via methods such as logistic regression.
+To provide a more formal description of IPWs, consider a sample of $N$ individuals and for the $i^{th}$ person denote $x_i$ as a **discrete** treatment option (the example below is binary, but it can be multinomial), $t_i$ and $\delta_i$ as the observed time and a censoring indicator, $\bzi$ as a $p$-vector of baseline features (possibly confounders), and $w_i$ as the inverse of the probability of receiving person $i$'s treatment $x_i$ conditional on the observed covariate vector $\bzi$. The inverse probability weight $w_i$ can be thought of as the inverse of the conditional marginal density of $X\|Z$: $[f_{X\|Z}(x_i\|\bzi)]^{-1}$. While $w_i$ is of course unknown, it can be estimated parametrically, $\hat{w}_i$, via methods such as logistic regression.
 
 The form that the [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression) model takes when there is a binary outcome is shown in equation $\eqref{eq:logit}$. In this generalized linear model, the canonical link is the logit (i.e. log-odds) function, which means a one-unit change in a covariate leads to a $\mu_j$ unit change in the log-odds of the encoded outcome. As the logit transform is a monotonic transformation of the probability of the event, the conditional probability can always be backed out using the expit transformation[[^5]], which allows for the calculation of $\hat{w}_i$. As $x_i = \{0,1\}$[[^6]], one less the fitted probability returns the probability for the alternative event.
 
@@ -91,7 +91,7 @@ $$
 
 Since the weighted-Cox model has only a single covariate $x_i$, the third and final step is to compare two KM survival curves: $\hat{S}(t_j;x_i=1) = [\hat{S}_0(t_j;\hat{sw}_i)]^{\exp\{\hat{\gamma}\}}$ and $\hat{S}(t_j;x_i=0) = \hat{S}_0(t_j;\hat{sw}_i)$.
 
-\ \ 
+<br>
 
 
 ## <span style="color:green"> Example: recurrence of Ewing's sarcoma </span>
@@ -112,11 +112,10 @@ Table 1 below shows the summary statistics for this data set along with informat
 <tr><td style="text-align:left">Normal</td><td>Standard</td><td>10</td><td>0.38</td><td>0.22</td><td>4.50</td><td>1.72</td><td>17.20</td></tr>
 <tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr></table>
 
-\ \ 
+<br>
 
 Table 2 shows the estimates of three Cox regression models. In model (1) only the treatment variable is included. For reasons already discussed, this results in a positive bias, and the coefficient estimate suggests that the hazard rate is lower if a patient receives the treatment (significant at the 5% level). However, the inclusion of the LDH variable for model (2) leads to a statistically insignificant measure of treatment variable, and a highly significant one for LDH. Lastly, model (3) shows the coefficient estimate for the different treatments when the model is weighted by the stabilized IPWs. Like model (2), the coefficient result is insignificant, and numerically almost identical[[^8]].
 
-<p align="center">
 <table style="text-align:center"><caption><strong>Table 2: Cox-PH regression estimates (exponential)</strong></caption>
 <tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td>Biased</td><td>Controlled</td><td>Weighted</td></tr>
 <tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td></tr>
@@ -130,9 +129,8 @@ Table 2 shows the estimates of three Cox regression models. In model (1) only th
 <tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
 <tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>76</td><td>76</td><td>76</td></tr>
 <tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td colspan="4" style="text-align:right"></td></tr></table>
-</align>
 
-\ \ 
+<br>
 
 There are actually two approaches that can be used to adjust the KM survival curves: (1) the stratified approach and (2) the marginal approach, as shown in equations $\eqref{eq:stratified}$ and $\eqref{eq:marginal}$ below. The former adjusts the estimate of the baseline hazard rate (and hence survival rate[[^9]]) for the different treatment levels, whereas the latter shows the *theoretical* survival distribution for all patients had each person been assigned to the standard or novel treatment. Figures 3A and 3B show the visual results of these two approaches. The stratified approach has the advantage that it uses the same structure of the unadjusted KM curves (and could use the log-rank test in principle), whereas the marginal approach appeals to the potential outcomes framework of the [Rubin causal model](https://en.wikipedia.org/wiki/Rubin_causal_model).
 
@@ -147,8 +145,9 @@ $$
 <h3><p align="center">Figure 3: KM adjusted survival curves </p></h3>
 <p align="center"><img src="figures/kmadjust1.png" width="80%"></p>
 
+<br> 
 
-\newpage
+* * * 
 
 ## References
 
@@ -165,6 +164,9 @@ $$
 <p>Robins, J.M., M.A. Hernan, and B. Brumback. 2000. "Marginal Structural Models and Causal Inference in Epidemiology." <em>Epidemiology</em> 11: 550-60.</p>
 </div>
 
+<br> 
+
+* * * 
 
 ## Footnotes
 
