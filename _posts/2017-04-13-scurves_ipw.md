@@ -129,11 +129,11 @@ Table 2 shows the estimates of three Cox regression models. In model (1) only th
 There are actually two approaches that can be used to adjust the KM survival curves: (1) the stratified approach and (2) the marginal approach, as shown in equations $\eqref{eq:stratified}$ and $\eqref{eq:marginal}$ below. The former adjusts the estimate of the baseline hazard rate (and hence survival rate[[^9]]) for the different treatment levels, whereas the latter shows the *theoretical* survival distribution for all patients had each person been assigned to the standard or novel treatment. Figures 3A and 3B show the visual results of these two approaches. The stratified approach has the advantage that it uses the same structure of the unadjusted KM curves (and could use the log-rank test in principle), whereas the marginal approach appeals to the potential outcomes framework of the [Rubin causal model](https://en.wikipedia.org/wiki/Rubin_causal_model).
  
 $$
-\begin{align*}
+\begin{align}
   \hat{S}_{x}(t_j) &= \hat{S}_{0,x}(t_j) \hspace{2cm} \text{Stratified approach} \label{eq:stratified}  \\
 \hat{S}(t_j) &= [\hat{S}_0(t_j)]^{\exp\{\hat{\beta} x \}} \hspace{7mm} \text{Marginal approach} \label{eq:marginal}  \\
 &\text{For } x=\{0,1\}
-\end{align*}
+\end{align}
 $$
  
 <h3><p align="center">Figure 3: KM adjusted survival curves </p></h3>
