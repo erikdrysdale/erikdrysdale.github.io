@@ -87,7 +87,7 @@ L^{IPW}(\gamma) &= \prod_{i=1}^N \Bigg[ \Bigg( \frac{\exp(\gamma x_i)}{\sum_{k=1
 \end{align*}
 $$
 
-Since the weighted-Cox model has only a single covariate $x_i$, the third and final step is to compare two KM survival curves: $\hat{S}(t_j;x_i=1) = [\hat{S}_0(t_j;\hat{sw}_i)]^{\exp\{\hat{\gamma}\}}$ and $\hat{S}(t_j;x_i=0) = \hat{S}_0(t_j;\hat{sw}_i)$.
+Since the weighted-Cox model has only a single covariate $x_i$, the third and final step is to compare two KM survival curves: $\hat{S}(t_j;x_i=1) = [\hat{S}_0(t_j;\hat{sw}_i)]^{\exp\\{\hat{\gamma}\\}}$ and $\hat{S}(t_j;x_i=0) = \hat{S}_0(t_j;\hat{sw}_i)$.
 
 
 ## <span style="color:green"> Example: recurrence of Ewing's sarcoma </span>
@@ -132,7 +132,7 @@ $$
 \begin{align}
   \hat{S}_{x}(t_j) &= \hat{S}_{0,x}(t_j) \hspace{2cm} \text{Stratified approach} \label{eq:stratified}  \\
 \hat{S}(t_j) &= [\hat{S}_0(t_j)]^{\exp\{\hat{\beta} x \}} \hspace{7mm} \text{Marginal approach} \label{eq:marginal}  \\
-&\text{For } x=\{0,1\}
+&\text{For } x=\{0,1\} \nonumber
 \end{align}
 $$
 
