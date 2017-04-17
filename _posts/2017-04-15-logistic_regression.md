@@ -22,20 +22,24 @@ Logistic regression (LR) models a function of the probability of $K$ discrete cl
  
 Unlike linear regression, LR ensures that the fitted values are are bounded between $[0,1]$, as the log-odds form of the model allows for a mapping to the [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) for the probability values. Notationally, the form of the multinomial logistic regression model is shown below where $\beta_i^T=(\beta_{i1},\dots,\beta_{ip})$. 
  
+$$
 \begin{align*}
 \log\frac{P(G=1|X=x)}{P(G=K|X=x)} &= \beta_{10} + \beta_1^T x \\ 
 \vdots \\
 \log\frac{P(G=K-1|X=x)}{P(G=K|X=x)} &= \beta_{(K-1)0} + \beta_{K-1}^T x
 \end{align*}
+$$
  
 For the $i^{th}$ equation, the dependent variable is the log of the probability of class $i$ relative to class $K$ (i.e. the odds), conditional on some feature vector $x$. Since both an odds and a log transformation are [monotonic](https://en.wikipedia.org/wiki/Monotonic_function), the probability of the $i^{th}$ class can always be recovered from the log-odds. While class $K$ is used in the denominator above, using the final encoded class is arbitrary, and the the estimated coefficients would are equivariant under this choice. While there are $\frac{K!}{2!(K-2)!}$ relationships in a $K$-class LR model[[^5]], only $K-1$ equations are actually needed. For example, in the $K=3$ situation, it is easy to see that the log-odds relationship between classes 1 & 2 can be recovered from the log-odds relationship of classes 1 & 3 and 2 & 3.
  
+$$
 \begin{align*}
 \frac{\log p_1}{\log p_2} &= (\beta_{10} - \beta_{20}) + (\beta_{1} - \beta_{2})^T x \\
 \frac{\log p_1}{\log p_2} &= \gamma_{10} + \gamma_{1}^T x
 \end{align*}
+$$
  
-Having one less equation than classes ensures that the probabilities sum to one, as the probability of the $K^{th}$ class is defined as: $P(G=K|X=x)=1-\sum_{l=1}^{K-1} P(G=l|X=x)$. In the multinomial setting, the parameter $\theta$ will be used to show that there are actually $(K-1) \times p$ parameters: $\theta=(\beta_{10},\beta_1^T,\dots,\beta_{(K-1)0},\beta_{K-1}^T )$ that define the system. To save on space, the conditional likelihood may also be denoted as: $p_k(x;\theta)=P(G=k|X=x)$. After solving the log-odds equations, the probability of each class is:
+Having one less equation than classes ensures that the probabilities sum to one, as the probability of the $K^{th}$ class is defined as: $P(G=K\|X=x)=1-\sum_{l=1}^{K-1} P(G=l\|X=x)$. In the multinomial setting, the parameter $\theta$ will be used to show that there are actually $(K-1) \times p$ parameters: $\theta=(\beta_{10},\beta_1^T,\dots,\beta_{(K-1)0},\beta_{K-1}^T )$ that define the system. To save on space, the conditional likelihood may also be denoted as: $p_k(x;\theta)=P(G=k\|X=x)$. After solving the log-odds equations, the probability of each class is:
  
 $$
 \begin{align*}
@@ -200,7 +204,7 @@ round(beta.new,3)
 ## age        0.043
 {% endhighlight %}
  
-An alternative approach which yields identical results is to substitute  in $\eqref{eq:score}$ and $\eqref{eq:hess}$ into $\eqref{eq:nr}$ and then re-define some terms to get the "iteratively reweighted least squares" (IRLS) algorithm. Equation $\eqref{eq:irls}$ shows that at each step of the IRLS, the new coefficient weight is the weighted [OLS](https://en.wikipedia.org/wiki/Ordinary_least_squares) coefficient vector for the adjusted response vector $\mathbf{z}$. It's easy to show that Show that equation $\eqref{eq:irls}$ is equivalent to $\underset{\beta}{\text{arg}\min} (\mathbf{z}-\mathbf{X}\beta)^T\mathbf{W} (\mathbf{z}-\mathbf{X}\beta)$
+An alternative approach which yields identical results is to substitute  in $\eqref{eq:score}$ and $\eqref{eq:hess}$ into $\eqref{eq:nr}$ and then re-define some terms to get the "iteratively reweighted least squares" (IRLS) algorithm. Equation $\eqref{eq:irls}$ shows that at each step of the IRLS, the new coefficient weight is the weighted [OLS](https://en.wikipedia.org/wiki/Ordinary_least_squares) coefficient vector for the adjusted response vector $\mathbf{z}$. It is easy to show that show that equation $\eqref{eq:irls}$ is equivalent to $\underset{\beta}{\text{arg}\min} (\mathbf{z}-\mathbf{X}\beta)^T\mathbf{W} (\mathbf{z}-\mathbf{X}\beta)$
  
 $$
 \begin{align}
@@ -381,18 +385,23 @@ The log-likelihood is always made up of $N$ "summand functions": $\sum_{i=1}^N Q
  
 When the number of classes is greater than two, several modifications need to be made to both the likelihood and matrix formulation of the Newton-Raphson estimation procedure. The rest of this section will show the mathematical and matrix calculations needed to handle this slightly more complex LR form. The responses are now one-hot encoded in an $N \times (K-1)$ matrix, $\mathbf{Y}$, whose $i^{th}$ row, $\mathbf{y}_i$, is a $K-1$ row vector, whose $j^{th}$ element is only equal to one if it belongs to class $j$.
  
+$$
 \begin{align*}
 \mathbf{Y} &= \begin{pmatrix} \mathbf{y}_1 \\ \vdots \\ \mathbf{y}_N \end{pmatrix} = \begin{pmatrix} (y_{11}, \hspace{2mm} \dots \hspace{2mm} y_{1(K-1)} \\ \vdots \\ (y_{N1}, \hspace{2mm} \dots \hspace{2mm} y_{N(K-1)} ) \end{pmatrix}
 \end{align*}
+$$
  
 The joint pmf becomes the multinomial rather than the binomial distribution, whose $i^{th}$ contribution to the product of terms is shown below.
  
+$$
 \begin{align*}
 p_{\mathbf{y}_i}(x_i) &= P(G=1|X=x_i)^{y_{i1}} \times \cdots \times P(G=K-1|X=x_i)^{y_{i(K-1)}}\times P(G=K|X=x_i)^{1-\sum_{l=1}^{K-1} y_{il}}
 \end{align*}
+$$
  
 Hence, the $i^{th}$ summand of the log-likelihood is going to be:
  
+$$
 \begin{align*}
 \log(p_{\mathbf{y}_i}(x_i)) &= y_{i1}\log P(G=1|X=x_i) + \cdots + \\
 & y_{i(K-1)}\log P(G=K-1|X=x_i) + (1-\sum_{l=1}^{K-1} y_{il}) \log P(G=K|X=x_i) \\
@@ -402,15 +411,20 @@ l(\theta|\mathbf{Y}) &= \sum_{i=1}^N \Bigg[\sum_{l=1}^{K-1} [\beta_l^T x_i]y_{il
 &= \log P(G=K|X = x_i) +  \sum_{l=1}^{K-1} [\beta_l^T x_i]y_{il} \\
  &= \sum_{i=1}^N \Bigg[\sum_{l=1}^{K-1} [\beta_l^T x_i]y_{il} -  \log \Bigg(1 + \sum_{l=1}^{K-1} \exp\{\beta_l^T x_i \} \Bigg)   \Bigg]
 \end{align*}
+$$
+ 
  
 To actually estimate the parameters, it will be useful to vertically "stack" all the observations and parameters. There will be $K-1$ vertical blocks of $p+1$ parameters for the different classes.
  
+$$
 \begin{align*}
 \underbrace{\theta}_{(K-1)(p+1)\times 1} &= \begin{bmatrix} \beta_1 \\ \vdots \\ \beta_{K-1}\end{bmatrix} = \begin{bmatrix}\beta_{10} \\ \beta_{11} \\ \beta_{12} \\ \vdots \\ \beta_{(K-1)p}\end{bmatrix}
 \end{align*}
+$$
  
 Consider the $p+1$ partial derivatives for the score vector for the $l^{th}$ block of parameters.
  
+$$
 \begin{align*}
 \frac{\partial l(\theta)}{\partial\beta_{l0}} &= \sum_{i=1}^N \Bigg[ y_{il}x_{i0} - \Bigg(\frac{\exp\{\beta^T_l x_i \}}{1+ \sum_{l'=0}^{K-1}\exp\{\beta^T_{l'} x_i \}}\Bigg)x_{i0} \Bigg] \\
 &\vdots \\
@@ -418,9 +432,11 @@ Consider the $p+1$ partial derivatives for the score vector for the $l^{th}$ blo
 \underbrace{\frac{\partial l(\theta)}{\partial\beta_{l}}}_{(p+1)\times 1} &= \sum_{i=1}^N y_{il}\begin{bmatrix}x_{i0} \\ \vdots \\ x_{ip}\end{bmatrix} - \sum_{i=1}^N P(G=l|X=x_i) \begin{bmatrix}x_{i0} \\ \vdots \\ x_{ip}\end{bmatrix} \\
 \frac{\partial l(\theta)}{\partial\beta_{l}} &= \sum_{i=1}^N y_{il}x_i - \sum_{i=1}^N P(G=l|X=x_i)x_i
 \end{align*}
+$$
  
 Next denote:
  
+$$
 \begin{align*}
 \textbf{t}_l &= \begin{bmatrix}y_{1l} \\ \vdots \\ y_{nl} \end{bmatrix} \hspace{1cm} and  \hspace{1cm} \textbf{p}_l = \begin{bmatrix}P(G=l|X=x_1) \\ \vdots \\ P(G=l|X=x_n) \end{bmatrix} \\
 \mathbf{X}^T \textbf{t}_l &= \begin{pmatrix}x_{10} & \dots & x_{N0} \\ \vdots & & \vdots \\ x_{1p} & \dots & x_{Np} \end{pmatrix} \begin{bmatrix}y_{1l} \\ \vdots \\ y_{nl} \end{bmatrix} = \begin{pmatrix}\sum_{i=1}^N x_{i0}y_{il} \\ \vdots \\ \sum_{i=1}^N x_{ip}y_{il} \end{pmatrix} \\
@@ -429,9 +445,11 @@ Next denote:
 \mathbf{X}^T \textbf{p}_l &= \sum_{i=1}^N P(G=l|X=x_i)x_i \\
 \frac{\partial l(\theta)}{\partial\beta_{l}} &= \mathbf{X}^T (\textbf{t}_l - \textbf{p}_l )
 \end{align*}
+$$
  
 The final score vector of length $(p+1)\times (K-1)$ will take the following form:
  
+$$
 \begin{align*}
 \frac{\partial l(\theta|\mathbf{Y})}{\partial \theta} &=  \underbrace{\begin{bmatrix}
 \mathbf{X}^T(\textbf{t}_1 - \textbf{p}_1 ) \\ \vdots \\ \mathbf{X}^T(\textbf{t}_{K-1} - \textbf{p}_{K-1} )
@@ -440,9 +458,11 @@ The final score vector of length $(p+1)\times (K-1)$ will take the following for
 \textbf{t}_1 - \textbf{p}_1 \\ \textbf{t}_2 - \textbf{p}_2 \\ \\\vdots \\  \textbf{t}_{K-1} - \textbf{p}_{K-1} \end{bmatrix} \\
 &= \underbrace{\tilde{\mathbf{X}}^T}_{(p+1)(K-1)\times N(K-1)} \underbrace{[\tilde{\textbf{t}}-\tilde{\textbf{p}}]}_{N(K-1)\times 1}
 \end{align*}
+$$
  
 The Hessian for the multinomial LR has the additional wrinkle that the diagonal and off-diagonal blocks will be different. Beginning with the matrices on the diagonals:
  
+$$
 \begin{align*}
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_l^T}\ &= -\sum_{i=1}^N \frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T} x_i \\
 \frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T}  &= \begin{bmatrix} \frac{\partial}{\partial \beta_{l0} } & \dots  & \frac{\partial}{\partial \beta_{lp} }\end{bmatrix} \frac{\exp\{\beta_l^T x_i\}}{1+\sum_{l'=1}^{K-1}\exp\{\beta_{l'}^T x_i\}} \\
@@ -451,9 +471,11 @@ The Hessian for the multinomial LR has the additional wrinkle that the diagonal 
 \frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T} &= P(G=l|X=x_i)(1-P(G=l|X=x_i)) x_i^T \\
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_l^T}\ &= - \sum_{i=1}^N  P(G=l|X=x_i)(1-P(G=l|X=x_i)) x_i x_i^T
 \end{align*}
+$$
  
 Then for the off diagonals:
  
+$$
 \begin{align*}
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_k^T} &= -\sum_{i=1}^N \frac{\partial P(G=l|X=x_i)}{\partial \beta_k^T} x_i \\
 \frac{\partial P(G=l|X=x_i)}{\partial \beta_k^T}  &= \begin{bmatrix} \frac{\partial}{\partial \beta_{k0} } & \dots  & \frac{\partial}{\partial \beta_{kp} }\end{bmatrix} \frac{\exp\{\beta_l^T x_i\}}{1+\sum_{l'=1}^{K-1}\exp\{\beta_{l'}^T x_i\}} \\
@@ -461,23 +483,29 @@ Then for the off diagonals:
 &= - \begin{pmatrix}P(G=l|X=x_i)P(G=k|X=x_i)x_{i0} \\ \vdots \\ P(G=l|X=x_i)P(G=k|X=x_i)x_{ip}\end{pmatrix}^T \\
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_k^T}\ &= \sum_{i=1}^N P(G=l|X=x_i)P(G=k|X=x_i) x_i x_i^T \\
 \end{align*}
+$$
  
 The final Hessian will therefore be made up $K-1 \times K-1$ matrices.
  
+$$
 \begin{align*}
 \frac{\partial ^2 l(\theta)}{\partial \theta \partial \theta^T} &= \begin{bmatrix} \frac{\partial^2l(\theta)}{\partial \beta_1 \partial \beta_1^T}  & \frac{\partial^2l(\theta)}{\partial \beta_1 \partial \beta_2^T} & \dots & \frac{\partial^2l(\theta)}{\partial \beta_1 \partial \beta_{K-1}^T} \\
 & & \vdots & \\ \frac{\partial^2l(\theta)}{\partial \beta_{K-1} \partial \beta_1^T}  & \frac{\partial^2l(\theta)}{\partial \beta_{K-1} \partial \beta_2^T} & \dots & \frac{\partial^2l(\theta)}{\partial \beta_{K-1} \partial \beta_{K-1}^T} \end{bmatrix}
 \end{align*}
+$$
  
 Introducing some further matrix notation:
  
+$$
 \begin{align*}
 \mathbf{Q}_l &= \text{diag}[p_l(x_1)(1-p_l(x_1)),\dots,p_l(x_n)(1-p_l(x_n))] \\
 \mathbf{R}_l &= \text{diag}[p_l(x_1),\dots,p_l(x_n)]
 \end{align*}
+$$
  
 This allows the matrix formulation of the Hessian.
  
+$$
 \begin{align*}
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_l^T} &= - \mathbf{X}^T \mathbf{Q}_l \mathbf{X} \\
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_k^T} &= \mathbf{X}^T \mathbf{R}_l \mathbf{R}_k \mathbf{X} \\
@@ -488,12 +516,15 @@ This allows the matrix formulation of the Hessian.
 \end{bmatrix} \tilde{\mathbf{X}} \\
 &= - \tilde{\mathbf{X}}^T \tilde{\mathbf{W}} \tilde{\mathbf{X}}
 \end{align*}
+$$
  
 Using the terms defined above, the Newton-Raphson algorithm can be written in a very similar form.
  
+$$
 \begin{align*}
 \theta^{\text{new}} &= \theta^{\text{old}} + (\tilde{\mathbf{X}}^T \tilde{\mathbf{W}} \tilde{\mathbf{X}})^{-1} \tilde{\mathbf{X}}^T [\tilde{\textbf{t}}-\tilde{\textbf{p}}]
 \end{align*}
+$$
  
 Returning to the Iris data set but using all three species of flowers, multinomial LR can be used to estimate the two log-odds equations. Implementing multinomial LR can be done quickly in `R` using the `nnet` or `VGAM` libraries. 
  
