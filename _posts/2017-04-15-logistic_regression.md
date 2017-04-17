@@ -300,6 +300,7 @@ glm(chd~sbp+tobacco+ldl+famhist+obesity+alcohol+age,data=dat,family=binomial(lin
  
 Table 1A shows the coefficient estimates for data set using LR with the seven features. Not of all the results are intuitive including the fact that the systolic blood pressure variable is insignificant and the coefficient sign suggests that obesity lowers the risk of CHD!
  
+<br>
 
 <table style="text-align:center"><caption><strong>Table 1A: Coefficient estimates for SA Heart</strong></caption>
 <tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td>Estimate</td><td>Std. Error</td><td>z value</td><td>Pr(> | z| )</td></tr>
@@ -324,6 +325,7 @@ mdl.bw <- step(mdl.full,direction = 'backward',trace=0)
  
 Three variables are dropped after the backward selection procedure, and the remaining covariates are shown in Table 1B. All four features increase the log-odds of CHD, a result which aligns with our intuition about the relationship between heart disease and tobacco use, LDL levels, a family history of the disease, and age. 
  
+<br>
 
 <table style="text-align:center"><caption><strong>Table 1B: LR with backward selection</strong></caption>
 <tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td>Estimate</td><td>Std. Error</td><td>z value</td><td>Pr(> | z| )</td></tr>
@@ -335,7 +337,7 @@ Three variables are dropped after the backward selection procedure, and the rema
 <tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr></table>
 <br> 
  
-How can one specifically interpret the coefficients from a logistic regression, such as the $\hat{\beta}_{\text{age}}=0.044$ result from Table 1B? Consider two input vectors $x_a$ and $x_b$ that share the same covariate values except that the individual associated with $x_a$ is one year older. By subtracting the two fitted values, it is easy to see that the difference is equal to $\hat{\beta}_{\text{age}}$. Therefore, the coefficient results of a LR model should be interpreted as follows: a one unit change in a feature $j$ leads to a $\hat{\beta}_j$ increase in the log-odds (also known as the log-odds ratio) of the condition.
+How can one specifically interpret the coefficients from a logistic regression, such as the $\hat{\beta}\_{\text{age}}=0.044$ result from Table 1B? Consider two input vectors $x_a$ and $x_b$ that share the same covariate values except that the individual associated with $x_a$ is one year older. By subtracting the two fitted values, it is easy to see that the difference is equal to $\hat{\beta}_{\text{age}}$. Therefore, the coefficient results of a LR model should be interpreted as follows: a one unit change in a feature $j$ leads to a $\hat{\beta}_j$ increase in the log-odds (also known as the log-odds ratio) of the condition.
  
 $$
 \begin{align*}
@@ -575,7 +577,7 @@ LR remains popular in both the social sciences for performing statistical infere
  
 ## Footnotes
  
-[^1]: The default assumption of a discrete-category response is that there is no implicit "ordering" of the responses such as whether something is red, blue, or green, or whether an animal is a cat or a dog. In contrast, if the classification task was to predict the color hue of red or the age-range of a cat (0-2, 3-10, or 10+ years) it would make sense to incorporate some measure of ordering.
+[^1]: The default assumption of a discrete-category response is that there is no implicit "ordering" of the responses such as whether something is red, blue, or green, or whether an animal is a cat or a dog. In contrast, if the classification task was to predict the hue of red or the age-range of a cat (0-2, 3-10, or 10+ years) it would make sense to incorporate some measure of ordering.
  
 [^2]: The notation used will largely follow that of [Elements of Statistical Learning](https://statweb.stanford.edu/~tibs/ElemStatLearn/); a popular machine learning textbook.
  
