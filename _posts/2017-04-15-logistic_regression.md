@@ -128,7 +128,7 @@ H(\beta) &= - \mathbf{X}^T \mathbf{W} \mathbf{X} \label{eq:hess}
 \end{align}
 $$
  
-The ML estimate $\hat{\beta}$ is found where $\partial l(\hat{\beta}|\textbf{y}) / \partial \beta_j =0$ for $j=0,\dots,p$. Specifically, the classical approach uses [Newton-Raphson algorithm](https://en.wikipedia.org/wiki/Newton%27s_method) to find the ML estimate. This method appeals to the use of a Taylor expansion of the score vector about the point $\beta_0$ (this is a vector point not a scalar).
+The ML estimate $\hat{\beta}$ is found where $\partial l(\hat{\beta}\|\textbf{y}) / \partial \beta_j =0$ for $j=0,\dots,p$. Specifically, the classical approach uses [Newton-Raphson algorithm](https://en.wikipedia.org/wiki/Newton%27s_method) to find the ML estimate. This method appeals to the use of a Taylor expansion of the score vector about the point $\beta_0$ (this is a vector point not a scalar).
  
 $$
 \begin{align}
