@@ -300,18 +300,18 @@ glm(chd~sbp+tobacco+ldl+famhist+obesity+alcohol+age,data=dat,family=binomial(lin
  
 Table 1A shows the coefficient estimates for data set using LR with the seven features. Not of all the results are intuitive including the fact that the systolic blood pressure variable is insignificant and the coefficient sign suggests that obesity lowers the risk of CHD!
  
-<table border=1>
-<caption align="top"> Table 1A: Coefficient estimates for SA Heart </caption>
-<tr> <th>  </th> <th> Estimate </th> <th> Std. Error </th> <th> z value </th> <th> Pr(&gt;|z|) </th>  </tr>
-  <tr> <td align="right"> (Intercept) </td> <td align="right"> -4.130 </td> <td align="right"> 0.964 </td> <td align="right"> -4.283 </td> <td align="right"> 0.000 </td> </tr>
-  <tr> <td align="right"> sbp </td> <td align="right"> 0.006 </td> <td align="right"> 0.006 </td> <td align="right"> 1.023 </td> <td align="right"> 0.306 </td> </tr>
-  <tr> <td align="right"> tobacco </td> <td align="right"> 0.080 </td> <td align="right"> 0.026 </td> <td align="right"> 3.034 </td> <td align="right"> 0.002 </td> </tr>
-  <tr> <td align="right"> ldl </td> <td align="right"> 0.185 </td> <td align="right"> 0.057 </td> <td align="right"> 3.219 </td> <td align="right"> 0.001 </td> </tr>
-  <tr> <td align="right"> famhistPresent </td> <td align="right"> 0.939 </td> <td align="right"> 0.225 </td> <td align="right"> 4.177 </td> <td align="right"> 0.000 </td> </tr>
-  <tr> <td align="right"> obesity </td> <td align="right"> -0.035 </td> <td align="right"> 0.029 </td> <td align="right"> -1.187 </td> <td align="right"> 0.235 </td> </tr>
-  <tr> <td align="right"> alcohol </td> <td align="right"> 0.001 </td> <td align="right"> 0.004 </td> <td align="right"> 0.136 </td> <td align="right"> 0.892 </td> </tr>
-  <tr> <td align="right"> age </td> <td align="right"> 0.043 </td> <td align="right"> 0.010 </td> <td align="right"> 4.181 </td> <td align="right"> 0.000 </td> </tr>
-   </table>
+
+<table style="text-align:center"><caption><strong>Table 1A: Coefficient estimates for SA Heart</strong></caption>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td>Estimate</td><td>Std. Error</td><td>z value</td><td>Pr(> | z| )</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">(Intercept)</td><td>-4.130</td><td>0.964</td><td>-4.283</td><td>0.00002</td></tr>
+<tr><td style="text-align:left">sbp</td><td>0.006</td><td>0.006</td><td>1.023</td><td>0.306</td></tr>
+<tr><td style="text-align:left">tobacco</td><td>0.080</td><td>0.026</td><td>3.034</td><td>0.002</td></tr>
+<tr><td style="text-align:left">ldl</td><td>0.185</td><td>0.057</td><td>3.219</td><td>0.001</td></tr>
+<tr><td style="text-align:left">famhistPresent</td><td>0.939</td><td>0.225</td><td>4.177</td><td>0.00003</td></tr>
+<tr><td style="text-align:left">obesity</td><td>-0.035</td><td>0.029</td><td>-1.187</td><td>0.235</td></tr>
+<tr><td style="text-align:left">alcohol</td><td>0.001</td><td>0.004</td><td>0.136</td><td>0.892</td></tr>
+<tr><td style="text-align:left">age</td><td>0.043</td><td>0.010</td><td>4.181</td><td>0.00003</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr></table>
 <br>
  
 The insignificant and counter-intuitive results are likely driven by the inclusion of extraneous and multicollinear variables. For small data sets like this one, a backward selection strategy (a specific type of [stepwise regression](https://en.wikipedia.org/wiki/Stepwise_regression)) where variables are iteratively dropped from the model until the [AIC](https://en.wikipedia.org/wiki/Akaike_information_criterion) stops falling can be used to pare down the model. This is also fairly easy to implement in `R` by using the `step` function.
@@ -324,15 +324,15 @@ mdl.bw <- step(mdl.full,direction = 'backward',trace=0)
  
 Three variables are dropped after the backward selection procedure, and the remaining covariates are shown in Table 1B. All four features increase the log-odds of CHD, a result which aligns with our intuition about the relationship between heart disease and tobacco use, LDL levels, a family history of the disease, and age. 
  
-<table border=1>
-<caption align="top"> Table 1B: LR with backward selection </caption>
-<tr> <th>  </th> <th> Estimate </th> <th> Std. Error </th> <th> z value </th> <th> Pr(&gt;|z|) </th>  </tr>
-  <tr> <td align="right"> (Intercept) </td> <td align="right"> -4.204 </td> <td align="right"> 0.498 </td> <td align="right"> -8.437 </td> <td align="right"> 0.000 </td> </tr>
-  <tr> <td align="right"> tobacco </td> <td align="right"> 0.081 </td> <td align="right"> 0.026 </td> <td align="right"> 3.163 </td> <td align="right"> 0.002 </td> </tr>
-  <tr> <td align="right"> ldl </td> <td align="right"> 0.168 </td> <td align="right"> 0.054 </td> <td align="right"> 3.093 </td> <td align="right"> 0.002 </td> </tr>
-  <tr> <td align="right"> famhistPresent </td> <td align="right"> 0.924 </td> <td align="right"> 0.223 </td> <td align="right"> 4.141 </td> <td align="right"> 0.000 </td> </tr>
-  <tr> <td align="right"> age </td> <td align="right"> 0.044 </td> <td align="right"> 0.010 </td> <td align="right"> 4.521 </td> <td align="right"> 0.000 </td> </tr>
-   </table>
+
+<table style="text-align:center"><caption><strong>Table 1B: LR with backward selection</strong></caption>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td>Estimate</td><td>Std. Error</td><td>z value</td><td>Pr(> | z| )</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">(Intercept)</td><td>-4.204</td><td>0.498</td><td>-8.437</td><td>0</td></tr>
+<tr><td style="text-align:left">tobacco</td><td>0.081</td><td>0.026</td><td>3.163</td><td>0.002</td></tr>
+<tr><td style="text-align:left">ldl</td><td>0.168</td><td>0.054</td><td>3.093</td><td>0.002</td></tr>
+<tr><td style="text-align:left">famhistPresent</td><td>0.924</td><td>0.223</td><td>4.141</td><td>0.00003</td></tr>
+<tr><td style="text-align:left">age</td><td>0.044</td><td>0.010</td><td>4.521</td><td>0.00001</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr></table>
 <br> 
  
 How can one specifically interpret the coefficients from a logistic regression, such as the $\hat{\beta}_{\text{age}}=0.044$ result from Table 1B? Consider two input vectors $x_a$ and $x_b$ that share the same covariate values except that the individual associated with $x_a$ is one year older. By subtracting the two fitted values, it is easy to see that the difference is equal to $\hat{\beta}_{\text{age}}$. Therefore, the coefficient results of a LR model should be interpreted as follows: a one unit change in a feature $j$ leads to a $\hat{\beta}_j$ increase in the log-odds (also known as the log-odds ratio) of the condition.
