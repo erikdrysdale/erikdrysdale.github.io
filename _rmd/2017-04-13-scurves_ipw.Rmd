@@ -172,11 +172,11 @@ $$
 
 [^5]: $\log(p/(1-p))=x \longleftrightarrow x=1/(1+e(-x))$
 
-[^6]: The zero/one encoding is the conventional notation, but it could $x_i=\{a,b\}$, as what matters is there are two categorical levels. 
+[^6]: The zero/one encoding is the conventional notation, but it could $x_i=\\{a,b\\}$, as what matters is there are two categorical levels. 
 
 [^7]: Also known as the instantaneous failure rate, the hazard rate can be though of the probability of death at time $t$ given that one has already survived to $t$. 
 
 [^8]: IPWs will not for any given estimate produce the same result as a regression model. However, IPWs yield asymptotically unbiased estimators, like multivariate regression, under certain assumptions.
 
-[^9]: The survival function can be backed out from the cumulative hazard function: $S(t)=\exp\{- H(t)\}$, where $H(t) = \int_0^t h(u) du$.
+[^9]: The survival function can be backed out from the cumulative hazard function: $S(t)=\exp \\{- H(t) \\}$, where $H(t) = \int_0^t h(u) du$.
 
