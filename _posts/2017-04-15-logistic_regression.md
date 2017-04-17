@@ -7,20 +7,20 @@ status: publish
 mathjax: true
 ---
  
-Logistic regression (LR) is a type of classification model that is able to predict discrete or qualitative response categories. While LR usually refers to the two-class case (binary LR) it can also generalize to a multiclass system (multinomial LR) or the category-ordered situation (ordinal LR)[[^1]]. By using a logit link, LR is able to map a linear combination of features to the log-odds of a categorical event. While linear models are unrealistic in a certain sense, they nevertheless remain popular due their flexibility and simplicity. LR is commonly used for classification problems in small- to medium-sized data sets despite the bevy of new statistical approaches that have been developed over the past two decades. The development of regularization techniques for LR, including stochastic gradient descent and LASSO, have also helped to maintain LR's use in the machine learning (ML) model repertoire. While LR is no longer considered "state of the art", it is worth discussing in detail as it will remain an important approach for developing statistical intuition for aspiring ML practitioners. 
+Logistic regression (LR) is a type of classification model that is able to predict discrete or qualitative response categories. While LR usually refers to the two-class case (binary LR) it can also generalize to a multiclass system (multinomial LR) or the category-ordered situation (ordinal LR)[[^1]]. By using a logit link, LR is able to map a linear combination of features to the log-odds of a categorical event. While linear models are unrealistic in a certain sense, they nevertheless remain popular due their flexibility and simplicity. LR is commonly used for classification problems in small- to medium-sized data sets despite the bevy of new statistical approaches that have been developed over the past two decades. The development of regularization techniques for LR, including stochastic gradient descent and LASSO, have also helped to maintain LR's place in the machine learning (ML) model repertoire. While LR is no longer considered "state of the art", it is worth discussing in detail as it will remain an important approach for developing statistical intuition for aspiring ML practitioners. 
  
 The rest of the post will proceed with the following sections: (1) the notation and mathematical foundation of LR models, (2) the classical estimation procedure, (3) analysis of a real-world data set with LR, (4) alternative estimation procedures, (5) the multinomial LR case, and (6) a conclusion and discussion of other issues in LR.
  
 ## (1) Notational overview[[^2]]
  
-Logistic regression (LR) models a function of the probability of $K$ discrete classes with a linear combination of $p$ or $p+1$ features $x=(x_1,\dots,x_p)^T$ or $x=(1,x_1,\dots,x_p)^T$[[^3]]. When the response (or dependent) variable is discrete and categorical, the prediction task is referred to as classification (as opposed to regression which has a numerical and continuous response). One approach to performing classification is to use a linear regression model but encode the response variable as a matrix in the one-hot encoding format (dimension $N \times K$), and then estimate $K \times p$ coefficients. For a given vector $x$, classification is done according to which ever fitted value (there will be $K$ of them) is closest to the encoded numerical response value. There are two problems to this approach: first, some classes may never be predicted (a problem known as masking) and second, the fitted values do not align with intuitions about probability[[^4]]. 
+Logistic regression (LR) models a function of the probability of $K$ discrete classes with a linear combination of $p$ or $p+1$ features $x=(x_1,\dots,x_p)^T$ or $x=(1,x_1,\dots,x_p)^T$[[^3]]. When the response (or dependent) variable is discrete and categorical, the prediction task is referred to as classification (as opposed to regression which has a numerical and continuous response). One approach to performing classification is to use a linear regression model but encode the response variable as a matrix in the one-hot encoding format (dimension $N \times K$), and then estimate $K \times p$ coefficients. For a given vector $x$, classification is done according to which ever fitted value (there will be $K$ of them) is the largest. There are two issues with this approach: first, some classes may never be predicted (a problem known as masking) and second, the fitted values do not align with intuitions about probability[[^4]]. 
  
 <br>
-<h5><p align="center">Figure 1: One-hot-encoding format</p></h5>
+<h5><p align="center">Figure 1: The one-hot-encoding format</p></h5>
 <p align="center"><img src="/figures/one_hot_encoding.png" width="40%"> </p>
 <br>
  
-Unlike linear regression, LR ensures that the fitted values are are bounded between $[0,1]$, as the log-odds form of the model allows for a mapping to the [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) for the probability values. Notationally, the form of the multinomial logistic regression model is shown below where $\beta_i^T=(\beta_{i1},\dots,\beta_{ip})$. 
+Unlike linear regression, LR ensures that the fitted values are bounded between $[0,1]$, as the log-odds form of the model allows for a mapping to the [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) for the probability values. Notationally, the form of the multinomial logistic regression model is shown below where $\beta_i^T=(\beta_{i1},\dots,\beta_{ip})$. 
  
 $$
 \begin{align*}
@@ -30,7 +30,7 @@ $$
 \end{align*}
 $$
  
-For the $i^{th}$ equation, the dependent variable is the log of the probability of class $i$ relative to class $K$ (i.e. the odds), conditional on some feature vector $x$. Since both an odds and a log transformation are [monotonic](https://en.wikipedia.org/wiki/Monotonic_function), the probability of the $i^{th}$ class can always be recovered from the log-odds. While class $K$ is used in the denominator above, using the final encoded class is arbitrary, and the the estimated coefficients would are equivariant under this choice. While there are $\frac{K!}{2!(K-2)!}$ relationships in a $K$-class LR model[[^5]], only $K-1$ equations are actually needed. For example, in the $K=3$ situation, it is easy to see that the log-odds relationship between classes 1 & 2 can be recovered from the log-odds relationship of classes 1 & 3 and 2 & 3.
+For the $i^{th}$ equation, the dependent variable is the log of the probability of class $i$ relative to class $K$ (i.e. the odds), conditional on some feature vector $x$. Since both an odds and a log transformation are [monotonic](https://en.wikipedia.org/wiki/Monotonic_function), the probability of the $i^{th}$ class can always be recovered from the log-odds. While class $K$ is used in the denominator above, using the final encoded class is arbitrary, and the the estimated coefficients are equivariant under this choice. While there are $\frac{K!}{2!(K-2)!}$ relationships in a $K$-class LR model[[^5]], only $K-1$ equations are actually needed. For example, in the $K=3$ situation, it is easy to see that the log-odds relationship between classes 1 & 2 can be recovered from the log-odds relationship of classes 1 & 3 and 2 & 3.
  
 $$
 \begin{align*}
@@ -50,7 +50,7 @@ $$
  
 In the $K=2$ situation, the above equations result in the well known sigmoid function: $p=[1+e^{-(\beta^T x)}]^{-1}$. In classification problems, the function which is used to make the classification choice is referred to as the discriminant function $\delta$, and it can only be a function of the data. For LR, $\delta_k(x) = p_k(x;\hat{\theta})$, where the discriminant problem is $\underset{i}{\text{arg}\max} \hspace{2mm} \delta_i(x), \hspace{2mm} i = 1,\dots,K$. When there are no higher order terms of the features (such as $x_{i1}^2$), the LR classification decision boundary is linear. 
  
-For an example, the `Iris` data set is considered, where the classification problem is determining whether a flower is of the Versicolor or Virginica species using information regarding petal and sepal width. Figure 2A shows the linear decision boundary using the estimated coefficients. For the two class case it is easy to see that the decision boundary occurs where $\hat{\beta}^T x > 0$. At the decision boundary, the fitted probabilities are exactly one-half and therefore the flower species is assigned to the Versicolor species whenever the estimated probability is greater than $1/2$.
+For an example, the [Iris data set](https://archive.ics.uci.edu/ml/datasets/Iris) is considered, where the classification problem is determining whether a flower is of the Versicolor or Virginica species using information regarding petal and sepal width. Figure 2A shows the linear decision boundary using the estimated coefficients. For the two class case it is easy to see that the decision boundary occurs where $\hat{\beta}^T x > 0$. At the decision boundary, the fitted probabilities are exactly one-half and therefore the flower is classified as the Versicolor species whenever the estimated probability is greater than $1/2$.
  
 <br>
 <h5><p align="center">Figure 2: Using LR for flower classification</p></h5>
@@ -73,7 +73,7 @@ $$
 f(\boldsymbol y|\beta) = \prod_{i=1}^N p(x_i;\beta)^{y_i}(1-p(x_i;\beta))^{1 - y_i}
 $$
  
-Conditioning on a given realization of the data and then expressing the joint distribution as a function of the parameters leads to the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function). Taking the log of this function yields the log-likelihood function, and finding the vector $\beta$ which maximizes the log-likelihood function will also maximize the likelihood function since a log-transformation is monotonic[[^7]]. Equation $\eqref{eq:ll}$ shows that the log-likelihood is a non-linear function for each parameter in $\beta$. Numerically methods will therefore be needed to find the vector $\beta$ which maximizes the function.
+Conditioning on a given realization of the data and then expressing the joint distribution as a function of the parameters leads to the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function). Taking the log of this function yields the log-likelihood function, and finding the vector $\beta$ which maximizes the log-likelihood function will also maximize the likelihood function since a log-transformation is monotonic[[^7]]. Equation $\eqref{eq:ll}$ shows that the log-likelihood is a non-linear function for each parameter in $\beta$. Numerical methods will therefore be needed to find the vector $\beta$ which maximizes the function.
  
 $$
 \begin{align}
@@ -204,7 +204,7 @@ round(beta.new,3)
 ## age        0.043
 {% endhighlight %}
  
-An alternative approach which yields identical results is to substitute  in $\eqref{eq:score}$ and $\eqref{eq:hess}$ into $\eqref{eq:nr}$ and then re-define some terms to get the "iteratively reweighted least squares" (IRLS) algorithm. Equation $\eqref{eq:irls}$ shows that at each step of the IRLS, the new coefficient weight is the weighted [OLS](https://en.wikipedia.org/wiki/Ordinary_least_squares) coefficient vector for the adjusted response vector $\mathbf{z}$. It is easy to show that show that equation $\eqref{eq:irls}$ is equivalent to $\underset{\beta}{\text{arg}\min} (\mathbf{z}-\mathbf{X}\beta)^T\mathbf{W} (\mathbf{z}-\mathbf{X}\beta)$
+An alternative approach which yields identical results is to substitute  in $\eqref{eq:score}$ and $\eqref{eq:hess}$ into $\eqref{eq:nr}$ and then re-define some terms to get the "iteratively reweighted least squares" (IRLS) algorithm. Equation $\eqref{eq:irls}$ shows that at each step of the IRLS, the new vector is the solution to the weighted [OLS](https://en.wikipedia.org/wiki/Ordinary_least_squares) regression on the adjusted response vector $\mathbf{z}$. It is easy to show that show that equation $\eqref{eq:irls}$ is equivalent to $\underset{\beta}{\text{arg}\min} (\mathbf{z}-\mathbf{X}\beta)^T\mathbf{W} (\mathbf{z}-\mathbf{X}\beta)$
  
 $$
 \begin{align}
@@ -298,7 +298,7 @@ Fitting a LR model is very easy using base `R` and can be done with the `glm` fu
 glm(chd~sbp+tobacco+ldl+famhist+obesity+alcohol+age,data=dat,family=binomial(link=logit))
 {% endhighlight %}
  
-Table 1A shows the coefficient estimates for data set using LR with the seven features. Not of all the results are intuitive including the fact that the systolic blood pressure variable is insignificant and the coefficient sign suggests that obesity lowers the risk of CHD!
+Table 1A shows the coefficient estimates for the data set using LR with all seven features. Not all the results are intuitive including the fact that the systolic blood pressure variable is insignificant and the coefficient sign suggests that obesity lowers the risk of CHD!
  
 <br>
 
@@ -354,14 +354,14 @@ $$
 \exp\{\hat\beta_{\text{age}}\} = \frac{p(x_a;\hat{\beta})/(1-p(x_a;\hat{\beta}))}{p(x_b;\hat{\beta})/(1-p(x_b;\hat{\beta}))}
 $$
  
-For this data set, the LR results suggest that becoming one-year older leads to an increase of the odds of coronary heart disease by 1.045. To determine statistical significance, confidence intervals (CI) can be constructed easily too by appealing to the fact that the maximum likelihood estimate is (asymptotically) normal. If the CI contains "1", then the result is insignificant.
+For this data set, the LR results suggest that becoming one-year older leads to an increase of the odds of coronary heart disease by 1.045. To determine statistical significance, confidence intervals (CI) can be constructed by appealing to the fact that the maximum likelihood estimate is (asymptotically) normal. If the CI for the odds contains "1", then the result is insignificant.
  
 
  
 $$
 \begin{align*}
 &(1-\alpha)\% \text{ CI for the change in odds} \\
-\exp \Big\{ \hat\beta_j &\pm Z_{1-\alpha/2}\sqrt{\hat{\text{Var}}(\hat\beta_j)} \Big\} = \{1.025,1.065 \}
+\exp \Big\{ \hat\beta_{\text{age}} &\pm Z_{1-\alpha/2}\sqrt{\hat{\text{Var}}(\hat\beta_{\text{age}})} \Big\} = \{1.025,1.065 \}
 \end{align*}
 $$
  
@@ -585,7 +585,7 @@ LR remains popular in both the social sciences for performing statistical infere
  
 [^4]: For example, if the response is numerically encoded as $\\{0,1\\}$, then the fitted values may be below 0 or above 1.
  
-[^5]: In the $K=4$ situation, there are six relationships between classes 1 & 2, 1 & 3, 1 & 4, 2 & 3, 2 & 4, and 3 & 4, although there are only three equations.
+[^5]: In the $K=4$ situation, for example, there are six relationships between classes 1 & 2, 1 & 3, 1 & 4, 2 & 3, 2 & 4, and 3 & 4, although there are only three equations.
  
 [^6]: Suppose an experiment were carried out in ten Petri dishes containing one-hundred cells each to see how many cells divided depending on the concentration of a chemical. Now for a given $x_i$, the chemical level, there would be some $y_i$ number of divided cells out of $m_i=100$ potential divisions. 
  
