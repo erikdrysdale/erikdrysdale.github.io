@@ -332,6 +332,7 @@ beta.seq <- lapply(lam.seq,function(ll) fn.beta.ridge(ll,V=V.train,D=D.train,bol
 loss.seq <- lapply(beta.seq,function(bb) fn.loss(y.test,X.test,bb) )
 # Plot
 plot(lam.seq,loss.seq,
+     cex.lab=0.75,cex.axis=0.75,cex.sub=0.75,cex.main=1,
      xlab = expression(lambda),
      ylab='Test set loss',
      main=expression('Relationship of ' * lambda * ' to ' * L[T](lambda)),
