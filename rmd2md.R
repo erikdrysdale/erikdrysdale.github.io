@@ -109,7 +109,7 @@ rmd2md <- function( path_site = getwd(),
 }
 
 
-setwd("C:/Users/erikinwest/Documents/bioeconometrician/github/erikdrysdale.github.io/")
+setwd("C:/Users/erikinwest/Documents/blogs/github/erikdrysdale.github.io/")
 rmd2md()
 
 
