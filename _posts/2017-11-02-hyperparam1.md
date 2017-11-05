@@ -50,9 +50,9 @@ $$
 \end{align*}
 $$
  
-* Step 2: Evaluate model on the test (T) data: $\LT(\bbetahl,\bX_T,\by_T)$
+* Step 2: Evaluate the model on the test (T) data: $\LT(\bbetahl,\bX_T,\by_T)$
  
-* Step 3: Do a line search across a range of $\lambda$'s $\mathcal{D}=\{\lambda_1,\dots,\lambda_m \}$ and find the value that minimizes the test error
+* Step 3: Do a line search across a range of $\lambda$'s $\mathcal{D}=\\{\lambda_1,\dots,\lambda_m \\}$ and find the value that minimizes the test error
  
 $$
 \begin{align*}
@@ -60,9 +60,9 @@ $$
 \end{align*}
 $$
  
-In the steps above I omitted the details of the inner loop that Steps 1-2 have from CV and that $\lambda$ can be a vector, but the same principle applies. Notice that $\bbetahl$ is explicitely indexed by $\lambda$, because for a given value of the hyperparameter, $\bbetahl$ has only one unique solution (or ought to).
+In the steps above I omitted the details of the inner loop that Steps 1-2 have with CV as well as and that $\lambda$ can be a vector, but the same principle applies. Notice that $\bbetahl$ is indexed by $\lambda$, because for a given value of the hyperparameter, $\bbetahl$ has a unique solution.
  
-As the number of hyperparameters increases, line/grid search becomes costly. For example, searching over 100 values of $\lambda$ and $\alpha$ for the hyperparameters of the [Elastic Net](https://en.wikipedia.org/wiki/Elastic_net_regularization) algorithm whilst using 10-fold cross validation requires estimating 100,000 models. Even though this algorithm has lightning fast convex optimization procedure, searching across the hyperparameter space neither scales well nor lends itself to more complex models.
+As the number of hyperparameters increases, line/grid search becomes costly. For example, searching over 100 values of $\lambda$ and $\alpha$ for the hyperparameters of the [Elastic Net](https://en.wikipedia.org/wiki/Elastic_net_regularization) algorithm whilst using 10-fold cross validation requires estimating 100,000 models. Even though this algorithm has a lightning fast convex optimization procedure, searching across the hyperparameter space neither scales well nor lends itself to more complex models.
  
 In addition to grid search (described above) or random search (as the name implies), gradient-based optimization[[^1]] can also be used. In a future post I'll summarize some of the work that has already been done which can be implemented on a broader scale, but I wanted to review some first principles in this post and show how this can be done for ridge regression due to the unique properties of the estimator. As in the above pipeline we'll assume there's a training and a test set, but the underlying principle can be applied to both CV or risk estimators. 
  
@@ -86,7 +86,7 @@ $$
 \end{align}
 $$
  
-Equation \eqref{eq:minmin} looks somewhat odd as there is an $\arg \min$ inside the function we are trying to minimize. All it means is that $\bbetah$ will get passed to $\LT(\cdot)$ and that it is a function of the outer optimization parameter $\bbetah(\lambda)$, where $\bbetah$ is the solution to $\frac{\partial}{\bbeta}\Bigg( \LT + P(\lambda,\bbeta) \Bigg)=\mathbf{0}$. 
+Equation \eqref{eq:minmin} looks somewhat odd as there is an $\arg \min$ inside the function we are trying to minimize. All it means is that $\bbetah$ will get passed to $\LT(\cdot)$ and that it is a function of the outer optimization parameter $\bbetah(\lambda)$, where $\bbetah$ is the solution to $\frac{\partial}{\bbeta}\Bigg( \LR + P(\lambda,\bbeta) \Bigg)=\mathbf{0}$. 
  
 <!-- We will be able to solve for $\hlam$ if we know how to evaluate $\partial \mathcal{L}_T / \partial \lambda = (\partial \LT / \partial \bbetah) (\partial \bbetah/\partial \lambda) =  0$. This chain rule makes intuitive sense: as we change $\lambda$ we case $\bbetah$ to change which in turn cases the test loss to change.  -->
  
@@ -103,7 +103,7 @@ $$
 \end{align}
 $$
  
-Equation \eqref{eq:deriv} has a nice interpration: a change in $\lambda$ first causes a change in $\bbetah$ which then causes a chaneg in the fittd value and hence prediction loss. The first term in the chain rule can be easy to determine (depends on the loss function), whereas the second term $\partial \bbetah / \partial \lambda$ is non-trivial as we need the figure out the relationship between how a change in $\lambda$ changes the coefficients weights to the  *penalized regression* problem. Luckily in the case of ridge regression, this derivative can be analytically derived.
+Equation \eqref{eq:deriv} has a nice interpration: a change in $\lambda$ first causes a change in $\bbetah$ which then causes a change in the fitted value and hence prediction loss. The first term in the chain rule can be easy to determine (depends on the loss function), whereas the second term $\partial \bbetah / \partial \lambda$ is non-trivial as we need the figure out the relationship between how a change in $\lambda$ changes the coefficients weights to the  *penalized regression* problem. Luckily in the case of ridge regression, this derivative can be analytically derived.
  
 $$
 \begin{align*}
@@ -112,7 +112,7 @@ $$
 \end{align*}
 $$
  
-The loss function has taken the form of the sum-of-squares with the fitted values taken a linear form (weighted by $\bbeta$), and the penalty term is the $\ell_2$ norm of the coefficients weighted by $\lambda$. Ridge regression is one of the few ML estimators that has a closed-form solution,[[^2]] revealing the direct link between $\lambda$ and its solution. 
+The loss function has taken the form of the sum-of-squares with the fitted values taking a linear form (weighted by $\bbeta$), and the penalty term is the $\ell_2$ norm of the coefficients weighted by $\lambda$. Ridge regression is one of the few ML estimators that has a closed-form solution,[[^2]] revealing the direct link between $\lambda$ and its solution. 
  
 $$
 \begin{align*}
@@ -189,7 +189,7 @@ We can now plug in the analytical solution for equation \eqref{eq:deriv} for the
 $$
 \begin{align}
 \frac{\partial \LT(\bbetah(\lambda,\bXR,\byR),\bXT,\byT)}{\partial \lambda} &= - (\bXT' (\byT - \bXT \bbetahl))' \frac{\bbetahl}{\partial \lambda} \nonumber \\
-&= (\byT - \bXT \bbetahl)^T \bXT'  \bV \hone \text{diag} \Bigg\{ \frac{d_{ii}^2}{(\lambda + d_{ii}^2)^2} \Bigg\} \bV^T \bbetah^{\text{ols}} \label{eq:ridge_deriv}
+&= (\byT - \bXT \bbetahl)^T \bXT'  \bV \hone \text{diag} \Bigg\{ \frac{d_{ii}^2}{(\lambda + d_{ii}^2)^2} \Bigg\} \bV^T \bbetah^{\text{ols}} \label{eq:ridge_deriv} \\
 &= 0 \nonumber  \\
 \end{align}
 $$
