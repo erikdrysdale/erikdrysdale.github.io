@@ -1,0 +1,158 @@
+---
+title: 'Optimal number of samples in the validation set'
+output: html_document
+fontsize: 12pt
+published: true
+status: process
+mathjax: true
+---
+
+<!-- Links -->
+<!-- http://hunch.net/?p=45 -->
+
+<!-- Define any latex commands -->
+
+$$
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\bbeta}{\mathbf{\beta}}
+\newcommand{\bbetah}{\hat{\bbeta}}
+\newcommand{\bhatk}{\hat{\beta}_k}
+\newcommand{\by}{\mathbb{y}}
+\newcommand{\bx}{\mathbb{x}}
+\newcommand{\bxi}{\bx_i}
+\newcommand{\bxk}{\bx_k}
+\newcommand{\bu}{\mathbb{u}}
+\newcommand{\bX}{\mathbb{X}}
+\newcommand{\fH}{\mathcal{H}}
+\newcommand{\fR}{\mathcal{R}}
+\newcommand{\fX}{\mathcal{X}}
+\newcommand{\fY}{\mathcal{Y}}
+$$
+
+## Background and motivation
+
+Before machine learning (ML) algorithms can be deployed in the real world settings, an estimate of their generalization error is required.[[^1]] Because data is finite, a model can at most be trained on $N$ labelled samples $S=\{(y_1,\bx_1),\dots,(y_N,\bx_N)\}$, where $y_i$ is the response and $\bxi$ is a vector of features. Should all $N$ samples be used in the training of an algorithm? The answer is no for two reasons: (1) hypothesis selection, and (2) generalization accuracy.
+
+First, ML researchers do not limit themselves to a single model, but allow their algorithms to search a space of functions $\fH=\{h_1,\dots,h_m \}$, for example $\fH=\{\fX \times \mathbb{B} \to \fY | h(\bx)= \bx^T \bbeta \text{ s.t.} \|\bbeta\|_2^2<\Gamma  \}$, where $\Gamma$ is a hyperparameter. A learning algorithm is a map that looks at some number of training samples $R \subseteq S$ and selects from $\fH$ a function $f_R : \bx \to y$ so that $f_R(\bx) \approx y$, so as to minimize some loss function.[[^2]] By learning weights ($\bbeta$) indexed by a hyperparameter ($\Gamma$) on $R$, and then seeing how that function performs on a validation set $V \subseteq S \setminus  R$, a fair competition can be had, so that models which overfit on $R$ are not unduly selected. In other words, by splitting $S$ into a training set $R$ and validation set $V$, we can find $\hat{\Gamma} \in \arg \min_\Gamma \hspace{2mm} L(\by_V,f_R(\bx_V))$, for some loss function $L$.
+
+Second, while the training/validation split provides an unbiased estimate of the **relative** generalization performance of each indexed function, it does not provide an unbiased estimate of winning algorithm's generalization performance. This is because the winning estimator is picked after the data has been observed, so that the error rate is optimistic. For example consider $m$ i.i.d random normals $X_i$ with means $\mu_1 < \mu_2 < \dots \mu_m$, it will be the case that $E[\min(X_1,\dots,X_m)]<\mu_1$. In other words, if we pick the lowest realization of a vector of normals with different means, our average pick will be lower than the smallest mean: i.e. we will have a biased estimate of $\arg \min_j E[X_j]$. Instead, if we measure the performance of the winning estimator on some test set: $T \subseteq S \setminus (R \cup V)$, then an unbiased estimate of the generalization error of the chosen algorithm can be determined. 
+
+```{r}
+# We can get an unbiased estimate of relative model performance, but not of generalization accuracy
+mu1 <- 0
+mu2 <- 1
+mu3 <- 2
+
+sim <- t(replicate(1000,{
+  val <- rnorm(n=3,mean=c(mu1,mu2,mu3),sd=rep(1,1))
+  c(val[which.min(val)],which.min(val))
+}))
+```
+
+```{r,echo=F}
+sprintf('Mean of smallest realization: %0.2f',mean(sim[,1]))
+print('Relative frequency of winning r.v.s')
+paste(round(prop.table(table(sim[,2]))*100,1),'%',sep='')
+```
+
+
+Therefore in our classical set up, a dataset of $N$ samples will be split into $N_R$, $N_V$, and $N_T$, in order to train the models (on $N_R$), pick the best performing one (on $N_V$) and then get an estimate of its performance for observations it hasn't observed in its training/selection (using $N_T$). Note we will always assume that the samples are independently drawn from some common distribution: $(y,\bx) \sim P(\by,\bx)$.
+
+So far, so tidy. However, consider this problem: how many observations should I put aside in $N_T$ to give me high confidence that my chosen algorithm will perform well. This question can have two interpretations: (i) how many $N_V$ do I need to reject the null that the expected loss is greater than some amount (a power question), or (ii) how many $N_V$ do I need to achieve a confidence interval of some range. These questions turn out to harder than expected because there is a tradeoff: the more observations an algorithm is given in $N_R+N_V$, the better its accuracy will be (because the more data it has the more it can learn) but the larger the uncertainty around its point estimate obtained in the test set will be because there are fewer observations to determine the variance of its predictions. For our purposes we'll aggregate $N_R+N_V$ and call then $N_R$, because we're not interested in model selection.
+
+Consider this motivating simulation. 
+
+```{r,eval=F}
+# True model
+pix <- 0.5
+b0 <- -1
+b1 <- +2
+expit <- function(x) { 1/(1+exp(-x))}
+dclass <- function(x,tt=0.5) { ifelse(x > tt,1,0) }
+nsim <- 500
+n <- 100
+idx <- seq(n/10,n-n/10,n/10)
+bayes.rate <- (1-expit(b0+b1))*pix + (expit(b0)-0)*pix
+phat.store <- list()
+pse.store <- list()
+for (k in 1:nsim) {
+  set.seed(k)
+  x <- rbinom(n,1,prob=pix)
+  py <- expit(b0 + b1*x)
+  y <- rbinom(n,1,py)
+  dat <- data.frame(y,x)
+  kpred <- lapply(idx,function(ii) dclass(predict.glm(glm(y~x,family=binomial,data=dat[1:ii,]),
+                                      newdata=dat[-(1:ii),],type='response'))==dat[-(1:ii),]$y )
+  phat <- unlist(lapply(kpred,mean))
+  pse <- mapply(function(phat,N) sqrt(phat*(1-phat)/N),phat,n-idx )
+  phat.store[[k]] <- phat
+  pse.store[[k]] <- pse
+  # print(k)
+}
+error.hat <- 1-apply(do.call('rbind',phat.store),2,mean)
+pse.hat <- apply(do.call('rbind',pse.store),2,mean)
+dat.hat <- data.frame(error=error.hat,pse=pse.hat,Ntrain=idx)
+```
+```{r,echo=F,warning=F,message=F,eval=F}
+library(cowplot);library(scales)
+ggplot(dat.hat,aes(x=Ntrain,y=error,color=factor(Ntrain))) + 
+  geom_point(size=3) + 
+  geom_linerange(aes(ymin=error-pse,ymax=error+pse),linetype=2) + 
+  theme(legend.position = 'none') + 
+  labs(y='Test set error',caption='Verticle lines show ± S.E. estimate\n Black line is Bayes rate',
+       x='# of training points') + 
+  scale_x_continuous(breaks = c(0,idx),
+    sec.axis = sec_axis(trans=~n-.,name='# of testing points',breaks=rev(c(0,idx)))) +
+  scale_y_continuous(labels=scales::percent) +
+  background_grid(major='y',minor='none') + 
+  geom_hline(yintercept = bayes.rate,color='black')
+
+```
+
+It's easy to show that:
+
+$$
+\begin{align*}
+\hat{\beta}_0 &= \log\Bigg(\frac{\phi_{n,m}}{1-\phi_{n,m}} \Bigg), \hspace{3mm} \phi_{n,m}=\frac{n}{n-m}\bar{y}_n - \frac{m}{n-m}\bar{y}_m \\
+\hat{\beta_1} &= \log\Bigg(\frac{\bar{y}_m}{1-\bar{y}_m} \Bigg) - \hat{\beta}_0
+\end{align*}
+$$
+
+```{r}
+n=100;b0=-1;b1=2
+x <- rbinom(n,1,0.5)
+y <- rbinom(n,1,1/(1 + exp(-(b0+b1*x))))
+m <- sum(x==1)
+ym <- mean(y[x==1])
+yn <- mean(y)
+phi.nm <- (n/(n-m))*yn - (m/(n-m))*ym
+b0.hat <- log(phi.nm/(1-phi.nm))
+b1.hat <- log(ym/(1-ym)) - b0.hat
+data.frame(glm=round(coef(glm(y~x,family=binomial)),3),hand=round(c(b0.hat,b1.hat),3))
+```
+
+## Simple bounds
+
+It's easy enough to show that that the $(1-\alpha)\%$ CI around any test set error can be bounded to $\pm \epsilon$ using either the [binomial proportional confidence interval](https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval) (BPCI) or [Hoeffding's inequality](https://en.wikipedia.org/wiki/Hoeffding%27s_inequality).
+
+$$
+\begin{align}
+n_T &= \frac{4 z_{1-\alpha/2}^2 \hat{p}(1-\hat{p})}{\epsilon^2} &\text{BPCI} \\
+n_T &= \frac{\log(2/\alpha)}{2\epsilon^2}  &\text{Hoeffding's ineq.}
+\end{align}
+$$
+
+The $n_T$ under Hoeffding's is always greater than the BPCI, although the latter is only true for sufficiently large $n_T$ since $[1/\sqrt{n}](\hat{p}-p_0) \overset{d}{\to} N(0,p_0(1-p_0))$.
+
+## Learning rate
+
+
+
+* * * 
+
+## References
+
+
+[^1]: The flip-side or generalization error is generalization accuracy, but I prefer to think in terms of the former.
+
+[^2]: See [Mostafa Samir's](https://mostafa-samir.github.io/ml-theory-pt1/) page or [these lecture notes](http://www.mit.edu/~9.520/spring10/Classes/class02-regularization.pdf) for more details.

@@ -4,7 +4,7 @@ title: About me
 permalink: /about/
 ---
 
-My name is Erik Drysdale and I am currently studying Statistics at Queen's  University. My research interests are primarily focused on statistical and machine learning approaches to analyzing biological data sets.
+My name is Erik Drysdale and I work as Bioinformatician in a genomics lab focusing on cancer research. My research interests are primarily focused on statistical and machine learning approaches for analyzing high-dimensional biological data sets.
 
 You can reach me here: [13ewd@queensu.ca](mailto:13ewd@queensu.ca)
 
