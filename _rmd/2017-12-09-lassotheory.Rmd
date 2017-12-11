@@ -173,7 +173,7 @@ $$
 \end{align}
 $$
 
-This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of $\lambda^{*}$ in equation \eqref{eq:lam1} required knowledge of $\sigma$! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
+This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of $\lambda^*$ in equation \eqref{eq:lam1} required knowledge of $\sigma$! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
 
 
 ## (2) Statistical properties of the SQRT-Lasso
@@ -245,7 +245,7 @@ Figure 1A shows that each estimator is able to select most of the true features,
 
 Figure 1B shows that the OLS/Ridge post-estimators do very well in reconstructing $\bbetaz$, although the $\sqrtl$'s post-estimators are better in terms of avoiding assigning the coefficient budget towards the noise variables. Lastly, in Figure 1C we see that the $\sqrtl$ and its post-estimators achieve the smallest MSE revealing the advantage of this theoretically motivated choice over the common paradigm of cross-validation.
 
-A discerning reader might point out that this approach nevertheless still assumes that the error is Gaussian. This does not turn out to be a significant problem because even if $\|\bX_j^T \be\| \\|\be \\|_2$ is non-Gaussian, it is characterized by [self-normalized process](https://projecteuclid.org/euclid.ps/1385665279),[[^6]] and will have a distribution which will be well-approximated by the student-t anyways, especially in the tails of the distribution. The skeptical may find a simulation to be more convincing.
+A discerning reader might point out that this approach nevertheless still assumes that the error is Gaussian. This does not turn out to be a significant problem because even if $\|\bX_j^T \be\| / \\|\be \\|_2$ is non-Gaussian, it is characterized by [self-normalized process](https://projecteuclid.org/euclid.ps/1385665279),[[^6]] and will have a distribution which will be well-approximated by the student-t anyways, especially in the tails of the distribution. The skeptical may find a simulation to be more convincing.
 
 ```{r,eval=FALSE}
 n=p=100
@@ -272,7 +272,7 @@ sn.df <- gather(sn.df)
 <p align="center"><img src="/figures/gg_sns.png" width="45%"> </p>
 <br>
 
-One significant problem with the choice of $\lambda^{*}$ in equation \eqref{eq:lam2} for the $\sqrtl$ is that it is a *conservative* estimate because it assumes the upper bound situation where the columns of the design matrix are orthogonal to each other. In reality, there will almost surely be some correlation between the features and a lower $\lambda$ will be needed to prevent too much bias. While the distribution of the error term is unknown, we've already shown that the event target can be approximated by a self-normalizing sum from the standard normal case. This allows for a choice of $\lambda$ to closely match the actual quantile of $\\|\bX^T \be \\|_\infty / \\|\be \\|_2$. 
+One significant problem with the choice of $\lambda^*$ in equation \eqref{eq:lam2} for the $\sqrtl$ is that it is a *conservative* estimate because it assumes the upper bound situation where the columns of the design matrix are orthogonal to each other. In reality, there will almost surely be some correlation between the features and a lower $\lambda$ will be needed to prevent too much bias. While the distribution of the error term is unknown, we've already shown that the event target can be approximated by a self-normalizing sum from the standard normal case. This allows for a choice of $\lambda$ to closely match the actual quantile of $\\|\bX^T \be \\|_\infty / \\|\be \\|_2$. 
 
 $$
 \begin{align}
@@ -285,7 +285,7 @@ $$
 \end{align}
 $$
 
-In the next section when genomic data is employed, the data-driven choice of $\lambda^{*}$ from equation \eqref{eq:lam3} will be used.
+In the next section when genomic data is employed, the data-driven choice of $\lambda^*$ from equation \eqref{eq:lam3} will be used.
 
 
 ## (3) Application to microarray data
@@ -301,7 +301,7 @@ colnames(df)[3] <- 'N'
 df
 ```
 
-The gene expression measurements were normalized across each dataset. Testing was done using a 75/25 training/test split, with 5-fold CV used where appropriate. The choice of $\lambda$ for the $\sqrtl$ was set to three sensitivity levels: $\alpha=\{0.05,0.01,0.001\}$. Post-estimation using least-squares or CV-tuned ridge regression was also considered for the $\sqrtl$. As Figure 3A shows below, regardless of the sensitivity level, the median MSE across the 22 datasets is smallest for the CV-min tuned $\lambda$. The most competitive form of the $\sqrtl$ was the CV-tuned ridge regression for $\lambda^{*}$ at $\alpha=0.05$. This result is interesting since it suggests that selecting around 5% of the features (several hundred gene measurements) is preferred. This result provides evidence against a highly *sparse* DGP for gene expression measurements, and almost certainly disproves the assumption that $s < N$ for these microarray datasets. In other words, predicting genetic variation is best done with many weak signals rather than a few strong ones. Figure 3B shows the range of the number of genes by the $\sqrtl$ across the different datasets at different sensitivity levels.
+The gene expression measurements were normalized across each dataset. Testing was done using a 75/25 training/test split, with 5-fold CV used where appropriate. The choice of $\lambda$ for the $\sqrtl$ was set to three sensitivity levels: $\alpha=\{0.05,0.01,0.001\}$. Post-estimation using least-squares or CV-tuned ridge regression was also considered for the $\sqrtl$. As Figure 3A shows below, regardless of the sensitivity level, the median MSE across the 22 datasets is smallest for the CV-min tuned $\lambda$. The most competitive form of the $\sqrtl$ was the CV-tuned ridge regression for $\lambda^*$ at $\alpha=0.05$. This result is interesting since it suggests that selecting around 5% of the features (several hundred gene measurements) is preferred. This result provides evidence against a highly *sparse* DGP for gene expression measurements, and almost certainly disproves the assumption that $s < N$ for these microarray datasets. In other words, predicting genetic variation is best done with many weak signals rather than a few strong ones. Figure 3B shows the range of the number of genes by the $\sqrtl$ across the different datasets at different sensitivity levels.
 
 <br>
 <h5><p align="center">Figure 3: Microarray results </p></h5>
