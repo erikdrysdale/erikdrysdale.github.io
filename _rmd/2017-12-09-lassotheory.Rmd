@@ -57,7 +57,7 @@ $$
 
 ### Least-squares case
 
-Before considering the Lasso, the more simply least squares model is useful for some building intuition. When $N>p$, the least-squares solution to fitting the data to this problem has the following closed-form solution: $\hat{\bbeta} = \arg \min_{\beta} \|\by - \bX\bbeta \|_2^2 = (\bX^T\bX)^{-1}\bX^T\by$. In order to establish prediction bounds for this estimator, one begins by writing down the optimality conditions.
+Before considering the Lasso, the more simply least squares model is useful for some building intuition. When $N>p$, the least-squares solution to fitting the data to this problem has the following closed-form solution: $\hat{\bbeta} = \arg \min_{\beta} \\|\by - \bX\bbeta \\|_2^2 = (\bX^T\bX)^{-1}\bX^T\by$. In order to establish prediction bounds for this estimator, one begins by writing down the optimality conditions.
 
 $$
 \begin{align}
@@ -78,7 +78,7 @@ $$
 \end{align*}
 $$
 
-Where $\Lambda(\cdot)$ refers to the eigenvalue of the matrix. The first property is derived from showing that $E(\\|\bX^T\be\\|_2^2)=\sigma^2 \text{tr}(\bX^T\bX) \leq \sigma^2 \cdot p \cdot \Lambda_{\max}(\bX^T\bX)$ and then applying a Chebyshev-bound, and the second is more complicated but a justification can be found [Sara van de Geer's](http://stat.ethz.ch/~geer/Sara-Anna-van-de-Geer.pdf) works.
+Where $\Lambda(\cdot)$ refers to the eigenvalue of the matrix. The first property is derived from showing that $E(\|\bX^T\be\|_2^2)=\sigma^2 \text{tr}(\bX^T\bX) \leq \sigma^2 \cdot p \cdot \Lambda_{\max}(\bX^T\bX)$ and then applying a Chebyshev-bound, and the second is more complicated but a justification can be found [Sara van de Geer's](http://stat.ethz.ch/~geer/Sara-Anna-van-de-Geer.pdf) works.
 
 $$
 \begin{align}
@@ -165,10 +165,10 @@ $$
 Substituting $\lambda^*$ back into the prediction norm gives:
 
 $$
-\begin{align*}
+\begin{align}
 \frac{\| \bX(\bbetah-\bbetaz)\|_2}{\sqrt{N}}
 &\leq 2 \cdot \sigma \cdot (c+1) \frac{1}{\kappa_{\bar{c}}} \sqrt{\frac{s}{N}} \Phi^{-1}\Bigg(1-\frac{\alpha}{2p}\Bigg) \label{eq:pred_lasso1}
-\end{align*}
+\end{align}
 $$
 
 This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of $\lambda^*$ in equation \eqref{eq:lam1} required knowledge of $\sigma$! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
@@ -316,7 +316,7 @@ The prediction results on real-world datasets are revealing. They show that whil
 
 [^3]: It should be noted that is to the *predictable* part of $\by$, meaning one will never be able to predict the irreducible error of $\by$ which is the error term $\be$.
 
-[^4]: Note the infinity norm is just the largest absolute value: $\|\mathbb{u}\|_\infty=\max_{i=1,\dots,N} |u_i|$.
+[^4]: Note the infinity norm is just the largest absolute value.
 
 [^5]: Alternatively, another machine learning approach could be applied to the selected features such as ridge regression.
 
