@@ -78,7 +78,7 @@ $$
 \end{align*}
 $$
 
-Where $\Lambda(\cdot)$ refers to the eigenvalue of the matrix. The first property is derived from showing that $E(\|\bX^T\be\|_2^2)=\sigma^2 \text{tr}(\bX^T\bX) \leq \sigma^2 \cdot p \cdot \Lambda_{\max}(\bX^T\bX)$ and then applying a Chebyshev-bound, and the second is more complicated but a justification can be found [Sara van de Geer's](http://stat.ethz.ch/~geer/Sara-Anna-van-de-Geer.pdf) works.
+Where $\Lambda(\cdot)$ refers to the eigenvalue of the matrix. The first property is derived from showing that $E(\\| \bX^T \be \\|_2^2)=\sigma^2 \text{tr}(\bX^T\bX) \leq \sigma^2 \cdot p \cdot \Lambda\_{\max}(\bX^T\bX)$ and then applying a Chebyshev-bound, and the second is more complicated but a justification can be found [Sara van de Geer's](http://stat.ethz.ch/~geer/Sara-Anna-van-de-Geer.pdf) works.
 
 $$
 \begin{align}
