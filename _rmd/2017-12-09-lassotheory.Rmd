@@ -110,7 +110,7 @@ $$
 \end{align*}
 $$
 
-It turns out that one can think of $\\|\bX^T\be\\|_\infty$ as the variance term, and if $\lambda$ is chosen to moderate this term at the expense of $\\| \hat{\beta}-\beta_0 \\|_1$ (bias) a prediction bound can be achieved. Therefore define the event: $E = \Big\{\lambda  \geq c \frac{\\|\bX^T\be\\|_\infty}{N}\Big\}, \hspace{2mm} c>1$, set $\lambda$ s.t. $P(E)\to 1$ as $N \to \infty$ Assuming that event $E$ holds:
+It turns out that one can think of $\\| \bX^T \be \\|\_{\infty}$ as the variance term, and if $\lambda$ is chosen to moderate this term at the expense of $\\| \hat{\beta}-\beta_0 \\|_1$ (bias) a prediction bound can be achieved. Therefore define the event: $E = \Big\\{\lambda  \geq c \frac{\\| \bX^T \be \\|\_{\infty}}{N}\Big\\}, \hspace{2mm} c>1$, set $\lambda$ s.t. $P(E)\to 1$ as $N \to \infty$ Assuming that event $E$ holds:
 
 $$
 \begin{align*}
@@ -123,7 +123,9 @@ $$
 &\leq \lambda \Bigg(1+\frac{1}{c}\Bigg) \|\bbetah_T-\bbetaz\|_1
 \end{align*}
 $$
+
 Next, we introduce the restricted eigenvalue condition:
+
 
 $$
 \begin{align*}
@@ -171,7 +173,7 @@ $$
 \end{align}
 $$
 
-This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of $\lambda^*$ in equation \eqref{eq:lam1} required knowledge of $\sigma$! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
+This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of $\lambda\^{*}$ in equation \eqref{eq:lam1} required knowledge of $\sigma$! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
 
 
 ## (2) Statistical properties of the SQRT-Lasso
@@ -187,7 +189,10 @@ $$
 &= \frac{\sigma \bX^T\bu}{ \|\sigma^2\bu\|_2} = \frac{\bX^T\bu}{ \|\bu\|_2}, \hspace{3mm} \bu \sim (0,I)
 \end{align*}
 $$
+
+
 In other words, the distribution of the gradient of the $\sqrtl$ under the true coefficient vector is stochastically identical regardless of the magnitude of $\sigma^2$! More amazingly, any given component of the this gradient has a student-t distribution!
+
 
 $$
 \begin{align}
@@ -223,12 +228,12 @@ r_j^{(t)} &= y - \bX\beta^{(t)} \\
 \end{align*}
 $$
 
-While the update term for the $\sqrtl$ is more complicated, the key point is that it keeps track of the the sum of squared residuals, and therefore a measure of the variance of the error. Let's run some simulations to see how well the models do in the high-dimensional and sparse case. We'll assume the following set-up: $\sigma^2=2$, $N=100$, $p=1000$, $s=5$, where $\bbetaz=\{\underbrace{1,\dots,1}_{\times 5},\underbrace{0,\dots,0}_{\times 995}\}$. Four baseline models will be considered: (i) $\lambda$'s chosen to minimizes the loss function (`CV-min`) on the hold-out folds as well as (ii) the most conservative $\lambda$ whose out-of-fold loss is within one standard deviation of the minimum (`CV-1se`), (iii) $\lambda^*$ chosen from equation \eqref{eq:lam1} where we somehow "know" the true variance (`Lasso-theory`), and (iv) the $\sqrtl$ with $\lambda^*$ from equation \eqref{eq:lam2} (`Lasso-SQRT`). Furthermore, both the Lasso-theory and Lasso-SQRT will also include a least-squares and CV-tuned Ridge regression model whereby the index of non-zero coefficients is used to re-estimate the model. 
+While the update term for the $\sqrtl$ is more complicated, the key point is that it keeps track of the the sum of squared residuals, and therefore a measure of the variance of the error. Let's run some simulations to see how well the models do in the high-dimensional and sparse case. We'll assume the following set-up: $\sigma^2=2$, $N=100$, $p=1000$, $s=5$, where $\bbetaz=\{\underbrace{1,\dots,1}\_{\times 5},\underbrace{0,\dots,0}\_{\times 995}\}$. Four baseline models will be considered: (i) $\lambda$'s chosen to minimizes the loss function (`CV-min`) on the hold-out folds as well as (ii) the most conservative $\lambda$ whose out-of-fold loss is within one standard deviation of the minimum (`CV-1se`), (iii) $\lambda^*$ chosen from equation \eqref{eq:lam1} where we somehow "know" the true variance (`Lasso-theory`), and (iv) the $\sqrtl$ with $\lambda^*$ from equation \eqref{eq:lam2} (`Lasso-SQRT`). Furthermore, both the Lasso-theory and Lasso-SQRT will also include a least-squares and CV-tuned Ridge regression model whereby the index of non-zero coefficients is used to re-estimate the model. 
 
 Three metrics will be considered: 
 
 1. The receiver operator characteristic (ROC): i.e. the number of true positives (TPs) and false positives (FPs) selected by each model [sensitivity/specificity]
-2. The accuracy of reconstructing $\bbetaz$: $\\|\bbetah_T - \bbetaz \\|_1$, and well as it's error:  $\\|\bbetah_{T^C}\\|_1$
+2. The accuracy of reconstructing $\bbetaz$: $\\|\bbetah\_T - \bbetaz \\|_1$, and well as it's error:  $\\|\bbetah\_{T^C}\\|_1$
 3. The generalization error, measured in MSE to see how well each manages the bias/variance trade-off
 
 <br>
@@ -236,7 +241,7 @@ Three metrics will be considered:
 <p align="center"><img src="/figures/gg_sqrt_comb.png" width="75%"> </p>
 <br>
 
-Figure 1A shows that each estimator is able to select most of the true features, most of the time, although the $\sqrtl$ has the worst sensitivity with a median of 4.4 out of 5. However, the the $\sqrtl$ almost never selects false positives making it a less noisy estimator. In contrast, the CV-min selects 30 noise features! This reveals why the $\sqrtl$ or the Lasso-theory approaches are well suited to post-estimation with either least-squares or ridge regression because they select a small number of features that will tend to be right ones.
+Figure 1A shows that each estimator is able to select most of the true features, most of the time, although the $\sqrtl$ has the worst sensitivity with a median of 4.4 out of 5. However, the $\sqrtl$ almost never selects false positives making it a less noisy estimator. In contrast, the CV-min selects 30 noise features! This reveals why the $\sqrtl$ or the Lasso-theory approaches are well suited to post-estimation with either least-squares or ridge regression because they select a small number of features that will tend to be right ones.
 
 Figure 1B shows that the OLS/Ridge post-estimators do very well in reconstructing $\bbetaz$, although the $\sqrtl$'s post-estimators are better in terms of avoiding assigning the coefficient budget towards the noise variables. Lastly, in Figure 1C we see that the $\sqrtl$ and its post-estimators achieve the smallest MSE revealing the advantage of this theoretically motivated choice over the common paradigm of cross-validation.
 
@@ -267,7 +272,7 @@ sn.df <- gather(sn.df)
 <p align="center"><img src="/figures/gg_sns.png" width="45%"> </p>
 <br>
 
-One significant problem with the choice of $\lambda^*$ in equation \eqref{eq:lam2} for the $\sqrtl$ is that it is a *conservative* estimate because it assumes the upper bound situation where the columns of the design matrix are orthogonal to each other. In reality, there will almost surely be some correlation between the features and a lower $\lambda$ will be needed to prevent too much bias. While the distribution of the error term is unknown, we've already shown that the event target can be approximated by a self-normalizing sum from the standard normal case. This allows for a choice of $\lambda$ to closely match the actual quantile of $\\|\bX^T \be \\|_\infty / \\|\be \\|_2$. 
+One significant problem with the choice of $\lambda\^{*}$ in equation \eqref{eq:lam2} for the $\sqrtl$ is that it is a *conservative* estimate because it assumes the upper bound situation where the columns of the design matrix are orthogonal to each other. In reality, there will almost surely be some correlation between the features and a lower $\lambda$ will be needed to prevent too much bias. While the distribution of the error term is unknown, we've already shown that the event target can be approximated by a self-normalizing sum from the standard normal case. This allows for a choice of $\lambda$ to closely match the actual quantile of $\\|\bX^T \be \\|_\infty / \\|\be \\|_2$. 
 
 $$
 \begin{align}
@@ -296,7 +301,7 @@ colnames(df)[3] <- 'N'
 df
 ```
 
-The gene expression measurements were normalized across each dataset. Testing was done using a 75/25 training/test split, with 5-fold CV used where appropriate. The choice of $\lambda$ for the $\sqrtl$ was set to three sensitivity levels: $\alpha=\{0.05,0.01,0.001\}$. Post-estimation using least-squares or CV-tuned ridge regression was also considered for the $\sqrtl$. As Figure 3A shows below, regardless of the sensitivity level, the median MSE across the 22 datasets is smallest for the CV-min tuned $\lambda$. The most competitive form of the $\sqrtl$ was the CV-tuned ridge regression for $\lambda^*$ at $\alpha=0.05$. This result is interesting since it suggests that selecting around 5% of the features (several hundred gene measurements) is preferred. This result provides evidence against a highly *sparse* DGP for gene expression measurements, and almost certainly disproves the assumption that $s < N$ for these microarray datasets. In other words, predicting genetic variation is best done with many weak signals rather than a few strong ones. Figure 3B shows the range of the number of genes by the $\sqrtl$ across the different datasets at different sensitivity levels.
+The gene expression measurements were normalized across each dataset. Testing was done using a 75/25 training/test split, with 5-fold CV used where appropriate. The choice of $\lambda$ for the $\sqrtl$ was set to three sensitivity levels: $\alpha=\{0.05,0.01,0.001\}$. Post-estimation using least-squares or CV-tuned ridge regression was also considered for the $\sqrtl$. As Figure 3A shows below, regardless of the sensitivity level, the median MSE across the 22 datasets is smallest for the CV-min tuned $\lambda$. The most competitive form of the $\sqrtl$ was the CV-tuned ridge regression for $\lambda\^{*}$ at $\alpha=0.05$. This result is interesting since it suggests that selecting around 5% of the features (several hundred gene measurements) is preferred. This result provides evidence against a highly *sparse* DGP for gene expression measurements, and almost certainly disproves the assumption that $s < N$ for these microarray datasets. In other words, predicting genetic variation is best done with many weak signals rather than a few strong ones. Figure 3B shows the range of the number of genes by the $\sqrtl$ across the different datasets at different sensitivity levels.
 
 <br>
 <h5><p align="center">Figure 3: Microarray results </p></h5>
