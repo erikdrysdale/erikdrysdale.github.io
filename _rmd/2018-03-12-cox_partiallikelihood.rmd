@@ -1,0 +1,94 @@
+---
+title: "Multitask learning for the Cox-PH model (part I)"
+output: html_document
+---
+
+$$
+\newcommand{\bbeta}{\mathbf{\beta}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bp}{\mathbf{p}}
+\newcommand{\etab}{\mathbf{\eta}}
+\newcommand{\bsigma}{\mathbf{\sigma}}
+\newcommand{\bdelta}{\mathbf{\delta}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\bxi}{\bx_i}
+\newcommand{\ei}{\varepsilon_i}
+$$
+
+Partial likelihood of the Cox-PH model with the following notation: $y_j(t_i)$ is a binary indicator if person $j$ is alive at time $t_i$.
+
+$$
+\begin{align*}
+L(\bbeta) &= \prod_{i=1}^N \Bigg( \frac{e^{\bxi^T \bbeta}}{\sum_{j=1}^N y_j(t_i) e^{\bx_j^T \bbeta}} \Bigg)^{\delta_i} \\
+\ell(\bbeta) &= \sum_{i=1}^N \delta_i \Bigg\{ \bxi^T \bbeta - \log \Bigg[\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta) \Bigg] \Bigg\}
+\end{align*}
+$$
+
+Derivative of the $i^{th}$ summand in the log-likelihood:
+
+$$
+\begin{align*}
+\frac{\partial \ell_i(\bbeta)}{\partial \beta_q} &= \delta_i x_{iq} - \delta_i \frac{\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta) x_{jq}}{\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta)} \\
+ &= \delta_i x_{iq} - \delta_i \Bigg[  \frac{y_1(t_i)\exp(\bx_1^T \bbeta)}{\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta)}x_{1q} + \dots + \frac{y_N(t_i)\exp(\bx_N^T \bbeta)}{\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta)}x_{Nq}  \Bigg] \\
+ &= \delta_i \Big( x_{iq} - \sum_{k=1}^N w_{ik} x_{iq}  \Big) \\
+w_{ik} &= \frac{y_k(t_i) \exp(\bx_k^T \bbeta)}{\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta)}
+\end{align*}
+$$
+
+The entire derivative will therefore be:
+
+$$
+\begin{align*}
+\frac{\partial \ell(\bbeta)}{\partial \beta_q} &= \sum_{i=1}^N \delta_i \Bigg\{ x_{ik} - \sum_{k=1}^N w_{ik} x_{kq} \Bigg\} \\
+\frac{\partial \ell(\bbeta)}{\partial \beta_q} &= (1-\bW)\bX_q^T \bdelta \\
+\frac{\partial \ell(\bbeta)}{\partial \bbeta} &= (1-\bW)\bX^T \bdelta
+\end{align*}
+$$
+
+Next, we can construct $N \times N$ matrices to calculate the given $\bY$ and $\bW$ matrices.
+
+$$
+\begin{align*}
+Y_{ik} &= y_k(t_i) \hspace{3mm} \text{is person $k$ alive up to time $t_i$} \\
+\bW_1 &= \begin{pmatrix} 
+y_1(t_1)\exp(\bx_1^T \bbeta) & \dots & y_N(t_1)\exp(\bx_N^T \bbeta) \\
+\vdots & \dots & \vdots \\
+y_1(t_N\exp(\bx_1^T \bbeta) & \dots & y_N(t_N)\exp(\bx_N^T \bbeta) 
+\end{pmatrix} \\
+\bW_2 &= \begin{pmatrix} 
+\sum_k y_k(t_1)\exp(\bx_k^T \bbeta) & \dots & \sum_k y_k(t_1)\exp(\bx_k^T \bbeta) \\
+\vdots & \dots & \vdots \\
+\sum_k y_k(t_N)\exp(\bx_k^T \bbeta) & \dots & \sum_k y_k(t_N)\exp(\bx_k^T \bbeta)
+\end{pmatrix} \\
+\bW &= \bW_1 \oslash \bW_2
+\end{align*}
+$$
+
+Next, we can extend the case so that there are $D$ datasets, each with their own partial likelihood but that share the same coefficient vector.
+
+$$
+\begin{align*}
+\ell(\bbeta) &= \sum_{d \in D}\Bigg( \frac{1}{N_d} \sum_{i=1}^N \delta_{i,d} \Bigg\{ \bx_{i,d}^T \bbeta - \log \Bigg[\sum_{j=1}^N y_{j,d}(t_{i,d}) \exp(\bx_{i,d}^T \bbeta) \Bigg] \Bigg\} \Bigg) \\
+\frac{\partial \ell(\bbeta)}{\partial \bbeta} &= \sum_{d \in D} \frac{1}{N_d} (1-\bW_d)\bX_d^T \bdelta_d
+\end{align*}
+$$
+
+This approach could be useful if two survival distribution had their rate parameter re-parameterized by $\bxi^T\bbeta$, but had other parameters that made comparing the survival distributions infeasible. For example:
+
+$$
+\begin{align*}
+T_{i,A} &\sim \text{Weibull}(\lambda \exp(\bxi^T\bbeta),\alpha_B)  \\
+T_{i,B} &\sim \text{Weibull}(\lambda \exp(\bxi^T\bbeta),\alpha_A) 
+\end{align*}
+$$
+
+The multi-task learning approach has an efficiency close to to the true dataset size.
+
+<h5><p align="center"> Figure: Multitask learning is highly efficient </p></h5>
+<p align="center"><img src="gg_time_mse_dens.png" width="60%"></p>
+
+
+

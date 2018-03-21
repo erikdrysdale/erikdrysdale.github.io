@@ -3,12 +3,13 @@ title: 'Optimal number of samples in the validation set'
 output: html_document
 fontsize: 12pt
 published: true
-status: process
+status: no_process
 mathjax: true
 ---
 
 <!-- Links -->
 <!-- http://hunch.net/?p=45 -->
+<!-- https://arxiv.org/abs/1411.1151 -->
 
 <!-- Define any latex commands -->
 
@@ -58,7 +59,7 @@ paste(round(prop.table(table(sim[,2]))*100,1),'%',sep='')
 
 Therefore in our classical set up, a dataset of $N$ samples will be split into $N_R$, $N_V$, and $N_T$, in order to train the models (on $N_R$), pick the best performing one (on $N_V$) and then get an estimate of its performance for observations it hasn't observed in its training/selection (using $N_T$). Note we will always assume that the samples are independently drawn from some common distribution: $(y,\bx) \sim P(\by,\bx)$.
 
-So far, so tidy. However, consider this problem: how many observations should I put aside in $N_T$ to give me high confidence that my chosen algorithm will perform well. This question can have two interpretations: (i) how many $N_V$ do I need to reject the null that the expected loss is greater than some amount (a power question), or (ii) how many $N_V$ do I need to achieve a confidence interval of some range. These questions turn out to harder than expected because there is a tradeoff: the more observations an algorithm is given in $N_R+N_V$, the better its accuracy will be (because the more data it has the more it can learn) but the larger the uncertainty around its point estimate obtained in the test set will be because there are fewer observations to determine the variance of its predictions. For our purposes we'll aggregate $N_R+N_V$ and call then $N_R$, because we're not interested in model selection.
+So far, so tidy. However, consider this problem: how many observations should I put aside in $N_T$ to give me high confidence that my chosen algorithm will perform well. This question can have two interpretations: (i) how many $N_V$ do I need to reject the null that the expected loss is greater than some amount (a power question), or (ii) how many $N_V$ do I need to achieve a confidence interval of some range. These questions turn out to be harder than expected because there is a tradeoff: the more observations an algorithm is given in $N_R+N_V$, the better its accuracy will be (because the more data it has the more it can learn) but the larger the uncertainty around its point estimate obtained in the test set will be because there are fewer observations to determine the variance of its predictions. For our purposes we'll aggregate $N_R+N_V$ and call then $N_R$, because we're not interested in model selection.
 
 Consider this motivating simulation. 
 

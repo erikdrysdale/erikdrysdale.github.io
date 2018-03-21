@@ -1,0 +1,152 @@
+---
+title: "The statistician bumps into an NP complete problem"
+output: html_document
+fontsize: 12pt
+published: false
+status: no_process
+mathjax: true
+---
+
+$$
+\newcommand{\be}{\boldsymbol{e}}
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\bX}{\boldsymbol{X}}
+\newcommand{\by}{\boldsymbol{y}}
+\newcommand{\bY}{\boldsymbol{Y}}
+\newcommand{\bz}{\boldsymbol{z}}
+\newcommand{\br}{\boldsymbol{r}}
+\newcommand{\bxobs}{\bx_{\text{obs}}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+\newcommand{\bpi}{\boldsymbol{\pi}}
+\newcommand{\bSig}{\boldsymbol{\Sigma}}
+\newcommand{\Err}{\text{Err}}
+\newcommand{\Var}{\text{Var}}
+\newcommand{\MSE}{\text{MSE}}
+\newcommand{\Bias}{\text{Bias}}
+\newcommand{\sup}{\text{sup}}
+$$
+
+### Background
+
+One of the downsides of having a background in economics/statistics is that one's eductation provides very little training in algorithmic complexity. In any field of research, it is inevitable that some material will have to be taken for granted, and one trusts that computer scientists are hard at work ensuring that the underlying computations that power our data analysis and simulations are being optimized. However, the more projects I undertake, the most I find myself having to think more carefully about how I write my code to make sure that run times take hours and not days. More generally, the concept of [computational complexity](https://en.wikipedia.org/wiki/Computational_complexity_theory) is an indispensible lens through which to determine how well certain problems scale. I recently came across a problem where trying to address a statistical problem ended up bumping against the problem on non-polynomial compute times.
+
+In classical Statistics, the goal in empirical research is often to develop hypothesis that we can perform inference on (i.e. quantify our uncertainty around this hypothesis). A hypothesis is any statement about a population parameter $\theta$, which we assume parameterizes some random variables $\bX=\{X_1,\dots,X_N \}$. Being clever, statisticians have found "statistics"[[^1]] which are a function of the data $T(\bX)=f(\bX)$ and which contain the relevant information about the population parameter $\theta$. For example, the sample mean contains all relevant information about the population mean for a vector of Gaussian random variables. A hypothesis test consists of two complementary hypothesis the null $H_0: \theta \in \Theta_0$ and the alterneative $H_1: \theta \in \Theta_0^c$, where $\Theta$ is some subset of the parameter space. For a given significance level $\alpha$, we reject the null hypothesis if the p-value is less than $\alpha$.
+
+$$
+\begin{align}
+&\text{Right-sided hypothesis test} \nonumber \\
+p_0(\bxobs) &= \underset{\theta \in \Theta_0}{\sup} \hspace{3mm} P_\theta (T(\bX) \geq T(\bxobs)) \label{eq:pval}
+\end{align}
+$$
+
+Equation \eqref{eq:pval} just says that the p-value of a realization of the data, is equal to the largest probability value evaluated over all possible population parameters under the null. Why do we use the supremum? This is because the null hypothesis may actually be a composite test. For example, suppose $H_0: \theta \leq \theta_0$ is a right-sided test because we reject the null if the *positive* difference between $T(\bxobs)$ and $\theta_0$ is sufficiently large. But notice that under the inequality one could test $\theta=\theta_0$ or $\theta=\theta_0 - 2.2$, etc. For any realization one could always find some constant $\theta_0 - c$, $c>0$ such that the p-value would be small enough to reject the null, so we use the **most conservative** population parameter.[[^2]] 
+
+However, to carry out hypothesis testing we need to know the distribution of $T(\bX)$ under some $\theta$. When the distribution of the statistic is unknown several strategies can be employed. First, one can use an approximate distribution. This usually arises when $T(\bX)$ has an asymptotic distribution. Although as we will later show, this tendency to rely on an asymptotic distribution can lead to systematic biases when researchers forget that they are using an *approximation*. Second, one can use the bootstrap, whereby the data is randomly sampled multiple times with replacement and a bootstrapped-statistic is calculated for each random sample. The p-value is the number of times the boostrapped statistic exceeds the realized test statistic (for a right tailed test). Third, are **exact tests** whereby the p-value is the probability of observing all other combinations of the data where the statistic is larger than the observed one. As the rest of this blog post will show, computational complexity becomes an important consideration for exact tests.
+
+$$
+\begin{align}
+&\text{Exact test} \\
+p_0^{\text{exact}}(\bxobs) &= \underset{\theta \in \Theta_0}{\sup} \hspace{3mm} \sum_{\bx: T(\bx) \geq T(\bxobs) } P_\theta (\bx) \label{eq:exact}
+\end{align}
+$$
+
+
+### Log-rank test
+
+In survival analysis, the [log-rank (LR) test](https://en.wikipedia.org/wiki/Log-rank_test) is a non-parametric approach to determining whether the hazard rates between two groups differ under the proportional hazards assumption.[[^3]] In other words we want to test whether the survival function differs between the two groups; for example $H_0: S_A(T) = S_B(T)$ where $T$ is a (possibly) right-censored survival time. For $n$ (possibly) right-censored measurements, if there are $k$ distinct failure times $t_1 \leq \dots \leq t_k$, then the log-rank statistic is defined as:
+
+$$
+\begin{align}
+&\text{Log-rank test statistic} \nonumber \\
+Z &= \frac{\sum_{j=1}^k (O_{Aj} - E_{Aj})}{\sqrt{\sum_{j=1}^k V_j}} \overset{a}{\sim} N(0,1) \label{eq:logrank}
+\end{align}
+$$
+
+Where $O_{Aj}$, $E_{Aj}$, $N_{Aj}$ are the observed, expected, and number of individuals in the risk set for group $A$ and time $j$. The expected number of events for group $A$ is $E_{Aj} = (O_j/N_j) \cdot N_{Aj}$. The test statistic is asymptotically standard normal under the null of a hazard ratio of one. Concomitatly, $Z^2 \overset{a}{\sim} \chi^2_1$. The figure below shows the log-rank test for the `survival::aml` dataset, where the test is whether there is a survival difference between patients that did and did not receive chemotherapy. 
+
+```{r,warning=F,message=F,echo=F}
+library(survival); library(cowplot); library(survminer)
+# Datasets
+dat1 <- survival::aml
+dat2 <- survival::flchain
+dat2 <- dat2[-which(is.na(dat2$chapter)),] # Drop missing
+dat2 <- dat2[dat2$chapter %in% c('External Causes','Infectious'),]
+dat3 <- survival::veteran
+dat3 <- dat3[dat3$celltype %in% c('squamous','adeno','large'),]
+# Survival objects (in matrix form)
+Som1 <- as.matrix(with(dat1,Surv(time,status)))
+Som2 <- as.matrix(with(dat2,Surv(futime,death)))
+Som3 <- as.matrix(with(dat3,Surv(time,status)))
+# Treatment variables (x)
+x1 <- ifelse(dat1$x=='Maintained',1,0) # No chemo is baseline
+x2 <- ifelse(dat2$sex=='F',0,1) # Females are baseline
+# Strata
+condo1 <- rep(1,nrow(Som1))
+condo2 <- as.numeric(as.factor(dat2$chapter))
+
+# Get chi-squared from log-rank test
+survdiff(Surv(time,status)~x,data=dat1)$chisq
+survdiff(Surv(futime,death)~sex,data=dat2)$chisq
+survdiff(Surv(futime,death)~sex+strata(chapter),data=dat2)$chisq
+survdiff(Surv(time,status)~celltype,data=dat3)
+
+
+ggsurvplot(survfit(Surv(time,status)~celltype,data=dat3))
+
+
+# Log-rank test function (can handle strata)
+lrfun <- function(Som,x,condo=NULL) {
+  # Run the fit command
+  fit <- survival:::survdiff.fit(y=Som,x=x,rho=0)
+  # if (is.matrix(fit$observed)) {
+  #   otmp <- apply(fit$observed, 1, sum)
+  #   etmp <- apply(fit$expected, 1, sum)
+  # } else {}
+  otmp <- fit$observed
+  etmp <- fit$expected
+  df <- (etmp > 0)
+  # if (sum(df) < 2) {
+  #   chi <- 0
+  # } else { }
+  temp2 <- ((otmp - etmp)[df])[-1]
+  vv <- (fit$var[df, df])[-1, -1, drop = FALSE]
+  chi <- sum(solve(vv, temp2) * temp2)
+  return(chi)
+
+  fit <- survival:::survdiff.fit(y=as.matrix(So),x=x,rho=0)
+  Ej <- fit$expected
+  Oj <- fit$observed
+  sum((Oj - Ej)^2)/sum(diag(fit$var))
+  
+  
+}
+lrtest <- survdiff(~treat,data=dat)
+names(lrtest$n)
+str(lrtest)
+lrtest$chisq
+?survdiff
+```
+
+
+### Finite-sample bias of the LR test
+
+How different is the finite sample to the aymptotic distribution? The answer turns out to be a function of both the absolute number of samples, and the ratio between samples. Let's consider look at the distribution under the null for $n = \{100,1000,10000 \}$ observations with three group proportions $N_A/N=\{0.05,0.25,0.50\}$, using an exponential survival distribution with no censoring.
+
+
+
+
+
+* * * 
+
+## Footnotes
+
+[^1]: I capitalize Statistics to denote the field of research as opposed to "a statistic" which is a function of the data.
+
+[^2]: Suppose the null hypothesis is true, then if $\theta = \theta_0$, we will reject the null $\alpha \cdot 100 \%$ of the time, and if $\theta = \theta_0 - c$, $c>0$, then we will reject the null less than $\alpha \cdot 100 \%$ of the time. So we will never have a type I error that exceeds our significance level. 
+
+[^3]: Because it is non-parameter we do not need to worry about how the underlying probability distribution is parameterized.
+
