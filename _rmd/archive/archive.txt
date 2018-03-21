@@ -1,0 +1,16 @@
+TL has become increasingly popular in machine learning (ML). Most of the cases involve re-using existing neural networks weights from a previous task as a starting point for fitting a new neural network to a smaller domain of data. This can be done by literally taking the entire network weights as initial values and then updating them with the new data, or more reasonably, randomizing the last several layers of nodes and then retraining those. For example, [Matlab](https://www.mathworks.com/help/nnet/examples/transfer-learning-using-alexnet.html) recently included functionality to "transfer" the trained AlexNet Deep Convolutional NN to new image classification problems. TL has also been endoresed by Andrew NG, who, according to those who were at the 2016 NIPS conference, said that TL will be next succeed supervised machine learning in commercial succes.
+
+<br>
+<h4> <p align="center"> Figure 1: With TL take over? </p> </h4>
+<p align="center"><img src="figures/transfer_ng.png" width="60%"></p>
+<br>
+
+This is all very interesting and makes sense for image classification with DNNs since many of their hidden node layers have "learned" to recognize certain facial features. For example Figure 2 shows how a convolutional input is translated as into different features by the DNN. Some of these low/medium level features, for example, could be useful even for pictures of cats, since their faces have these low-levels properties too. 
+
+<br>
+<h4> <p align="center"> Figure 2: TL makes sense for images </p> </h4>
+<p align="center"><img src="figures/face_patterns.png" width="80%"></p>
+<p align="center"> Source: [Sebastian Ruder](http://ruder.io/transfer-learning/index.html)</p>
+<br>
+
+As a trained statistician, I'm more interested in thinking about TL for very basic regression problems to build some simple algebraic intuition. 
