@@ -30,7 +30,7 @@ $$
  
 ## Introduction
  
-In statistical learning theory the goal of a prediction model is to learn regularities of a data generating process from a sample and then obtain the best possible generalization error, which can be thought of the error that will occur "in the wild" when the trained model is asked to make predictions on data it has never seen. Being more formal, define a **domain** $\D=\{\X,P(X)\}$ as a feature space $\bX\in\X$ with a marginal probability over the feature space $P(\bX)$ and a **task** as a response space $\by \in \Y$ with a conditional probability distribution $P(\by|\bX)$. We are either trying to learn $P(\by|\bX)$ (for classification) or $E(\by|\bX)$ (for regression) with the training data. We call the function we learn from the sample data the prediction estimator $\hat{f}$.
+In statistical learning theory the goal of a prediction model is to learn regularities of a data generating process from a sample and then obtain the best possible generalization error, which can be thought of the error that will occur "in the wild" when the trained model is asked to make predictions on data it has never seen. Being more formal, define a **domain** $\D=\{\X,P(X)\}$ as a feature space $\bX\in\X$ with a marginal probability over the feature space $P(\bX)$ and a **task** as a response space $\by \in \Y$ with a conditional probability distribution $P(\by\|\bX)$. We are either trying to learn $P(\by\|\bX)$ (for classification) or $E(\by\|\bX)$ (for regression) with the training data. We call the function we learn from the sample data the prediction estimator $\hat{f}$.
  
 Since we can imagine various estimators/algorithms that could fit the data, $f_1,\dots,f_M$, we want to know the expected generalization error of each when they are given training data from a source domain $(\by_S,\bX_S)\in\X_S\times \Y_S$ and asked to make predictions on a target domain $(\by_T,\bX_T) \in \X_T \times \Y_T$  for some loss function $L$:
  
@@ -41,7 +41,7 @@ $$
 \end{align}
 $$
  
-There are several things to note about equation \eqref{eq:err1}. First, we are conditioning $\hat{f_S}(x)=\hat{f}(x|\by_S,\bX_S)$ on the source features and responses since these data determine the functional mapping properties of $\hat{f}$. Second, our expectation is over everything that is random: $\bX_S,\by_S,\bX_T,\by_S$.[[^1]] Third, we are allowing for the possibility that $S\neq T$, which differs from the standard "single domain" assumption that $S=T$ in the classical setups. Generally,  [**transfer learning**](https://en.wikipedia.org/wiki/Transfer_learning) (TL) is the field of machine learning that is interested in $S\neq T$. Pan and Yang's (2010) [Survey on Transfer Learning](http://ieeexplore.ieee.org/document/5288526/) provides a very useful overview. Specifically *transductive transfer learning* or *covariate shift* is the scenario where $P_S(\bX)\neq P_T(\bX)$ but $E_S(y|X=x)=E_T(y|X=x)$ or $P_S(y|X=x)=P_T(y|X=x)$, meaning the fundamental classification/regression relationship between $y \sim x$ is the same.
+There are several things to note about equation \eqref{eq:err1}. First, we are conditioning $\hat{f_S}(x)=\hat{f}(x\|\by_S,\bX_S)$ on the source features and responses since these data determine the functional mapping properties of $\hat{f}$. Second, our expectation is over everything that is random: $\bX_S,\by_S,\bX_T,\by_S$.[[^1]] Third, we are allowing for the possibility that $S\neq T$, which differs from the standard "single domain" assumption that $S=T$ in the classical setups. Generally,  [**transfer learning**](https://en.wikipedia.org/wiki/Transfer_learning) (TL) is the field of machine learning that is interested in $S\neq T$. Pan and Yang's (2010) [Survey on Transfer Learning](http://ieeexplore.ieee.org/document/5288526/) provides a very useful overview. Specifically *transductive transfer learning* or *covariate shift* is the scenario where $P_S(\bX)\neq P_T(\bX)$ but $E_S(y\|X=x)=E_T(y\|X=x)$ or $P_S(y\|X=x)=P_T(y\|X=x)$, meaning the fundamental classification/regression relationship between $y \sim x$ is the same.
  
 In the next section, we will see what happens to the usual OLS prediction error bounds when domain/source equivalence is relaxed.
  
@@ -117,7 +117,7 @@ sprintf('Variance of S: %0.3f, variance of T: %0.3f, theoretical: %0.3f',var.cal
  
 ### Back to regression
  
-Now let's consider the MSE of the predictor $L(y,\hat{f_S}(x))=(y-\hat\beta x)^2$ when it makes a prediction of on some $x \sim N(\mu_x,\sigma^2_x)$ where $E[y|x]=\beta x$. 
+Now let's consider the MSE of the predictor $L(y,\hat{f_S}(x))=(y-\hat\beta x)^2$ when it makes a prediction of on some $x \sim N(\mu_x,\sigma^2_x)$ where $E[y\|x]=\beta x$. 
  
 $$
 \begin{align*}
@@ -128,7 +128,7 @@ E[\MSE(\hat{f_S})|\bx_s,x] &= E[L(y,\hat{f_S}(x))|\bx_s,x] \\
 \end{align*}
 $$
  
-The conditional expectation of the MSE is equal to the irreducible error ($\sigma^2$) scaled by a by factor proportional to $x^2$ over approximately $\approx N_S\sigma^2_S$. This result makes sense since the error is a function of how far away $y$ is from zero and the number of training observations. Because we're assuming the distribution of the domains are Gaussian, $x^2/\sigma^2_x \sim \chi^2_{NC}(1,\mu_x^2)$ has a [non-central chi-squared distribution](https://en.wikipedia.org/wiki/Noncentral_chi-squared_distribution)  with one degree of freedom and a non-centrality parameter $\lambda=(\mu_x/\sigma_x)^2$, whereas $\|\bx_S\|_2^2/\sigma^2_S$ has a chi-squared with $N_S$ degrees of freedom. Interestingly, the ratio of these two distributions (divided by their respective degrees of freedom) is a [noncentral F-distribution](https://en.wikipedia.org/wiki/Noncentral_F-distribution) with 1 and $N_S$ degrees of freedom and a non-centrality parameter equal to $(\mu_x/\sigma_x)^2$.
+The conditional expectation of the MSE is equal to the irreducible error ($\sigma^2$) scaled by a by factor proportional to $x^2$ over approximately $\approx N_S\sigma^2_S$. This result makes sense since the error is a function of how far away $y$ is from zero and the number of training observations. Because we're assuming the distribution of the domains are Gaussian, $x^2/\sigma^2_x \sim \chi^2_{NC}(1,\mu_x^2)$ has a [non-central chi-squared distribution](https://en.wikipedia.org/wiki/Noncentral_chi-squared_distribution)  with one degree of freedom and a non-centrality parameter $\lambda=(\mu_x/\sigma_x)^2$, whereas $\\|\bx_S\\|_2^2/\sigma^2_S$ has a chi-squared with $N_S$ degrees of freedom. Interestingly, the ratio of these two distributions (divided by their respective degrees of freedom) is a [noncentral F-distribution](https://en.wikipedia.org/wiki/Noncentral_F-distribution) with 1 and $N_S$ degrees of freedom and a non-centrality parameter equal to $(\mu_x/\sigma_x)^2$.
  
 $$
 \begin{align*}
