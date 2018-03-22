@@ -34,7 +34,7 @@ $$
  
 Before machine learning (ML) algorithms can be deployed in real world settings, an estimate of their generalization error is required. Because data is finite, a model can at most be trained on $N$ labelled samples $S=\\{(y_1,\bx_1),\dots,(y_N,\bx_N)\\}$, where $y_i$ is the response and $\bxi$ is a vector of features. Should all $N$ samples be used in the training of an algorithm? The answer is no for two reasons: (1) hypothesis selection, and (2) generalization accuracy.
  
-First, ML researchers do not limit themselves to a single model, but allow their algorithms to search a space of functions $\fH=\\{h_1,\dots,h_m \\}$, for example $\fH=\\{\fX \times \mathbb{B} \to \fY \| h(\bx)= \bx^T \bbeta \text{ s.t.} \\|\bbeta\\|_2^2<\Gamma  \\}$, where $\Gamma$ is a hyperparameter. A learning algorithm is a map that looks at some number of training samples $R \subseteq S$ and selects from $\fH$ a function $f_R : \bx \to y$, with the goal to minimize some loss function and have $f_R(\bx) \approx y$.[[^1]] By learning weights ($\bbeta$) indexed by a hyperparameter ($\Gamma$) on $R$, and then seeing how that function performs on a validation set $V \subseteq S \setminus  R$, a fair competition can be had, so that models which overfit on $R$ are not unduly selected. In other words, by splitting $S$ into a training set $R$ and validation set $V$, we can find $\hat{\Gamma} \in \arg \min_\Gamma \hspace{2mm} L(\by_V,f_R(\bx_V))$, for some loss function $L$.
+First, ML researchers do not limit themselves to a single model, but allow their algorithms to search a space of functions $\fH=\\{h_1,\dots,h_m \\}$, for example $\fH=\\{\fX \times \mathbb{B} \to \fY \\}$ $a$ $\| h(\bx)= \bx^T \bbeta \text{ s.t.}$ $b$ $\\|\bbeta\\|_2^2< \Gamma$ $c$, where $\Gamma$ is a hyperparameter. A learning algorithm is a map that looks at some number of training samples $R \subseteq S$ and selects from $\fH$ a function $f_R : \bx \to y$, with the goal to minimize some loss function and have $f_R(\bx) \approx y$.[[^1]] By learning weights ($\bbeta$) indexed by a hyperparameter ($\Gamma$) on $R$, and then seeing how that function performs on a validation set $V \subseteq S \setminus  R$, a fair competition can be had, so that models which overfit on $R$ are not unduly selected. In other words, by splitting $S$ into a training set $R$ and validation set $V$, we can find $\hat{\Gamma} \in \arg \min_{\Gamma} \hspace{2mm} L(\by_{V},f_{R}(\bx_{V}))$, for some loss function $L$.
  
 Second, while the training/validation split provides an unbiased estimate of the **relative** generalization performance of each indexed function, it does not provide an unbiased estimate of the winning algorithm's generalization performance. This is because the winning estimator is picked after the data has been observed, so that the error rate is optimistic. For example consider $m$ i.i.d random normals $X_i$ with means $\mu_1 < \mu_2 < \dots \mu_m$, it will be the case that $E[\min(X_1,\dots,X_m)]<\mu_1$. In other words, if we pick the lowest realization of a vector of normals with different means, our average pick will be lower than the smallest mean: i.e. we will have a biased estimate of $\arg \min_j E[X_j]$. Instead, if we measure the performance of the winning estimator on some test set: $T \subseteq S \setminus (R \cup V)$, then an unbiased estimate of the generalization error of the chosen algorithm can be determined. 
  
@@ -54,7 +54,7 @@ sim <- t(replicate(1000,{
  
 
 {% highlight text %}
-## [1] "Mean of smallest realization: -0.23"
+## [1] "Mean of smallest realization: -0.25"
 {% endhighlight %}
 
 
@@ -66,7 +66,7 @@ sim <- t(replicate(1000,{
 
 
 {% highlight text %}
-## [1] "73.3%" "22.7%" "4%"
+## [1] "74.3%" "22.1%" "3.6%"
 {% endhighlight %}
  
  
@@ -84,7 +84,7 @@ N_T &= \frac{\log(2/\alpha)}{2\epsilon^2} \label{eq:hoeffding}
 \end{align}
 $$
  
-The $N_T$ under Hoeffding's is always greater than the BPCI, although the latter is only true for sufficiently large $N_T$ since $[1/\sqrt{N}](\hat{p}-p_0) \overset{d}{\to} N(0,p_0(1-p_0))$. Hoeffding's inequality also has the nice property that we don't need to know the value of $\hat{p}$ or $p_0$. 
+The $N_T$ under Hoeffding's is always greater than the BPCI, although the latter is only true for sufficiently large $N_T$ since $[1 \sqrt{N}]$ $a$ $(\hat{p}-p_0)$ $b$ $\overset{d}{\to}$ $c$ $N(0,p_0(1-p_0))$ $d$. Hoeffding's inequality also has the nice property that we don't need to know the value of $\hat{p}$ or $p_0$. 
  
 ## The trade-off
  
