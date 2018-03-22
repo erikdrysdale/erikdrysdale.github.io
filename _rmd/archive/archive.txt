@@ -14,3 +14,25 @@ This is all very interesting and makes sense for image classification with DNNs 
 <br>
 
 As a trained statistician, I'm more interested in thinking about TL for very basic regression problems to build some simple algebraic intuition. 
+
+
+
+$$
+\begin{align*}
+\hat{\beta}_0 &= \log\Bigg(\frac{\phi_{n,m}}{1-\phi_{n,m}} \Bigg), \hspace{3mm} \phi_{n,m}=\frac{n}{n-m}\bar{y}_n - \frac{m}{n-m}\bar{y}_m \\
+\hat{\beta_1} &= \log\Bigg(\frac{\bar{y}_m}{1-\bar{y}_m} \Bigg) - \hat{\beta}_0
+\end{align*}
+$$
+
+```{r}
+n=100;b0=-1;b1=2
+x <- rbinom(n,1,0.5)
+y <- rbinom(n,1,1/(1 + exp(-(b0+b1*x))))
+m <- sum(x==1)
+ym <- mean(y[x==1])
+yn <- mean(y)
+phi.nm <- (n/(n-m))*yn - (m/(n-m))*ym
+b0.hat <- log(phi.nm/(1-phi.nm))
+b1.hat <- log(ym/(1-ym)) - b0.hat
+data.frame(glm=round(coef(glm(y~x,family=binomial)),3),hand=round(c(b0.hat,b1.hat),3))
+```
