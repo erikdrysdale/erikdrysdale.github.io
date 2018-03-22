@@ -38,11 +38,11 @@ First, ML researchers do not limit themselves to a single model, but allow their
  
 $$
 \begin{align*}
-\fH &= ^\{\fX \times \mathbb{B} \to \fY \} \| h(\bx)= \bx^T \bbeta \text{ s.t.} \|\bbeta\|_{2}^{2} < \Gamma
+\fH &= \{\fX \times \mathbb{B} \to \fY  | h(\bx)= \bx^T \bbeta \text{ s.t.} \|\bbeta\|_{2}^{2} < \Gamma \}
 \end{align*}
 $$
  
-where $\Gamma$ is a hyperparameter. A learning algorithm is a map that looks at some number of training samples $R \subseteq S$ and selects from $\fH$ a function $f_R : \bx \to y$, with the goal to minimize some loss function and have $f_R(\bx) \approx y$.[[^1]] By learning weights ($\bbeta$) indexed by a hyperparameter ($\Gamma$) on $R$, and then seeing how that function performs on a validation set $V \subseteq S \setminus  R$, a fair competition can be had, so that models which overfit on $R$ are not unduly selected. In other words, by splitting $S$ into a training set $R$ and validation set $V$, we can find for some loss function $L$:
+Where $\Gamma$ is a hyperparameter. A learning algorithm is a map that looks at some number of training samples $R \subseteq S$ and selects from $\fH$ a function $f_R : \bx \to y$, with the goal to minimize some loss function and have $f_R(\bx) \approx y$.[[^1]] By learning weights ($\bbeta$) indexed by a hyperparameter ($\Gamma$) on $R$, and then seeing how that function performs on a validation set $V \subseteq S \setminus  R$, a fair competition can be had, so that models which overfit on $R$ are not unduly selected. In other words, by splitting $S$ into a training set $R$ and validation set $V$, we can find for some loss function $L$:
  
 $$
 \begin{align*}
@@ -68,7 +68,7 @@ sim <- t(replicate(1000,{
  
 
 {% highlight text %}
-## [1] "Mean of smallest realization: -0.19"
+## [1] "Mean of smallest realization: -0.28"
 {% endhighlight %}
 
 
@@ -80,9 +80,10 @@ sim <- t(replicate(1000,{
 
 
 {% highlight text %}
-## [1] "71.7%" "22.4%" "5.9%"
+## [1] "76.3%" "19.9%" "3.8%"
 {% endhighlight %}
  
+<br>
  
 Therefore in our classical set up, a dataset of $N$ samples will be split into $N_R$, $N_V$, and $N_T$, in order to train the models (on $N_R$), pick the best performing one (on $N_V$) and then get an estimate of its performance for observations it hasn't observed in its training/selection (using $N_T$). Note we will assume that the samples are independently drawn from some common distribution: $(y,\bx) \sim P(\by,\bx)$. Going forward, we'll aggregate $N_R+N_V$ and call then $N_R$, because we're not interested in model selection.
  
