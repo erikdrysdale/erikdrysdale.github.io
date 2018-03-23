@@ -201,7 +201,7 @@ round(data.frame(glmnet=coef(mdl.glmnet)[,1],beta.lasso),4)
 ## age       0.0000     0.0000
 {% endhighlight %}
  
-Lastly, we can combine both the Ridge and Lasso models into the single elastic-net framework: $P(\lambda,\alpha,\bbeta)=\lambda(\alpha \\| \bbeta \\|_1 )$ and once again use proximal gradient descent to update our model:
+Lastly, we can combine both the Ridge and Lasso models into the single elastic-net framework: $P(\lambda,\alpha,\bbeta)=\lambda(\alpha \\| \bbeta \\|_1 + 0.5(1-\alpha) \\| \bbeta \\|_{2}^2 )$ and once again use proximal gradient descent to update our model:
  
 $$
 \begin{align*}
