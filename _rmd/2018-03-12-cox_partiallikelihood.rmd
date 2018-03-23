@@ -93,7 +93,7 @@ $$
 \end{align*}
 $$
 
-For example, if $P(\lambda,\bbeta)= \lambda 0.5 \|\bbeta\|_{2}^2$, then the gradient descent update will become:
+For example, if $P(\lambda,\bbeta)= \lambda 0.5 \\| \bbeta \\|_{2}^2$, then the gradient descent update will become:
 
 $$
 \begin{align*}
@@ -138,7 +138,7 @@ for (k in 1:250) {
 round(data.frame(glmnet=coef(mdl.glmnet)[,1],beta.ridge),4)
 ```
 
-Our results will differ slightly from `glmnet` when ties are not properly taken account of in the construction of our $\bP$ matrix (see [here](https://en.wikipedia.org/wiki/Proportional_hazards_model#Tied_times) for a discussion of tied times). For this reason ties have been removed from the dataset, but they are not challenging to incorporate. When $P(\lambda,\bbeta) = \lambda \|\bbeta\|_1$, which is the Lasso penalty term, we will have to use proximal gradient descent due to non-smooth (but convex) penalty term. For a discussion of how to obtain the solution to the proximal mapping in the Lasso case see [here](http://www.stat.cmu.edu/~ryantibs/convexopt-S15/scribes/08-prox-grad-scribed.pdf).
+Our results will differ slightly from `glmnet` when ties are not properly taken account of in the construction of our $\bP$ matrix (see [here](https://en.wikipedia.org/wiki/Proportional_hazards_model#Tied_times) for a discussion of tied times). For this reason ties have been removed from the dataset, but they are not challenging to incorporate. When $P(\lambda,\bbeta) = \lambda \\| \bbeta \|_1$, which is the Lasso penalty term, we will have to use proximal gradient descent due to non-smooth (but convex) penalty term. For a discussion of how to obtain the solution to the proximal mapping in the Lasso case see [here](http://www.stat.cmu.edu/~ryantibs/convexopt-S15/scribes/08-prox-grad-scribed.pdf).
 
 $$
 \begin{align*}
@@ -181,7 +181,7 @@ for (k in 1:250) {
 round(data.frame(glmnet=coef(mdl.glmnet)[,1],beta.lasso),4)
 ```
 
-Lastly, we can combine both the Ridge and Lasso models into the single elastic-net framework: $P(\lambda,\alpha,\bbeta)= \lambda(\alpha \|\bbeta \|_1 + 0.5(1-\alpha)\|\bbeta\|_{2}^2)$ and once again use proximal gradient descent to update our model:
+Lastly, we can combine both the Ridge and Lasso models into the single elastic-net framework: $P(\lambda,\alpha,\bbeta)= \lambda(\alpha \\|\bbeta \\|_1 + 0.5 (1-\alpha) \\| \bbeta \\|_{2}^2)$ and once again use proximal gradient descent to update our model:
 
 $$
 \begin{align*}
