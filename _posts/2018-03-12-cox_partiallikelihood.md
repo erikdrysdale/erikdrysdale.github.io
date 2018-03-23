@@ -201,13 +201,14 @@ round(data.frame(glmnet=coef(mdl.glmnet)[,1],beta.lasso),4)
 ## age       0.0000     0.0000
 {% endhighlight %}
  
-Lastly, we can combine both the Ridge and Lasso models into the single elastic-net framework: $P(\lambda,\alpha,\bbeta)=\lambda(\alpha \\| \bbeta \\|_1 + 0.5(1-\alpha) \\| \bbeta \\|_{2}^2 )$ and once again use proximal gradient descent to update our model:
+Lastly, we can combine both the Ridge and Lasso models into the single elastic-net framework and once again use proximal gradient descent to update our model:
  
 $$
 \begin{align*}
 &\text{Elnet Cox Proximal-GD update} \\
+P(\lambda,\alpha,\bbeta) &= \lambda(\alpha \| \bbeta \|_1 + 0.5(1-\alpha) \| \bbeta \|_{2}^2 ) \\
 \bbeta^{(k)} &= S_{\gamma\alpha\lambda}\Bigg(\beta^{(k-1)} - \gamma \frac{\mathcal{p}\ell(\bbeta)}{\partial \bbeta}\Bigg) \\ 
-&= S_{\gamma\alpha\lambda}\Bigg(\beta^{(k-1)} + \frac{\gamma}{N}\bX^T(\bdelta - \bP\bdelta) - \gamma(1-\alpha)\bbeta^{(k-1)} \Bigg) 
+&= S_{\gamma\alpha\lambda}\Bigg(\beta^{(k-1)} + \frac{\gamma}{N}\bX^T(\bdelta - \bP\bdelta) - \gamma\lambda(1-\alpha)\bbeta^{(k-1)} \Bigg) 
 \end{align*}
 $$
  
@@ -227,7 +228,7 @@ for (k in 1:250) {
   P <- outer(haz, rsk, '/')
   P[upper.tri(P)] <- 0
   beta.elnet <- Softfun(beta.elnet + (gam/N)*(t(Xscale) %*% (delta - P %*% delta) -
-                                                gam*(1-alpha)*beta.elnet ),lam*alpha*gam)
+                                                gam*lam*(1-alpha)*beta.elnet ),lam*alpha*gam)
 }
  
 round(data.frame(glmnet=coef(mdl.glmnet)[,1],beta.elnet),4)
@@ -237,8 +238,8 @@ round(data.frame(glmnet=coef(mdl.glmnet)[,1],beta.elnet),4)
 
 {% highlight text %}
 ##           glmnet beta.elnet
-## karno    -0.5475    -0.5523
-## diagtime  0.1428     0.1445
+## karno    -0.5475    -0.5527
+## diagtime  0.1428     0.1446
 ## age       0.0000     0.0000
 {% endhighlight %}
  
