@@ -99,7 +99,7 @@ $$
 \begin{align*}
 &\text{Ridge-Cox GD update} \\
 \bbeta^{(k)} &=\beta^{(k-1)} - \gamma \frac{\mathcal{p}\ell(\bbeta^{(k-1)} ; \lambda)}{\partial \bbeta}  \\
-\bbeta^{(k)} &=\beta^{(k-1)} + \frac{\gamma}{N}\bX^T(\bdelta - \bP\bdelta) - \gamma\lambda \bbeta \\
+\bbeta^{(k)} &=\beta^{(k-1)} + \frac{\gamma}{N}\bX^T(\bdelta - \bP\bdelta) - \gamma\lambda \bbeta^{(k-1)} \\
 \end{align*}
 $$
  
