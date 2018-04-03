@@ -401,7 +401,18 @@ d\bb^{[L-1]} &= \frac{1}{m}  d\bZ^{[L-1]} \biota_m
 \end{align*}
 $$
  
-By iterating back one layer a time, and storing the information in a cache, the derivatives of the weights with respect to the loss function are easy to obtain as the chain rule terms associated with higher level partial derivatives are embedded in just one layer up. The above derivation can be generalized for the $l^{th}$ layer  with some caveats for the output and the input layer. For the leaky-ReLU activation function, consider the $ij^{th}$ term of the matrix $[g^{[l]'}(\bZ^{[l]})]_{ij}=\partial \bA^{[l]}_{ij}/\partial \bZ^{[l]}_{ij}$ which is simply 1 if $\bA^{[l]}_{ij}>0$ and $\gamma$ otherwise. 
+By iterating back one layer a time, and storing the information in a cache, the derivatives of the weights with respect to the loss function are easy to obtain as the chain rule terms associated with higher level partial derivatives are embedded in just one layer up. The above derivation can be generalized for the $l^{th}$ layer  with some caveats for the output and the input layer. For the leaky-ReLU activation function the derivative will:
+ 
+$$
+\begin{align*}
+[g^{[l]'}(\bZ^{[l]})]_{ij} &=\partial \bA^{[l]}_{ij}/\partial \bZ^{[l]}_{ij} \\
+&= \begin{cases} 
+1 & \text{ if } \bA^{[l]}_{ij}>0 \\
+\gamma & \text{ otherwise}
+\end{cases}
+\end{align*}
+$$
+ 
  
 
 {% highlight r %}
