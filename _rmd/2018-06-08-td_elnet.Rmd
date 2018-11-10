@@ -113,7 +113,7 @@ Because the details of using proximal gradient descent have been outlined in [th
 
 $$
 \begin{align}
-&\text{Elastic-net Cox proximal update} \\
+&\text{Elastic-net Cox proximal update} \nonumber \\
 \bbeta^{(k)} &= S_{\gamma\alpha\lambda}\Bigg(\beta^{(k-1)} + \gamma^{(k)} \Big[ \frac{1}{N}\bX^T(\bdelta - \bP\bdelta) - \lambda(1-\alpha)\bbeta^{(k-1)} \Big] \Bigg) \label{eq:prox_step}
 \end{align}
 $$
@@ -206,15 +206,16 @@ elnet.prox.cox <- function(So,X,lambda,alpha=1,standardize=T, tol=1e-5,maxstep=1
     bhat <- bb
   }
   
-  res <- resfun(X, bhat, Y, tY, lambda, alpha, Pfun, d, llfun) # Barzilai Borwein (1)
+  # Barzilai Borwein initialization
+  res <- resfun(X, bhat, Y, tY, lambda, alpha, Pfun, d, llfun)
   grad <- gradfun(X, res$res, bhat, lambda, alpha)
   
   gtol <- max(abs(grad))
   if (alpha == 0) { gtol <- gtol / 1e-4 } else { gtol <- gtol / alpha }
-  if (lammax) { return(gtol) } # Should return?
+  if (lammax) { return(gtol) }
   if (lambda >= gtol) { return(rep(0,p)) } 
   
-  bhat.new <- proxstep(bhat, grad, 0.01*gtol, alpha, lambda) # Barzilai Borwein (2)
+  bhat.new <- proxstep(bhat, grad, 0.01*gtol, alpha, lambda)
   res.new <- resfun(X, bhat.new, Y, tY, lambda, alpha, Pfun, d, llfun)
   grad.new <- gradfun(X, res.new$res, bhat.new, lambda, alpha)
   gam.new <- bbstep(bhat.new, bhat, grad.new, grad)
@@ -239,9 +240,10 @@ elnet.prox.cox <- function(So,X,lambda,alpha=1,standardize=T, tol=1e-5,maxstep=1
     diff <- sqrt(sum((bhat.new - bhat)^2)) / gam
   }
   
-  bhat.scale <- as.vector(bhat / sd.X) # re-scale
+  # re-scale and check KKT
+  bhat.scale <- as.vector(bhat / sd.X) 
   
-  err.KKT1 <- sum((grad.new[bhat != 0]-alpha*lambda)^2) # Check KKT conditions
+  err.KKT1 <- sum((grad.new[bhat != 0]-alpha*lambda)^2) 
   err.KKT2 <- !any(abs(grad.new[bhat == 0]) >= alpha*lambda)
   stopifnot(err.KKT2)
   
@@ -260,13 +262,16 @@ We first want to make sure that `elnet.prox.cox` can recapitulate the output fro
 ```{r,warning=F,message=F}
 library(glmnet)
 
-So.ti <- with(veteran,Surv(time,status)) # Time-invariant data (veteran)
+# Time-invariant data (veteran)
+So.ti <- with(veteran,Surv(time,status))
 X.ti <- model.matrix(~factor(trt)+karno+diagtime+age+factor(prior), data=veteran)[,-1]
 
-So.td <- with(heart,Surv(start, stop, event)) # Time-dependent data (heart)
+# Time-dependent data (heart)
+So.td <- with(heart,Surv(start, stop, event))
 X.td <- model.matrix(~age+year+surgery+transplant, data=heart)[,-1]
 
-mdl1.coxph <- coxph(So.td ~ X.td,ties = 'breslow') # (i) Standard cox model
+# (i) Standard cox model
+mdl1.coxph <- coxph(So.td ~ X.td,ties = 'breslow')
 mdl1.wrapper <- elnet.prox.cox(So.td,X.td,lambda = 0,standardize = T)
 round( data.frame(coxph=coef(mdl1.coxph), wrapper=mdl1.wrapper$bhat, row.names = NULL) ,5)
 
@@ -275,24 +280,24 @@ l <- 0.05
 a <- 1
 mdl2.glmnet <- glmnet(X.ti,So.ti,'cox',alpha=a,lambda = l)
 mdl2.wrapper <- elnet.prox.cox(So.ti,X.ti,lambda = l, alpha = a)
-round( data.frame(glmnet=as.vector(coef(mdl2.glmnet)), bb=mdl2.wrapper$bhat ), 5)
+round( data.frame(glmnet=as.vector(coef(mdl2.glmnet)), wrapper=mdl2.wrapper$bhat ), 5)
 
 # (iii) Ridge
 l <- 0.1
 a <- 0.0
 mdl3.glmnet <- glmnet(X.ti,So.ti,'cox',alpha=a,lambda = l)
 mdl3.wrapper <- elnet.prox.cox(So.ti,X.ti,lambda = l, alpha = a)
-round( data.frame(glmnet=as.vector(coef(mdl3.glmnet)), bb=mdl3.wrapper$bhat ), 5)
+round( data.frame(glmnet=as.vector(coef(mdl3.glmnet)), wrapper=mdl3.wrapper$bhat ), 5)
 
 # (iv) Elastic-net
 l <- 0.05
 a <- 0.5
 mdl4.glmnet <- glmnet(X.ti,So.ti,'cox',alpha=a,lambda = l)
 mdl4.wrapper <- elnet.prox.cox(So.ti,X.ti,lambda = l, alpha = a)
-round( data.frame(glmnet=as.vector(coef(mdl4.glmnet)), bb=mdl4.wrapper$bhat ), 5)
+round( data.frame(glmnet=as.vector(coef(mdl4.glmnet)), wrapper=mdl4.wrapper$bhat ), 5)
 ```
 
-Of course to point of the `elnet.prox.cox` is not to replicate `coxph` or `glmnet` but rather regularized time-dependent cox models. We will fit the elastic-net solution path for $\alpha = [1/3, 2/3, 1]$ using our model on the `cgd` dataset.
+Of course to point of writing the `elnet.prox.cox` function is not simply to replicate `coxph` or `glmnet` but rather apply it to a regularized time-dependent Cox models. In the code below we will fit the elastic-net solution path for $\alpha = [1/3, 2/3, 1]$ on the `cgd` dataset.
 
 ```{r elnet_solution,fig.height=7,fig.width=8,,warning=F,message=F,eval=T}
 head(cgd)
