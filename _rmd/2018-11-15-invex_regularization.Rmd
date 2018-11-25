@@ -1,0 +1,76 @@
+---
+title: "Invexity and regularization"
+output: html_document
+fontsize: 12pt
+published: false
+status: no_process
+mathjax: true
+---
+
+$$
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\by}{\boldsymbol{y}}
+\newcommand{\bX}{\boldsymbol{X}}
+\newcommand{\ei}{\varepsilon_i}
+$$
+
+## Introduction
+
+A curious class of non-convex functions are known as invex functions if and only if ....
+
+For example the function $f(x) = x^2 + \gamma \cdot \text{sin}^2(x)$ is invex when $\gamma \leq 3$.
+
+Now consider a vector valued function $h(\bx) = f(\bx) + h(\bx)$ where $f$ is a smooth and invex function, and $h$ is a convex function (possibly smooth). Consider the univarate case of the SQRT-Lasso. 
+
+$$
+\begin{align*}
+\ell(\beta) &= \| \by - \beta \bx\|_2 + 0.5\cdot\lambda\beta^2 \\
+\ell'(\beta) &= 0 \hspace{2mm} \longleftrightarrow \\
+0 &= \frac{-\bx'(\by-\beta\bx)}{\|\by-\beta\bx \|_2} + \lambda\beta \\
+0 &= \beta^4\lambda^2\sigma_x^2 -2\beta^3\lambda^2\sigma_{xy} + \beta^2(\lambda^2\sigma^2_y - \sigma^4_x) + 2\beta\sigma_{xy}\sigma^2_x - \sigma^2_{xy} \\
+\sigma^2_x &= \sum_i x_i^2, \hspace{2mm} \sigma^2_y = \sum_i y_i^2, \hspace{2mm} \sigma_{xy} = \sum_i y_ix_i 
+\end{align*}
+$$
+
+Or the Lasso case.
+
+$$
+\begin{align*}
+\ell(\beta) &= \| \by - \beta \bx\|_2 + \lambda|\beta| \\
+0 &\in \partial_\beta \ell(\beta) \hspace{2mm} \longleftrightarrow \\
+0 &\in \beta^2 \lambda\sigma_x^2 + \beta(\sigma^2_x - 2\lambda \sigma_{xy}) + \lambda \sigma^2_y
+\end{align*}
+$$
+
+
+```{r}
+attach(cars)
+attach(MASS::Boston)
+# Ridge case
+lridge <- function(b,y,x,lam) { sqrt(sum((y - b*x)**2)) + 0.5*lam*b^2 }
+gridge <- function(b,y,x,lam) { sum(-x*(y-b*x))/sqrt(sum((y - b*x)**2)) + lam*b }
+y <- scale(indus,scale = F)
+x <- scale(nox)
+yi2 <- sum(y**2)
+xi2 <- sum(x**2)
+yixi <- sum(y * x)
+lam <- 1
+a <- lam^2 * xi2
+b <- -2 * lam^2 * yixi
+c <- lam^2 * yi2 - xi2^2
+d <- 2 * yixi * xi2
+e <- -1 * yixi^2
+bhat <- as.numeric(polyroot(c(e,d,c,b,a)))
+# gridge(bhat[1],y,x,lam=lam)
+# gridge(bhat[4],y,x,lam=-lam)
+# bhat.seq <- seq(bhat[1] - 3*bhat[1],bhat[1] + 3*bhat[1],length.out = 500)
+# lridge(b=bhat[1],y,x,lam)
+# lridge(b=bhat[2],y,x,lam)
+# gridge(b=bhat[1],y,x,lam)
+# gridge(b=bhat[2],y,x,lam)
+# plot(bhat.seq,sapply(bhat.seq,lridge,y=y,x=x,lam=lam))
+# plot(bhat.seq,sapply(bhat.seq,gridge,y=y,x=x,lam=0))
+
+```
+
