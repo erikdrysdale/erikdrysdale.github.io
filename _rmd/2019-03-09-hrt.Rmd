@@ -19,7 +19,7 @@ $$
 \newcommand{\bSigma}{\boldsymbol{\Sigma}}
 $$
 
-### Background
+## Background
 
 It is an exciting time for statistical inference in the high-dimensional and machine learning settings. Techniques like [Selective Inference](https://www.pnas.org/content/112/25/7629.full) (SI) have shown that certains classes of models (such as the Lasso or forward stepwise regression) can have valid inference procedures performed *after* model selection. This discovery was groundbreaking as it showed how the degree of model overfitting could be explicitely quantified and conditioned on. While SI only works for a subset of linear model fitting procedures, the [knockoffs](http://web.stanford.edu/group/candes/knockoffs/) method was another innovative technique that could be applied to any statistical learning model and perform variable selection with guaranteed false discovery rate properties. The original knockoffs approach required two things: (1) a model that could generate variable importance statistics that satisfied two fairly simple properties,[[^1]] and (2) a low-dimensional design matrix ($n > 2p$). The "knockoff" refers to a copy of a original design matrix constructed in such a way that it preserved the conditional dependence between variables, but made the knockoff copies as orthogonal as possible. In other words, knockoff features "x1" and "x2" have the same degree of correlation that is seen in real features "x1" and "x2", but the real feature "x1" was approximately orthogonal to knockoff feature "x1". A machine learning model was then fit to the data and the distribution of features importance metrics between the original and knockoffs features was compared. Because the distribution of these metrics should be the same when there is no conditional relationship to the response, a false discovery rate could be established using the properties of [martingales](https://en.wikipedia.org/wiki/Martingale_(probability_theory)). Extensions of the knockoffs approach to arbitrary $p$ [have been established](https://statweb.stanford.edu/~candes/papers/MF_knockoffs.pdf), but require estimating the conditional relationship of the variables in the columns of the design matrix with a statistical model (hereafter referred to as the permutation knockoff method).
 
@@ -31,7 +31,7 @@ However the knockoffs procedure suffers from two disadvantages. First, the amoun
 
 There is another method of model inference, what might be best called *local inference*, which aims to explain which features are used by the prediction model *at a given feature vector* $f_\btheta(\bx)$ which can be carried out with techniques like [LIME](https://github.com/marcotcr/lime) or [Shapley values](https://christophm.github.io/interpretable-ml-book/shapley.html). Whereas *local inference* procedures can have changing feature importance measures between different rows of the data, global inference procedures make statements about the relationship of features to the entire distribution of the data which is the focus of classical statistics. While *local inferrnece* methods are particularity useful for issues around [explainable AI](https://en.wikipedia.org/wiki/Explainable_artificial_intelligence) due to a variety of regulatory considerations, they are not the focus of this post.
 
-### Holdout Randomization Test (HRT)
+## Holdout Randomization Test (HRT)
 
 The [HRT](https://arxiv.org/abs/1811.00645) addresses the computational challenges of the permuation knockoff method by replacing the model fitting element with a prediction task. The computational complexity of querying a model that is already trained to make a prediction is usually trivial. Instead of looking at the relative variable importance measures of the original and sampled features, the HRT looks at the empirical risk scores between the original testing dataset and its repeatedly sampled version. Recall that in machine learning, the goal is to learn an algorithm $\by_R \approx f_\btheta(\bX_R)$ on some dataset $R$ that minimizes the risk function: $R(\btheta)=E[\ell(\by,f_\btheta(\bX_R))]$, where the risk is the expected loss (for some loss function $\ell(\cdot)$) for a given algorithm $f$. Because the learning algorithm is fit to some finite sample (also known as empirical risk minimization),
 
@@ -62,13 +62,21 @@ In other words, we want to sample the $j^{th}$ column of the design matrix, cond
 
 If $\bX_{\cdot j}$ is independent of $\by \| \bX_{\cdot, -j}$, then drawing new copies of the $j^{th}$ feature should not impact the loss function. In the rest of this post, we will show how to construct a function wrapper that receives as inputs a design matrix, a response vector, a risk function, a model fitting procedure, and a traning/test split and returns p-values for each column. Under the hood, we will use multivariate Gaussian model to estimate $P(\bX)$ and then be able to draw $P(\bX_{\cdot j} \| \bX_{\cdot, -j})$. Below I summarize the HRT algorithm (see Algorithm 1 from the [original paper](https://arxiv.org/abs/1811.00645)): $\texttt{HRT}(\bX,\by,R,T,f,\ell)$, where $\bX$ is the design matrix, $\by$ is the response, $R$ is training set index, $T$ is the test set index, $f$ is some algorithm which is optimized for $\btheta$, and $\ell(\by,\hat{\by})$ is a loss function for a true and predicted response label. 
 
-#### HRT Algorithm for feature $j$
+### HRT Algorithm for feature $j$
 
-1. Fit algorithm $f$
-$$\hat{\btheta} = \arg \min_\theta \hspace{2mm} \ell(\by_R,f_\theta(\bX_R)), \hspace{3mm} \hat{f}_{\btheta} := f(\hat{\btheta}) $$
-2. Compute empirical risk for $\bX_T$
-$$\hat{R}(\hat{\btheta}) = \ell(\by_T, \bX_T, \hat{f}(\btheta))$$
-3. Sample feature $j$ $S$-times from test set and calculate permuted risk score. For $s$ in 1 to $S$:
+1. Fit algorithm $f$:
+$$
+\begin{align*}
+\hat{\btheta} = \arg \min_\theta \hspace{2mm} \ell(\by_R,f_\theta(\bX_R)), \hspace{3mm} \hat{f}_{\btheta} := f(\hat{\btheta}) 
+\end{align*}
+$$
+2. Compute empirical risk for $\bX_T$:
+$$
+\begin{align*}
+\hat{R}(\hat{\btheta}) = \ell(\by_T, \bX_T, \hat{f}(\btheta))
+\end{align*}
+$$
+3. Sample feature $j$ from test set and calculate permuted risk score. For $s$ in 1 to $S$:
 $$
 \begin{align*}
 \bXt_T^{(s)} &\gets \bX_T \\
@@ -76,26 +84,30 @@ $$
 \hat{R}^{(s)}(\hat{\btheta}) &= \ell(\by_T, \bXt_T^{(s)}, \hat{f}(\btheta))
 \end{align*}
 $$
-4. Calculate one-sided p-value
-$$\hat{p}_j = \frac{1}{1+S} \Bigg( 1 + \sum_{s=1}^S I \Big[ \hat{R}^{(s)}(\hat{\btheta})  \leq \hat{R}(\hat{\btheta}) \Big] \Bigg)$$
+4. Calculate one-sided p-value:
+$$
+\begin{align*}
+\hat{p}_j = \frac{1}{1+S} \Bigg( 1 + \sum_{s=1}^S I \Big[ \hat{R}^{(s)}(\hat{\btheta})  \leq \hat{R}(\hat{\btheta}) \Big] \Bigg)
+\end{align*}
+$$
 
 The p-value generated from the permutation is necessarily one-sided because the risk is bounded from zero to positive infinity. By counting the number of times a randomly drawn feature $j$ obtains a lower risk score (i.e. better model performance), the value of the original feature can be compared to one that would have been obtained from random chance alone (which is what the concept of a p-value embodies). In order to increase the power of the HRT algorithm, a $K$-fold cross validation approach can used where the actual and permuted risk scores are simply averaged across the folds.
 
-#### CV-HRT Algorithm for feature $j$
+### CV-HRT Algorithm for feature $j$
 
-1. Split data into $k=[1,\dots,K]$ folds
-2. Run HRT Algorithm up to Step 3 for all $K$ folds
-3. Average scores over each fold
+1. Split data into $k=[1,\dots,K]$ folds.
+2. Run HRT Algorithm up to Step 3 for all $K$ folds.
+3. Average scores over each fold:
 $$
 \begin{align*}
 \hat{R}(\hat{\btheta}) &= \sum_{k=1}^K \ell(\by_T^{(k)}, \bX_T^{(k)}, \hat{f}^{(-k)}(\btheta)) \\
 \hat{R}^{(s)}(\hat{\btheta}) &= \ell(\by_T^{(s),(k)}, \bXt_T^{(s),(k)}, \hat{f}^{(-k)}(\btheta))
 \end{align*}
 $$
-4. Calculate one-sided p-value as before
+4. Calculate one-sided p-value as before.
 
 
-### Support functions
+## Support functions
 
 In this section we will detail the functions that will be needed be implement and HRT wrapper function in \texttt{R}. Below we define two helpful utility functions. The first one creates stratified folds (useful for balancing the train/test split) and the second makes the columns of $\bX$ as normal as possible using the [ordered quantile method](https://rdrr.io/github/petersonR/bestNormalize/man/orderNorm.html) and then standardizes them (mean zero, variance unity).
 
@@ -245,7 +257,7 @@ hrt_wrapper <- function(X, y, mdl_fun, pred_fun, rsk_fun, lst_out, nsim) {
 }
 ```
 
-### Example 1: Multinomial logistic regression
+## Example 1: Multinomial logistic regression
 
 For the first example, we'll compare the p-values that are generated by a classical approach (using the diagonals of the Fisher information matrix at the MLE) compared to the HRT approach. The $\texttt{vowel}$ dataset from the $\texttt{ElemStatLearn}$ package will be used, with only the first three classes considered. Additionally, we will add five columns of random noise. This will help us determine if the HRT can successfully distinguish the real features from the null ones.
 
@@ -301,7 +313,7 @@ We can next examine the differences in the estimate p-values between the models.
 <p align="center"><img src="figures/gg_pv_hrt_mnl.png" width="80%"></p>
 <br>
 
-### Example 2: Non-linear decision boundary
+## Example 2: Non-linear decision boundary
 
 While inference procedures are well developed for linear models like multinomial logistic regression, establishing feature importance for non-linear techniques is much harder. For example assessments of feature importance in random forests can be done by using the relative decrease in node impurity or an unconditional column permutation. While I am not aware of model-specific techniques to perform inference for the features in non-linear SVMs, computationally expensive procedures like [recursive feature elimination](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2451-4) could be used. The problem with all of these methods of feature importance is that none of them provide any statistical guarantees or ways to map the magnitude of the importance metric to an intepretable scale. Furthermore, by failing to condition on the entire design matrix these variable importance scores will be overly optimistic for multicollinear features.
 
@@ -374,9 +386,3 @@ This post has demonstrated how a simple set of functions can be used to apply th
 [^2]: There may also be an optimism bias as the p-value shown for the classical approach are the minimum of the two p-values for for the two sets of coefficients (as there are three classes there are two sets of coefficients). 
 
 [^3]: See the soft-margin solution in [this description](http://www.robots.ox.ac.uk/~az/lectures/ml/lect2.pdf).
-
-
-
-
-
-
