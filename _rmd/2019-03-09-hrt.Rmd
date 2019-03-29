@@ -29,7 +29,7 @@ However the knockoffs procedure suffers from two disadvantages. First, the amoun
 
 **It is worth pausing to note that the approach to inference carried out by knockoffs and the holdout randomization test (to be described below) inverts the usual method by which statistical inference has been carried out on a classical basis.** Instead of learning the conditional distribution of $P_\btheta(\by\|\bX)$ parameterized by some vector $\btheta$, the distribution of $P(\bX)$ is first approximated and then a prediction task is carried out. While this requires more work because an unsupervised and supervised approach must be used, it also increases modelling flexibility and reduces the fragility of inference to parametric assumptions on the conditional distribution. For properly constructed approaches, errors in modelling either $P(\bX)$ or predicting $\by \approx f_\btheta([\bX, \bXt])$ translate into lower power and maintain an appropriate Type-I error rate level (in contrast to the classical approach where model misspecification can lead to erroneous inference).
 
-There is another method of model inference, what might be best called *local inference*, which aims to explain which features are used by the prediction model *at a given feature vector* $f_\btheta(\bx)$ which can be carried out with techniques like [LIME](https://github.com/marcotcr/lime) or [Shapley values](https://christophm.github.io/interpretable-ml-book/shapley.html). Whereas *local inference* procedures can have changing feature importance measures between different rows of the data, global inference procedures make statements about the relationship of features to the entire distribution of the data which is the focus of classical statistics. While *local inferrnece* methods are particularity useful for issues around [explainable AI](https://en.wikipedia.org/wiki/Explainable_artificial_intelligence) due to a variety of regulatory considerations, they are not the focus of this post.
+There is another method of model inference, what might be best called *local inference*, which aims to explain which features are used by the prediction model *at a given feature vector* $f_\btheta(\bx)$ which can be carried out with techniques like [LIME](https://github.com/marcotcr/lime) or [Shapley values](https://christophm.github.io/interpretable-ml-book/shapley.html). Whereas *local inference* procedures can have changing feature importance measures between different rows of the data, global inference procedures make statements about the relationship of features to the entire distribution of the data which is the focus of classical statistics. While *local inference* methods are particularity useful for issues around [explainable AI](https://en.wikipedia.org/wiki/Explainable_artificial_intelligence) due to a variety of regulatory considerations, they are not the focus of this post.
 
 ## Holdout Randomization Test (HRT)
 
@@ -129,8 +129,8 @@ strat_kfold <- function(y,k,ss=1234) {
   return(idx_fid)
 }
 
-library(bestNormalize)
 ## --- Normalize training/test X --- ##
+library(bestNormalize)
 normX <- function(X_in,X_out) {
   stopifnot(ncol(X_in)==ncol(X_out))
   p <- ncol(X_in)
@@ -247,7 +247,6 @@ hrt_wrapper <- function(X, y, mdl_fun, pred_fun, rsk_fun, lst_out, nsim) {
     y_out <- y[idx_out]
     lst_r[[ff]] <- hrt_alg1(mdl_fun, pred_fun, rsk_fun, X_in, y_in, X_out, y_out, nsim)
   }
-  # Average over each
   r <- NA
   r <- Reduce('+',lapply(lst_r,function(ll) ll$r)) / nfold
   mat_r_ij <- Reduce('+',lapply(lst_r,function(ll) ll$r_ij)) / nfold
