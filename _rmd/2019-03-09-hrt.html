@@ -208,15 +208,28 @@ $(document).ready(function () {
 <p>It is an exciting time for statistical inference in the high-dimensional and machine learning settings. Techniques like <a href="https://www.pnas.org/content/112/25/7629.full">Selective Inference</a> (SI) have shown that certains classes of models (such as the Lasso or forward stepwise regression) can have valid inference procedures performed <em>after</em> model selection. This discovery was groundbreaking as it showed how the degree of model overfitting could be explicitely quantified and conditioned on. While SI only works for a subset of linear model fitting procedures, the <a href="http://web.stanford.edu/group/candes/knockoffs/">knockoffs</a> method was another innovative technique that could be applied to any statistical learning model and perform variable selection with guaranteed false discovery rate properties. The original knockoffs approach required two things: (1) a model that could generate variable importance statistics that satisfied two fairly simple properties,[<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>] and (2) a low-dimensional design matrix (<span class="math inline">\(n &gt; 2p\)</span>). The “knockoff” refers to a copy of a original design matrix constructed in such a way that it preserved the conditional dependence between variables, but made the knockoff copies as orthogonal as possible. In other words, knockoff features “x1” and “x2” have the same degree of correlation that is seen in real features “x1” and “x2”, but the real feature “x1” was approximately orthogonal to knockoff feature “x1”. A machine learning model was then fit to the data and the distribution of features importance metrics between the original and knockoffs features was compared. Because the distribution of these metrics should be the same when there is no conditional relationship to the response, a false discovery rate could be established using the properties of <a href="https://en.wikipedia.org/wiki/Martingale_(probability_theory)">martingales</a>. Extensions of the knockoffs approach to arbitrary <span class="math inline">\(p\)</span> <a href="https://statweb.stanford.edu/~candes/papers/MF_knockoffs.pdf">have been established</a>, but require estimating the conditional relationship of the variables in the columns of the design matrix with a statistical model (hereafter referred to as the permutation knockoff method).</p>
 <p>Key to permutation knockoff method is that if distribution of the feature space is known we can draw “copies” of this design matrix <span class="math inline">\(\bXt \sim P(\bX)\)</span> and then see how a model evaluates the features of the concatenated feature space <span class="math inline">\(\by \approx f_\btheta([\bX, \bXt])\)</span> and examining the difference between <span class="math inline">\(\theta_j\)</span> and <span class="math inline">\(\tilde{\theta}_j\)</span>, assuming that the parameter vector <span class="math inline">\(\btheta\)</span> encodes feature importance (otherwise some other metric must be used). By breaking the conditional distribution between the response and the features, but preserving the marginal distribution, the null of no effect can be tested with the advantage that a wide array of feature importance measures can be used for more complicated machine learning models like random forests and support vector machines (SVMs). While these feature importance metrics were able to give a rough approximation of how useful the feature was in the model, they had no clear statistical properties. In contrast, their knockoffs equivalents do have explicit statistical guarantees in terms of evaluating whether they have any statistical relationship to the response.</p>
 <p>However the knockoffs procedure suffers from two disadvantages. First, the amount of features that a model fits has to be doubled which reduces the effective power of the learning algorithm from the addition of noisy features. Second, for the permutation knockoff approach, the algorithm <span class="math inline">\(f_\btheta(\cdot)\)</span> needs to be repeatedly fitted. For large and complex models this can be computationally burdensome.</p>
-<p><strong>It is worth pausing to note that the approach to inference carried out by knockoffs and the holdout randomization test (to be described below) inverts the usual method by which statistical inference has been carried out on a classical basis.</strong> Instead of learning the conditional distribution of <span class="math inline">\(P_\btheta(\by|\bX)\)</span> parameterized by some vector <span class="math inline">\(\btheta\)</span>, the distribution of <span class="math inline">\(P(\bX)\)</span> is first approximated and then a prediction task is carried out. While this requires more work because an unsupervised and supervised approach must be used, it also increases modelling flexibility and reduces the fragility of inference to parametric assumptions on the conditional distribution. For properly constructed approaches, errors in modelling either <span class="math inline">\(P(\bX)\)</span> or predicting <span class="math inline">\(\by \approx f_\btheta([\bX, \bXt])\)</span> translate into lower power and maintain an appropriate Type-I error rate level (in contrast to the classical approach where model misspecification can lead to errenous inference).</p>
+<p><strong>It is worth pausing to note that the approach to inference carried out by knockoffs and the holdout randomization test (to be described below) inverts the usual method by which statistical inference has been carried out on a classical basis.</strong> Instead of learning the conditional distribution of <code>P_\btheta(\by|\bX)</code> parameterized by some vector <span class="math inline">\(\btheta\)</span>, the distribution of <span class="math inline">\(P(\bX)\)</span> is first approximated and then a prediction task is carried out. While this requires more work because an unsupervised and supervised approach must be used, it also increases modelling flexibility and reduces the fragility of inference to parametric assumptions on the conditional distribution. For properly constructed approaches, errors in modelling either <span class="math inline">\(P(\bX)\)</span> or predicting <span class="math inline">\(\by \approx f_\btheta([\bX, \bXt])\)</span> translate into lower power and maintain an appropriate Type-I error rate level (in contrast to the classical approach where model misspecification can lead to errenous inference).</p>
 <p>There is another method of model inference, what might be best called <em>local inference</em>, which aims to explain which features are used by the prediction model <em>at a given feature vector</em> <span class="math inline">\(f_\btheta(\bx)\)</span> which can be carried out with techniques like <a href="https://github.com/marcotcr/lime">LIME</a> or <a href="https://christophm.github.io/interpretable-ml-book/shapley.html">Shapley values</a>. Whereas <em>local inference</em> procedures can have changing feature importance measures between different rows of the data, global inference procedures make statements about the relationship of features to the entire distribution of the data which is the focus of classical statistics. While <em>local inferrnece</em> methods are particularity useful for issues around <a href="https://en.wikipedia.org/wiki/Explainable_artificial_intelligence">explainable AI</a> due to a variety of regulatory considerations, they are not the focus of this post.</p>
 </div>
 <div id="holdout-randomization-test-hrt" class="section level3">
 <h3>Holdout Randomization Test (HRT)</h3>
-<p>The <a href="https://arxiv.org/abs/1811.00645">HRT</a> addresses the computational challenges of the permuation knockoff method by replacing the model fitting element with a prediction task. The computational complexity of querying a model that is already trained to make a prediction is usually trivial. Instead of looking at the relative variable importance measures of the original and sampled features, the HRT looks at the empirical risk scores between the original testing dataset and its repeatedly sampled version. Recall that in machine learning, the goal is to learn an algorithm <span class="math inline">\(\by_R \approx f_\btheta(\bX_R)\)</span> on some dataset <span class="math inline">\(R\)</span> that minimizes the risk function: <span class="math inline">\(R(\btheta)=E[\ell(\by,f_\btheta(\bX_R))]\)</span>, where the risk is the expected loss (for some loss function <span class="math inline">\(\ell(\cdot)\)</span>) for a given algorithm <span class="math inline">\(f\)</span>. Because the learning algorithm is fit to some finite sample <span class="math inline">\(\hat{f}_\btheta = \arg \min_\theta \sum_{i=1}^n \ell(y_i,f_\theta(\bx_i))\)</span> (also known as empirical risk minimization), it will be an optimistic estimate of the risk due to overfitting. By reserving a held-out (or test) set of data <span class="math inline">\((\by_T, \bX_T)\)</span>, an unbiased estimate of the empirical risk can be established: <span class="math inline">\(\hat{R}(\by_T,\bX_T,\hat{f})=\sum_{i=n+1}^{n+k} \ell(y_i,\hat{f}_\theta(\bx_i))\)</span> (aka the empirical risk estimate). If we want to evaluate whether feature <span class="math inline">\(j\)</span>, <span class="math inline">\(\bX_{\cdot j}\)</span> has any conditional relationship to the response, then we want to test whether there is a change in the empirical risk estimate evaluated under <span class="math inline">\(\bXt^j = [\bX_{\cdot 1},\dots,\bXt_{\cdot j},\dots,\bX_{p}]\)</span> where <span class="math inline">\(\bXt_{\cdot j} \sim P(\bX_{\cdot j} | \bX_{\cdot, -j})\)</span>. In other words, we want to sample the <span class="math inline">\(j^{th}\)</span> column of the design matrix, conditional on all the other columns remaining the same. A valid p-value for feature <span class="math inline">\(j\)</span> can then be determined by simply counting the number of times the permuted test set has a lower risk score.</p>
-<p>If <span class="math inline">\(\bX_{\cdot j} \perp \!\!\! \perp \by | \bX_{\cdot, -j}\)</span>, then drawing new copies of the <span class="math inline">\(j^{th}\)</span> feature should not impact the loss function. In the rest of this post, we will show how to construct a function wrapper that receives as inputs a design matrix, a response vector, a risk function, a model fitting procedure, and a traning/test split and returns p-values for each column. Under the hood, we will use multivariate Gaussian model to estimate <span class="math inline">\(P(\bX)\)</span> and then be able to draw <span class="math inline">\(P(\bX_{\cdot j} | \bX_{\cdot, -j})\)</span>. Below I summarize the HRT algorithm (see Algorithm 1 from the <a href="https://arxiv.org/abs/1811.00645">original paper</a>): <span class="math inline">\(\texttt{HRT}(\bX,\by,R,T,f,\ell)\)</span>, where <span class="math inline">\(\bX\)</span> is the design matrix, <span class="math inline">\(\by\)</span> is the response, <span class="math inline">\(R\)</span> is training set index, <span class="math inline">\(T\)</span> is the test set index, <span class="math inline">\(f\)</span> is some algorithm which is optimized for <span class="math inline">\(\btheta\)</span>, and <span class="math inline">\(\ell(\by,\hat{\by})\)</span> is a loss function for a true and predicted response label.</p>
-<strong>HRT Algorithm for feature <span class="math inline">\(j\)</span></strong>
-<span class="math display">\[\begin{align*}
+<p>The <a href="https://arxiv.org/abs/1811.00645">HRT</a> addresses the computational challenges of the permuation knockoff method by replacing the model fitting element with a prediction task. The computational complexity of querying a model that is already trained to make a prediction is usually trivial. Instead of looking at the relative variable importance measures of the original and sampled features, the HRT looks at the empirical risk scores between the original testing dataset and its repeatedly sampled version. Recall that in machine learning, the goal is to learn an algorithm <span class="math inline">\(\by_R \approx f_\btheta(\bX_R)\)</span> on some dataset <span class="math inline">\(R\)</span> that minimizes the risk function: <span class="math inline">\(R(\btheta)=E[\ell(\by,f_\btheta(\bX_R))]\)</span>, where the risk is the expected loss (for some loss function <span class="math inline">\(\ell(\cdot)\)</span>) for a given algorithm <span class="math inline">\(f\)</span>. Because the learning algorithm is fit to some finite sample (also known as empirical risk minimization),</p>
+<p><span class="math display">\[
+\begin{align*}
+\hat{f}_\btheta = \arg \min_\theta \sum_{i=1}^n \ell(y_i,f_\theta(\bx_i)),
+\end{align*}
+\]</span></p>
+<p>It will be an optimistic estimate of the risk due to overfitting. By reserving a held-out (or test) set of data <span class="math inline">\((\by_T, \bX_T)\)</span>, an unbiased estimate of the empirical risk can be established: <code>\hat{R}(\by_T,\bX_T,\hat{f})=\sum_{i=n+1}^{n+k} \ell(y_i,\hat{f}_\theta(\bx_i))</code> (aka the empirical risk estimate). If we want to evaluate whether feature <span class="math inline">\(j\)</span>, <span class="math inline">\(\bX_{\cdot j}\)</span> has any conditional relationship to the response, then we want to test whether there is a change in the empirical risk estimate evaluated under,</p>
+<p><span class="math display">\[
+\begin{align*}
+\bXt^j &amp;= (\bX_{\cdot 1},\dots,\bXt_{\cdot j},\dots,\bX_{p}) \\
+\bXt_{\cdot j} &amp;\sim P(\bX_{\cdot j} | \bX_{\cdot, -j}).
+\end{align*}
+\]</span></p>
+<p>In other words, we want to sample the <span class="math inline">\(j^{th}\)</span> column of the design matrix, conditional on all the other columns remaining the same. A valid p-value for feature <span class="math inline">\(j\)</span> can then be determined by simply counting the number of times the permuted test set has a lower risk score.</p>
+<p>If <span class="math inline">\(\bX_{\cdot j}\)</span> is independent of <span class="math inline">\(\by | \bX_{\cdot, -j}\)</span>, then drawing new copies of the <span class="math inline">\(j^{th}\)</span> feature should not impact the loss function. In the rest of this post, we will show how to construct a function wrapper that receives as inputs a design matrix, a response vector, a risk function, a model fitting procedure, and a traning/test split and returns p-values for each column. Under the hood, we will use multivariate Gaussian model to estimate <span class="math inline">\(P(\bX)\)</span> and then be able to draw <span class="math inline">\(P(\bX_{\cdot j} | \bX_{\cdot, -j})\)</span>. Below I summarize the HRT algorithm (see Algorithm 1 from the <a href="https://arxiv.org/abs/1811.00645">original paper</a>): <span class="math inline">\(\texttt{HRT}(\bX,\by,R,T,f,\ell)\)</span>, where <span class="math inline">\(\bX\)</span> is the design matrix, <span class="math inline">\(\by\)</span> is the response, <span class="math inline">\(R\)</span> is training set index, <span class="math inline">\(T\)</span> is the test set index, <span class="math inline">\(f\)</span> is some algorithm which is optimized for <span class="math inline">\(\btheta\)</span>, and <span class="math inline">\(\ell(\by,\hat{\by})\)</span> is a loss function for a true and predicted response label.</p>
+<p><strong>HRT Algorithm for feature <span class="math inline">\(j\)</span></strong> <span class="math display">\[
+\begin{align*}
 &amp;\textbf{Step 1: Fit algorithm $f$} \\
 \hat{\btheta} &amp;= \arg \min_\theta \hspace{2mm} \ell(\by_R,f_\theta(\bX_R)), \hspace{3mm} \hat{f}_{\btheta} := f(\hat{\btheta}) \\
 &amp;\textbf{Step 2: Compute empirical risk for $\bX_T$} \\
@@ -228,22 +241,24 @@ $(document).ready(function () {
 &amp;\hspace{1cm}  \hat{R}^{(s)}(\hat{\btheta}) = \ell(\by_T, \bXt_T^{(s)}, \hat{f}(\btheta)) \\
 &amp;\textbf{Step 4: Calculate one-sided p-value} \\
 \hat{p}_j &amp;= \frac{1}{1+S} \Bigg( 1 + \sum_{s=1}^S I \Big[ \hat{R}^{(s)}(\hat{\btheta})  \leq \hat{R}(\hat{\btheta}) \Big] \Bigg)
-\end{align*}\]</span>
+\end{align*}
+\]</span></p>
 <p>The p-value generated from the permutation is necessarily one-sided because the risk is bounded from zero to positive infinity. By counting the number of times a randomly drawn feature <span class="math inline">\(j\)</span> obtains a lower risk score (i.e. better model performance), the value of the original feature can be compared to one that would have been obtained from random chance alone (which is what the concept of a p-value embodies). In order to increase the power of the HRT algorithm, a <span class="math inline">\(K\)</span>-fold cross validation approach can used where the actual and permuted risk scores are simply averaged across the folds.</p>
-<strong>CV-HRT Algorithm for feature <span class="math inline">\(j\)</span></strong>
-<span class="math display">\[\begin{align*}
+<p><strong>CV-HRT Algorithm for feature <span class="math inline">\(j\)</span></strong></p>
+<p><span class="math display">\[
+\begin{align*}
 &amp;\textbf{Step 1: Split data into $k=[1,\dots,K]$ folds} \\
 &amp;\textbf{Step 2: Run HRT Algorithm up to Step 3 for all $K$ folds} \\
 &amp;\textbf{Step 3: Average scores over each fold} \\
 \hat{R}(\hat{\btheta}) &amp;= \sum_{k=1}^K \ell(\by_T^{(k)}, \bX_T^{(k)}, \hat{f}^{(-k)}(\btheta)) \\
 \hat{R}^{(s)}(\hat{\btheta}) &amp;= \ell(\by_T^{(s),(k)}, \bXt_T^{(s),(k)}, \hat{f}^{(-k)}(\btheta))  \\
 &amp;\textbf{Step 4: Calculate one-sided p-value as before}
-\end{align*}\]</span>
+\end{align*}
+\]</span></p>
 </div>
 <div id="support-functions" class="section level3">
 <h3>Support functions</h3>
 <p>In this section we will detail the functions that will be needed be implement and HRT wrapper function in . Below we define two helpful utility functions. The first one creates stratified folds (useful for balancing the train/test split) and the second makes the columns of <span class="math inline">\(\bX\)</span> as normal as possible using the <a href="https://rdrr.io/github/petersonR/bestNormalize/man/orderNorm.html">ordered quantile method</a> and then standardizes them (mean zero, variance unity).</p>
-<p><br></p>
 <pre class="r"><code>## --- Stratified K-Fold --- ##
 strat_kfold &lt;- function(y,k,ss=1234) {
   y &lt;- as.numeric(as.factor(y))
@@ -284,14 +299,14 @@ normX &lt;- function(X_in,X_out) {
   X_out &lt;- sweep(sweep(X_out,2,mu_in,'-'),2,mu_out,'/')
   return(list(X_in=X_in, X_out=X_out))
 }</code></pre>
-<p><br></p>
 <p>Next, a sampling strategy has to be determined to be able to sample: <span class="math inline">\(\bXt_{\cdot j} \sim P(\bX_{\cdot j} | \bX_{\cdot, -j})\)</span>. The simplest approach is to assume that the rows are drawn from a mean-zero multivariate Gaussian: <span class="math inline">\(\bX_{i\cdot} \sim N(\boldsymbol{0},\bSigma)\)</span> (the mean zero assumption is trivial since the function <span class="math inline">\(\texttt{normX}\)</span> centers the data). A useful property of Gaussian graphical models is that the inverse of the covariance matrix can be explicitely related to linear regression coefficients (and vice versa). This means that the empirical estimate of <span class="math inline">\(\bThet = \bSigma^{-1}\)</span> is sufficient to draw from our conditional distribution.</p>
-<span class="math display">\[\begin{align}
+<p><span class="math display">\[
+\begin{align}
 \bX_{\cdot j} | \bX_{\cdot, -j} &amp;\sim N\Bigg(\sum_{k \neq j} \beta_{kj} \bX_{\cdot k}, \sigma_{jj} \Bigg) \label {eq:cond_draw} \\
 \beta_{kj} &amp;= -\frac{\theta_{kj}}{\theta_{kk}}, \hspace{2mm} \sigma_{jj} = \theta_{jj}^{-1}, \hspace{2mm} [\bThet]_{kj}=\theta_{kj} \nonumber
-\end{align}\]</span>
+\end{align}
+\]</span></p>
 <p>For a further discussion of this relationship, see Meinshausen and Buhlmann’s <a href="https://arxiv.org/pdf/math/0608017.pdf">paper</a> on how to use the Lasso to estimate a sparse graphical model. The function <span class="math inline">\(\texttt{condmomentsfun}\)</span> takes in the estimate of <span class="math inline">\(\bThet\)</span>, a design matrix <span class="math inline">\(\bX\)</span>, and a column <span class="math inline">\(j\)</span> to sample from and produces a conditional draw of the type seen in .</p>
-<p><br></p>
 <pre class="r"><code>condmomentsfun &lt;- function(Theta, X, j, seed) {
   set.seed(seed)
   sig_jj &lt;- 1 / Theta[j,j]
@@ -301,7 +316,6 @@ normX &lt;- function(X_in,X_out) {
   X[,j] &lt;- Xj
   return(X)
 }</code></pre>
-<p><br></p>
 <p>Note that the <code>condmomentsfun</code> is in practice applied to a test dataset meaning there is a second-order effect of uncertainty beyond the Gaussian assumption. Figure 1 below shows the draws from the distribution learned by one of the columns of the data on the <code>vowel</code> dataset. When conditioning on the other columns of the data, the sampled column from the test set has a mean below zero which may be a combination of: (i) the randomness in the data splits, (ii) a noisy measurement of the true column mean, or (iii) approximation errors in the normal quantile mapping.</p>
 <br>
 <h4>
@@ -321,7 +335,6 @@ Figure 1: Approximate conditional distribution under the MVN assumption
 <li>Training and test data <span class="math inline">\(\texttt{X_in}=\bX_R\)</span>, <span class="math inline">\(\texttt{y_in}=\by_R\)</span>, <span class="math inline">\(\texttt{X_out}=\bX_T\)</span>, <span class="math inline">\(\texttt{y_out}=\by_T\)</span>.</li>
 <li>Number of simulations to run.</li>
 </ol>
-<p><br></p>
 <pre class="r"><code>library(Rfast)
 hrt_alg1 &lt;- function(mdl_fun, pred_fun, rsk_fun, X_in, y_in, X_out, y_out, nsim=250) {
   # Step 1: Apply the normalization/standardization
@@ -357,9 +370,7 @@ hrt_alg1 &lt;- function(mdl_fun, pred_fun, rsk_fun, X_in, y_in, X_out, y_out, ns
   
   return(list(r=r, r_ij = mat_r_ij))
 }</code></pre>
-<p><br></p>
 <p>Lastly we need a wrapper that can run <span class="math inline">\(\texttt{hrt_alg1}\)</span> for multiple folds and returns a p-value. Like the above function, it returns a model, prediction, and risk function but now only requires to entire dataset <span class="math inline">\(\texttt{X}=\bX\)</span>, <span class="math inline">\(\texttt{y}=\by\)</span>, and a list of length <span class="math inline">\(K\)</span>, where each array in the list is the index for the folds.</p>
-<p><br></p>
 <pre class="r"><code>hrt_wrapper &lt;- function(X, y, mdl_fun, pred_fun, rsk_fun, lst_out, nsim) {
   n &lt;- nrow(X)
   nfold &lt;- length(lst_out)
@@ -382,12 +393,10 @@ hrt_alg1 &lt;- function(mdl_fun, pred_fun, rsk_fun, X_in, y_in, X_out, y_out, ns
   names(pv_j) &lt;- colnames(X)
   return(pv_j)
 }</code></pre>
-<p><br></p>
 </div>
 <div id="example-1-multinomial-logistic-regression" class="section level3">
 <h3>Example 1: Multinomial logistic regression</h3>
 <p>For the first example, we’ll compare the p-values that are generated by a classical approach (using the diagonals of the Fisher information matrix at the MLE) compared to the HRT approach. The <span class="math inline">\(\texttt{vowel}\)</span> dataset from the <span class="math inline">\(\texttt{ElemStatLearn}\)</span> package will be used, with only the first three classes considered. Additionally, we will add five columns of random noise. This will help us determine if the HRT can successfully distinguish the real features from the null ones.</p>
-<p><br></p>
 <pre class="r"><code>library(data.table)
 library(ElemStatLearn)
 dat &lt;- data.table(rbind(vowel.train, vowel.test))[y %in% 1:3][order(y)]
@@ -402,9 +411,7 @@ head(data.frame(y=y,apply(X,2,round,digits=2)),3)</code></pre>
 ## 1 1 -3.64  0.42 -0.67  1.78 -0.17  -1.21  -0.30   0.43   0.79   0.05
 ## 2 1 -3.65  0.37 -0.60  1.70 -0.22   0.28   1.83   1.30   0.69   0.77
 ## 3 1 -3.66  0.34 -0.64  1.79 -0.19   1.08   0.67  -0.65  -0.63   0.30</code></pre>
-<p><br></p>
 <p>Next, we’ll generate the five folds. This will allow for 80/20 train/test splits.</p>
-<p><br></p>
 <pre class="r"><code>idx_test &lt;- strat_kfold(y=y, k=5, ss=1234)
 lapply(idx_test[1:2],head)</code></pre>
 <pre><code>## $fold1
@@ -412,9 +419,7 @@ lapply(idx_test[1:2],head)</code></pre>
 ## 
 ## $fold2
 ## [1]  1  2  7 21 22 32</code></pre>
-<p><br></p>
 <p>A multinomial model, prediction, and risk function now need to be defined. The <span class="math inline">\(\texttt{nnet}\)</span> package’s <span class="math inline">\(\texttt{multinom}\)</span> function will be used, along with a custom <a href="https://en.wikipedia.org/wiki/Softmax_function">softmax</a> risk function. Note that when using the HRT, it may be preferable to use a continuous risk measure like the softmax loss as opposed to its discontinuous accuracy measure as otherwise different draws of the design matrix may end up returning the exact same risk score.</p>
-<p><br></p>
 <pre class="r"><code>library(nnet)
 mdl_mnl &lt;- function(y,X) { multinom(y ~ ., data=data.frame(X),trace=F) }
 pred_mnl &lt;- function(m, x) { predict(m, newdata=data.frame(x), type='probs') }
@@ -427,13 +432,10 @@ rsk_softmax &lt;- function(y,p) {
   for (ii in seq(n)) { lhat &lt;- lhat + -log(p[ii,y[ii]]) }
   return(lhat)
 }</code></pre>
-<p><br></p>
 <p>We are now ready to run the HRT algorithm for a single train/test split as well as its generalized 5-fold version. A classical model will also be fit as a comparison</p>
-<p><br></p>
 <pre class="r"><code>pv_hrt_single &lt;- hrt_wrapper(X, y, mdl_mnl, pred_mnl, rsk_softmax, lst_out = idx_test[1], nsim=250)
 pv_hrt_5fold &lt;- hrt_wrapper(X, y, mdl_mnl, pred_mnl, rsk_softmax, lst_out = idx_test, nsim=250)
 mdl.mnl &lt;- multinom(y ~ ., data=data.frame(X),trace=F)</code></pre>
-<p><br></p>
 <p>We can next examine the differences in the estimate p-values between the models. Figure 2 below shows the p-values for five original and noise features for the HRT (single 80/20 split), 5-fold CV HRT, and classical p-values. Notice that the HRT and classical approach find four of the original features to be significant, but the classical approach mistakes several of the noise features to be significant too. This is likely related to the finite-sample bias of MLE estimators which tend to return overly optimistic p-values.[<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>] While replacing the p-values from an MLE approach to a permutation approach has limited appeal, an additional advantage for the HRT is that its measure of uncertainty around the risk score more closely aligns with the goal of statistical learning theory. In other words, significance becomes re-defined from the perspective of the likelihood to measure of predictive performance which may be closer to the interest of the researcher.</p>
 <br>
 <h4>
@@ -477,7 +479,6 @@ X &lt;- cbind(X,matrix(rnorm(n*5),ncol=5,dimnames=list(NULL,paste0('noise',seq(5
 
 idx_test &lt;- strat_kfold(y=y, k=5, ss=1234)</code></pre>
 <p>As before a model, prediction, and risk function need to be defined. The code block below shows an SVM-RBF model (using <code>e1071::svm</code>) that is tuned across its similarity parameter <span class="math inline">\(K_\gamma(\bx_i,\bx_j) = \exp(-\gamma \cdot \|\bx_i - \bx_j \|_2^2)\)</span>, as well as the magnitude of the penalty applied to the slack variables in the soft margin.[<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>] The risk is the negative log-logistic loss from a binomial regression model.</p>
-<p><br></p>
 <pre class="r"><code>library(e1071)
 mdl_svd &lt;- function(y,X) { 
   set.seed(1234)
@@ -492,13 +493,10 @@ mdl_svd &lt;- function(y,X) {
 pred_svm &lt;- function(m, x) { attr(predict(m,newdata=x,probability = T),'probabilities')[,'1'] }
 
 rsk_logit &lt;- function(y,p) { -mean(y*log(p) + (1-y)*log(1-p)) }</code></pre>
-<p><br></p>
 <p>As before the HRT and its 5-fold cross validation version will be compared to a simple linear binary logistic regression (LR) model.</p>
-<p><br></p>
 <pre class="r"><code>pv_hrt_single &lt;- hrt_wrapper(X, y, mdl_svd, pred_svm, rsk_logit, lst_out = idx_test[1], nsim=250)
 pv_hrt_5fold &lt;- hrt_wrapper(X, y, mdl_svd, pred_svm, rsk_logit, lst_out = idx_test, nsim=250)
 mdl.logit &lt;- glm(y ~ ., data=data.frame(X),family=binomial)</code></pre>
-<p><br></p>
 <p>Figure 4 below shows that the HRT is easily able to identify the significance of the true features whereas the linear model detects no significance at all. While the HRT-CV finds one of the noise variables to be significant, there is a 40% chance that at least one of the ten noise variables tested in this and the previous model would be found significant due to the uniformity of p-values under no effect.</p>
 <br>
 <h4>
