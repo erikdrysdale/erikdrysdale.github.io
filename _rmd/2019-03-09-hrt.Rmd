@@ -67,12 +67,14 @@ If $\bX_{\cdot j}$ is independent of $\by \| \bX_{\cdot, -j}$, then drawing new 
 1. Fit algorithm $f$:
 $$
 \begin{align*}
+&\\
 \hat{\btheta} &= \arg \min_\theta \hspace{2mm} \ell(\by_R,f_\theta(\bX_R)), \hspace{3mm} \hat{f}_{\btheta} := f(\hat{\btheta}) 
 \end{align*}
 $$
 2. Compute empirical risk for $\bX_T$:
 $$
 \begin{align*}
+&\\
 \hat{R}(\hat{\btheta}) &= \ell(\by_T, \bX_T, \hat{f}(\btheta))
 \end{align*}
 $$
@@ -87,6 +89,7 @@ $$
 4. Calculate one-sided p-value:
 $$
 \begin{align*}
+&\\
 \hat{p}_j &= \frac{1}{1+S} \Bigg( 1 + \sum_{s=1}^S I \Big[ \hat{R}^{(s)}(\hat{\btheta})  \leq \hat{R}(\hat{\btheta}) \Big] \Bigg)
 \end{align*}
 $$
