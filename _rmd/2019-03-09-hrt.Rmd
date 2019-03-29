@@ -21,7 +21,7 @@ $$
 
 ## Background
 
-It is an exciting time for statistical inference in the high-dimensional and machine learning settings. Techniques like [Selective Inference](https://www.pnas.org/content/112/25/7629.full) (SI) have shown that certains classes of models (such as the Lasso or forward stepwise regression) can have valid inference procedures performed *after* model selection. This discovery was groundbreaking as it showed how the degree of model overfitting could be explicitely quantified and conditioned on. While SI only works for a subset of linear model fitting procedures, the [knockoffs](http://web.stanford.edu/group/candes/knockoffs/) method was another innovative technique that could be applied to any statistical learning model and perform variable selection with guaranteed false discovery rate properties. The original knockoffs approach required two things: (1) a model that could generate variable importance statistics that satisfied two fairly simple properties,[[^1]] and (2) a low-dimensional design matrix ($n > 2p$). The "knockoff" refers to a copy of a original design matrix constructed in such a way that it preserved the conditional dependence between variables, but made the knockoff copies as orthogonal as possible. In other words, knockoff features "x1" and "x2" have the same degree of correlation that is seen in real features "x1" and "x2", but the real feature "x1" was approximately orthogonal to knockoff feature "x1". A machine learning model was then fit to the data and the distribution of features importance metrics between the original and knockoffs features was compared. Because the distribution of these metrics should be the same when there is no conditional relationship to the response, a false discovery rate could be established using the properties of [martingales](https://en.wikipedia.org/wiki/Martingale_(probability_theory)). Extensions of the knockoffs approach to arbitrary $p$ [have been established](https://statweb.stanford.edu/~candes/papers/MF_knockoffs.pdf), but require estimating the conditional relationship of the variables in the columns of the design matrix with a statistical model (hereafter referred to as the permutation knockoff method).
+It is an exciting time for statistical inference in high-dimensional and machine learning settings. Techniques like [Selective Inference](https://www.pnas.org/content/112/25/7629.full) (SI) have shown that certains classes of models (such as the Lasso or forward stepwise regression) can have valid inference procedures performed *after* model selection. This discovery was groundbreaking as it showed how the degree of model overfitting could be explicitely quantified and conditioned on. While SI only works for a subset of linear model fitting procedures, the [knockoffs](http://web.stanford.edu/group/candes/knockoffs/) method was another innovative technique that could be applied to any statistical learning model and perform variable selection with guaranteed false discovery rate properties. The original knockoffs approach required two things: (1) a model that could generate variable importance statistics that satisfied two fairly simple properties,[[^1]] and (2) a low-dimensional design matrix ($n > 2p$). The "knockoff" refers to a copy of a original design matrix constructed in such a way that it preserved the conditional dependence between variables, but made the knockoff copies as orthogonal as possible. In other words, knockoff features "x1" and "x2" have the same degree of correlation that is seen in real features "x1" and "x2", but the real feature "x1" was approximately orthogonal to knockoff feature "x1". A machine learning model was then fit to the data and the distribution of features' importance metrics between the original and knockoffs features was compared. Because the distribution of these metrics should be the same when there is no conditional relationship to the response, a false discovery rate could be established using the properties of [martingales](https://en.wikipedia.org/wiki/Martingale_(probability_theory)). Extensions of the knockoffs approach to arbitrary $p$ [have been established](https://statweb.stanford.edu/~candes/papers/MF_knockoffs.pdf), but require estimating the conditional relationship of the variables in the columns of the design matrix with a statistical model (hereafter referred to as the permutation knockoff method).
 
 Key to permutation knockoff method is that if distribution of the feature space is known we can draw "copies" of this design matrix $\bXt \sim P(\bX)$ and then see how a model evaluates the features of the concatenated feature space $\by \approx f_\btheta([\bX, \bXt])$ and examining the difference between $\theta_j$ and $\tilde{\theta}_j$, assuming that the parameter vector $\btheta$ encodes feature importance (otherwise some other metric must be used). By breaking the conditional distribution between the response and the features, but preserving the marginal distribution, the null of no effect can be tested with the advantage that a wide array of feature importance measures can be used for more complicated machine learning models like random forests and support vector machines (SVMs). While these feature importance metrics were able to give a rough approximation of how useful the feature was in the model, they had no clear statistical properties. In contrast, their knockoffs equivalents do have explicit statistical guarantees in terms of evaluating whether they have any statistical relationship to the response. 
 
@@ -65,21 +65,18 @@ If $\bX_{\cdot j}$ is independent of $\by \| \bX_{\cdot, -j}$, then drawing new 
 ### HRT Algorithm for feature $j$
 
 1. Fit algorithm $f$:
-
 $$
 \begin{align*}
-\hat{\btheta} = \arg \min_\theta \hspace{2mm} \ell(\by_R,f_\theta(\bX_R)), \hspace{3mm} \hat{f}_{\btheta} := f(\hat{\btheta}) 
+\hat{\btheta} &= \arg \min_\theta \hspace{2mm} \ell(\by_R,f_\theta(\bX_R)), \hspace{3mm} \hat{f}_{\btheta} := f(\hat{\btheta}) 
 \end{align*}
 $$
 2. Compute empirical risk for $\bX_T$:
-
 $$
 \begin{align*}
-\hat{R}(\hat{\btheta}) = \ell(\by_T, \bX_T, \hat{f}(\btheta))
+\hat{R}(\hat{\btheta}) &= \ell(\by_T, \bX_T, \hat{f}(\btheta))
 \end{align*}
 $$
 3. Sample feature $j$ from test set and calculate permuted risk score. For $s$ in 1 to $S$:
-
 $$
 \begin{align*}
 \bXt_T^{(s)} &\gets \bX_T \\
@@ -88,10 +85,9 @@ $$
 \end{align*}
 $$
 4. Calculate one-sided p-value:
-
 $$
 \begin{align*}
-\hat{p}_j = \frac{1}{1+S} \Bigg( 1 + \sum_{s=1}^S I \Big[ \hat{R}^{(s)}(\hat{\btheta})  \leq \hat{R}(\hat{\btheta}) \Big] \Bigg)
+\hat{p}_j &= \frac{1}{1+S} \Bigg( 1 + \sum_{s=1}^S I \Big[ \hat{R}^{(s)}(\hat{\btheta})  \leq \hat{R}(\hat{\btheta}) \Big] \Bigg)
 \end{align*}
 $$
 
