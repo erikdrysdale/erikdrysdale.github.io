@@ -13,22 +13,20 @@ In [my last post](http://www.erikdrysdale.com/hrt/) I showed how the [holdout ra
 
 One simple way of learning the conditional distribution of the design matrix is to assume a multivariate Gaussian distribution but simply estimating the precision matrix. However when the columns of the data are not Gaussian or not continuous then this learned distribution will prove a poor estimate of the conditional relationship of the data. The goal is this post is two-fold. First, show how to fit a marginal regression model to each column of the data (regularized Gaussian and Binomial regressions are used). Second, a `python` implementation will be used to complement the `R` code used previously. While this post will use an un-tuned random forest classifier, any machine learning model can be used for the training set of the data.
 
-
-<code class="python">
+<pre><code class="python">
 # import the necessary modules
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 import seaborn as sns
-</code>
+</code></pre>
 
 ### Split a dataset into a tranining and a test folder
 
-In the code blocks below we load a real and synthetic dataset to highlight the HRT at the bottom of the script.
+In the code blocks below we load a real and synthetic dataset to highlight the HRT at the bottom of the script. Note that the column types of each data need to be defined in the `cn_type` variable.
 
 #### Option 1: South African Heart Dataset
-
 
 ```python
 link_data = "https://web.stanford.edu/~hastie/ElemStatLearn/datasets/SAheart.data"
@@ -40,12 +38,6 @@ dat_sah.drop(columns=['row.names','chd'],inplace=True)
 dat_sah['famhist'] = pd.get_dummies(dat_sah['famhist'])['Present']
 # Convert the X matrix to a numpy array
 X_sah = np.array(dat_sah)
-```
-
-Note that the column types of each data need to be defined in the `cn_type` variable.
-
-
-```python
 cn_type_sah = np.where(dat_sah.columns=='famhist','binomial','gaussian')
 # Do a train/test split
 np.random.seed(1234)
@@ -53,7 +45,6 @@ idx = np.arange(len(y_sah))
 np.random.shuffle(idx)
 idx_test = np.where((idx % 5) == 0)[0]
 idx_train = np.where((idx % 5) != 0)[0]
-
 X_train_sah = X_sah[idx_train]
 X_test_sah = X_sah[idx_test]
 y_train_sah = y_sah[idx_train]
@@ -298,85 +289,71 @@ pd.concat([pd.DataFrame({'vars':dat_sah.columns, 'pval':pval_sah, 'dataset':'SAH
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
       <td>sbp</td>
       <td>0.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>1</th>
       <td>tobacco</td>
       <td>0.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>2</th>
       <td>ldl</td>
       <td>0.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>3</th>
       <td>adiposity</td>
       <td>0.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>4</th>
       <td>famhist</td>
       <td>0.112</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>5</th>
       <td>typea</td>
       <td>1.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>6</th>
       <td>obesity</td>
       <td>1.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>7</th>
       <td>alcohol</td>
       <td>0.568</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>8</th>
       <td>age</td>
       <td>0.000</td>
       <td>SAH</td>
     </tr>
     <tr>
-      <th>0</th>
       <td>var1</td>
       <td>0.000</td>
       <td>NLP</td>
     </tr>
     <tr>
-      <th>1</th>
       <td>var2</td>
       <td>0.000</td>
       <td>NLP</td>
     </tr>
     <tr>
-      <th>2</th>
       <td>var3</td>
       <td>0.412</td>
       <td>NLP</td>
     </tr>
     <tr>
-      <th>3</th>
       <td>var4</td>
       <td>0.304</td>
       <td>NLP</td>
     </tr>
     <tr>
-      <th>4</th>
       <td>var5</td>
       <td>0.192</td>
       <td>NLP</td>
