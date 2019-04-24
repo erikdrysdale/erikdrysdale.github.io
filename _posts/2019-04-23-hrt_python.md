@@ -13,14 +13,16 @@ In [my last post](http://www.erikdrysdale.com/hrt/) I showed how the [holdout ra
 
 One simple way of learning the conditional distribution of the design matrix is to assume a multivariate Gaussian distribution but simply estimating the precision matrix. However when the columns of the data are not Gaussian or not continuous then this learned distribution will prove a poor estimate of the conditional relationship of the data. The goal is this post is two-fold. First, show how to fit a marginal regression model to each column of the data (regularized Gaussian and Binomial regressions are used). Second, a `python` implementation will be used to complement the `R` code used previously. While this post will use an un-tuned random forest classifier, any machine learning model can be used for the training set of the data.
 
-<pre><code class="python">
+<pre class="highlight">
+<code class="python">
 # import the necessary modules
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 import seaborn as sns
-</code></pre>
+</code>
+</pre>
 
 ### Split a dataset into a tranining and a test folder
 
@@ -274,7 +276,6 @@ pd.concat([pd.DataFrame({'vars':dat_sah.columns, 'pval':pval_sah, 'dataset':'SAH
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
-      <th></th>
       <th>vars</th>
       <th>pval</th>
       <th>dataset</th>
