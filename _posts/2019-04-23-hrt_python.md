@@ -248,18 +248,11 @@ def hrt_bin_fun(X_train,y_train,X_test,y_test,cn_type):
 
 ### Get the p-values for the different datasets
 
-Now that the `hrt_bin_fun` has been defined, we can perform inference on the columns of the two datasets created above.
-
+Now that the `hrt_bin_fun` has been defined, we can perform inference on the columns of the two datasets created above. The results below show that the `sbp`, `tobacco`, `ldl`, `adiposity`, and `age` are statistically significant features for the South African Heart Dataset. As expected, the first two variables, `var1`, and `var2` from the non-linear decision boundary dataset are important as these are the two variables which define the decision boundary with the rest of the variables being noise variables.
 
 ```python
 pval_circ = hrt_bin_fun(X_train=X_train_circ,y_train=y_train_circ,X_test=X_test_circ,y_test=y_test_circ,cn_type=cn_type_circ)
 pval_sah = hrt_bin_fun(X_train=X_train_sah,y_train=y_train_sah,X_test=X_test_sah,y_test=y_test_sah,cn_type=cn_type_sah)
-```    
-
-The results below show that the `sbp`, `tobacco`, `ldl`, `adiposity`, and `age` are statistically significant features for the South African Heart Dataset. As expected, the first two variables, `var1`, and `var2` from the non-linear decision boundary dataset are important as these are the two variables which define the decision boundary with the rest of the variables being noise variables.
-
-
-```python
 pd.concat([pd.DataFrame({'vars':dat_sah.columns, 'pval':pval_sah, 'dataset':'SAH'}),
            pd.DataFrame({'vars':['var'+str(x) for x in np.arange(5)+1],'pval':pval_circ,'dataset':'NLP'})])
 ```
