@@ -1,19 +1,27 @@
+---
+title: 'The HRT for mixed data types (Python implementation)'
+output: html_document
+fontsize: 12pt
+published: true
+status: publish
+mathjax: true
+---
 
-## The HRT for mixed data types (Python implementation)
+### Introduction
 
 In [my last post](http://www.erikdrysdale.com/hrt/) I showed how the [holdout random test](https://arxiv.org/abs/1811.00645) (HRT) could be used to obtain valid p-values for any machine learning model by sampling from the conditional distribution of the design matrix. Like the permutation-type approaches used to assess variable importance for decision trees, this method sees whether a measure of performance accuracy declines when a column of the data has its values shuffled. However these ad-hoc permutation approaches lack statistical rigor and will not obtain a valid inferential assessment, even asymptotically, as the non-permuted columns of the data are not conditioned on. For example, if two features are correlated with the data, but only one has a statistical relationship with the response, then naive permutation approaches will often find the correlated noise column to be significant simply by it riding on the statistical coattails of the true variable. The HRT avoids this issue by fully conditioning on the data.
 
 One simple way of learning the conditional distribution of the design matrix is to assume a multivariate Gaussian distribution but simply estimating the precision matrix. However when the columns of the data are not Gaussian or not continuous then this learned distribution will prove a poor estimate of the conditional relationship of the data. The goal is this post is two-fold. First, show how to fit a marginal regression model to each column of the data (regularized Gaussian and Binomial regressions are used). Second, a `python` implementation will be used to complement the `R` code used previously. While this post will use an un-tuned random forest classifier, any machine learning model can be used for the training set of the data.
 
 
-```python
+<code class="python">
 # import the necessary modules
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 import seaborn as sns
-```
+</code>
 
 ### Split a dataset into a tranining and a test folder
 
