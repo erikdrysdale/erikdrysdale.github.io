@@ -8,6 +8,6 @@ My name is Erik Drysdale and I work as a Machine Learning Specialist at the Hosp
 
 You can reach me here: [13ewd@queensu.ca](mailto:13ewd@queensu.ca)
 
-A copy of my CV can be found on [Google Drive](https://drive.google.com/open?id=0B-74o3fTjmIeOW55aV8xVjl0ekU)
+A copy of my CV can be found on [Google Drive](https://drive.google.com/drive/u/0/folders/0B-74o3fTjmIeTEtBd1ZZR3JEN2c)
 
 I also keep an informal blog [here](http://bioeconometrician.github.io)
