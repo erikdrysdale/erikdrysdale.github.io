@@ -1,11 +1,5 @@
----
-title: 'Elastic Net Exponential model for censored data'
-output: html_document
-fontsize: 12pt
-published: true
-status: publish
-mathjax: true
----
+
+# Fitting an elastic net Exponential model
 
 $$
 \newcommand{\bbeta}{\boldsymbol{\beta}}
@@ -21,9 +15,11 @@ $$
 
 ## Introduction
 
-There are many situations where a statistical model needs to be fit to data whose values are only *partially* known. When the outcome, or label, of a dataset is known to be *at least* or *at most* some amount, this process is referred to as censoring. Income data published by national statistics agencies will often bin this data to some upper bound, e.g. greater than \$500K dollars, making the exact number of millionaires to be unknown with certainty. In the biomedical domain many biological measurements are not measurable if they are outside some detectable range. When a measurement is known to be *at least* as large as some value this is known as right-censoring. A classic case of right-censoring is a survival time, where a patient is known to have lived for *at least* some amount of time. For regression models with a fixed number of covariates, there are a variety of approaches for fitting data to be able to handle right-censored data. These includes [Cox regression](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#cox-s-proportional-hazard-model), [parametric survival models](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#parametric-survival-models), the [Buckley-James Estimator](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#parametric-survival-models), or more modern machine learning like [random survival forests](https://square.github.io/pysurvival/models/survival_forest.html) and [a variety of others](https://scikit-survival.readthedocs.io/en/latest/api.html).
+There are many situations where a statistical model needs to be fit to data whose values are only *partially* known. When the outcome, or label, of a dataset is known to be *at least* or *at most* some amount, this process is referred to as censoring. Income data published by national statistics agencies will often bin this data to some upper bound, e.g. greater than \$500K dollars, making the exact number of millionaires to be unknown with certainty. In the biomedical domain many biological measurements are not measureable if they are outside some detectable range. When a measurement is known to be *at least* as large as some value this is known as right-censoring. A classic case of right-censoring is a survival time, where a patient is known to have lived for *at least* some amount of time. For regression models with a fixed number of covariates, there are a variety of approaches for fitting data to be able to handle right-censored data. These includes [Cox regression](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#cox-s-proportional-hazard-model), [parametric survival models](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#parametric-survival-models), the [Buckley-James Estimator](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#parametric-survival-models), or more modern machine learning like [random survival forests](https://square.github.io/pysurvival/models/survival_forest.html) and [a variety of others](https://scikit-survival.readthedocs.io/en/latest/api.html).
 
 In the case where the dataset has many features, often exceeding the sample size, a particular type of regularization will need to be used to ensure only a small subset of reliable features are ultimately employed. In this post I will show how to build an elastic-net regularized parametric survival model for the [Exponential](https://en.wikipedia.org/wiki/Exponential_distribution) distribution. The `scikit-survival` package currently has an [implementation](https://scikit-survival.readthedocs.io/en/latest/generated/sksurv.linear_model.CoxnetSurvivalAnalysis.html#sksurv.linear_model.CoxnetSurvivalAnalysis) for an elastic-net Cox-PH model. While the Cox model has fewer assumptions, it is harder to make predictions out of sample, whereas a parametric model gives each observation its own survival distribution with known moments (mean, median, quantiles, etc).
+
+
 
 ## (1) Linear Exponential model
 
@@ -78,11 +74,13 @@ $$
 
 Notice that a weighted least-squares problem is equivalent to a normal least-squares method where the rows of the response and design matrix are multiplied by the square-root of the row's weight.
 
+
+
 ## (2) Optimization approaches
 
 Section (1) showed that the linear exponential model can be solved through either gradient or hessian-based methods as well as its reformulation via IRLS. The first code block below will demonstrate how to generate exponential data with a given censoring rate. The observed time will be: $t_i = \min[c_i, u_i]$, where $u_i \sim \text{Exp}(\lambda_i)$, $\lambda_i = e^{\eta_i}$ and $c_i\sim \text{Exp}(\lambda_c)$ . The probability that one exponential distribution will be greater than another is $P(c_i > u_i) = \frac{\lambda_i}{\lambda_i+\lambda_c}=1-\alpha_i$. A given value of $\lambda_c$ will obtain an average censoring rate of $\alpha(\lambda_c) = n^{-1}\sum_i\alpha_i$. A simple univariate optimization procedure can find that value of $\lambda_c$ such that the averaging censoring rate of $\alpha$ is achieved. 
 
-Optimization methods can be sped up and made more robust by normalizing the features of the data so that the gradients are numerically stable and within reasonable ranges. If the columns of the data are standardized to have a mean and standard deviation of zero and one, respectively, and the measurement time is divided by its largest value to ensure $t_i \in (0,1]$, then it is easy to show that the following post-optimization transformation would recover the original un-normalized solution:
+Optimization methods can be sped up and made more robust by normalizing the features of the data so that the gradients are numerically stable and within reasonable ranges. If the columns of the data are standardized to have a mean and standard deviation of zero and one, respectively, and the measurment time is divided by its largest value to ensure $t_i \in (0,1]$, then it is easy to show that the following post-optimization transformation would recover the original un-normalized solution:
 
 $$
 \begin{align*}
@@ -90,6 +88,8 @@ $$
 \beta_0 &= \tilde\beta_0 - (\log \bt_{\max} + \mu^T \bbeta_1) 
 \end{align*}
 $$
+
+
 
 
 ```python
@@ -253,14 +253,28 @@ for ii in range(nsim):
 df_gd = pd.concat(gd_holder).reset_index(drop=True).assign(cens = lambda x: np.round(x.cens,1).astype(str),
                                                            tt = lambda x: x.tt.map({'b0':'intercept','b1':'slope'}))
 df_gd_long = df_gd.melt(['btrue','cens','tt'],var_name='method',value_name='bhat')
+```
 
+
+```python
 g = sns.FacetGrid(df_gd_long,col='cens',row='tt',hue='tt',height=3.5,aspect=1.5)
 g.map(plt.scatter,'bhat','btrue',alpha=0.5)
 plt.subplots_adjust(top=0.88)
 g.fig.suptitle(t='Figure 1: Consistent estimates using GD/IRLS',fontsize=20)
 g.set_xlabels('Estimate'); g.set_ylabels('Actual')
 ```
-![png](/figures/censored_reg_exponential_6_1.png)
+
+
+
+
+    <seaborn.axisgrid.FacetGrid at 0x1fed7a49eb8>
+
+
+
+
+![png](censored_reg_exponential_files/censored_reg_exponential_6_1.png)
+
+
 
 ```python
 g = sns.FacetGrid(df_gd,col='tt',height=3.5,aspect=1.5)
@@ -269,12 +283,21 @@ plt.subplots_adjust(top=0.8)
 g.fig.suptitle(t='Figure 2: GD and IRLS are identical',fontsize=20)
 g.set_xlabels('IRLS'); g.set_ylabels('GD')
 ```
-![png](/figures/censored_reg_exponential_7_1.png)
+
+
+
+
+    <seaborn.axisgrid.FacetGrid at 0x1fed1b29630>
+
+
+
+
+![png](censored_reg_exponential_files/censored_reg_exponential_7_1.png)
 
 
 # (3) Regularized Exponential model
 
-In real-world applications most datasets will have extraneous features that do not add any predictive power to a model. Elastic net regularization acts as a way to both control model variance and remove unhelpful features. The likelihood from the original linear exponential model can be augmented by the following penalty term:
+In real-world applications most datasets will have extraneous features that do not add any predictive power to a model. Elastic net regularization acts as a way to both control model variance and remove unhelpful features. The likelihood from the original linear exponential model can be augmented by the followoing penalty term:
 
 $$
 \begin{align*}
@@ -295,6 +318,7 @@ The `ElasticNet` class from `sklearn` has very fast coordinate descent solvers f
 
 
 We can visualize the Lasso solution path seen above for different values of $\alpha$ for a well-known [survival dataset](https://lifelines.readthedocs.io/en/latest/lifelines.datasets.html#lifelines.datasets.load_gbsg2).
+
 
 
 ```python
@@ -332,4 +356,6 @@ for ii,ax in enumerate(g.axes):
     ax.axhline(y=df_ml.loc[ii,'ml'],c='black',linestyle='dashed')
 ```
 
-![png](/figures/censored_reg_exponential_9_0.png)
+
+![png](censored_reg_exponential_files/censored_reg_exponential_9_0.png)
+

@@ -239,7 +239,7 @@ g_1d.set_ylabels('Density',size=12)
 g_1d.set_xlabels('x')
 ```
 
-![png](/figures/ordinal_regression_files/ordinal_regression_5_1.png)
+![png](/figures/ordinal_regression_5_1.png)
 
 Figure 1 shows the distribution of $x$, the density of the different classes represented by a colored histogram, and the underlying marginal probabilities learned from $\hat\theta_1, \hat\theta_2$, and $\hat\beta$. The predicted marginal probabilities align nicely with the true underlying densities showing that appropriate slope and intercept thresholds have been learned.
 
@@ -288,7 +288,7 @@ fig.suptitle('Figure 2: Simulated 2D ordinal data',size=14,weight='bold')
     lvls3       0   7  37   6
     lvls4       0   0   7  43
 
-![png](/figures/ordinal_regression_files/ordinal_regression_7_2.png)
+![png](/figures/ordinal_regression_7_2.png)
 
 
 As Figure 2 shows, the ordinal regression model has once again calculated reasonable slope and intercept coefficients such that the model's decision boundaries align with our intuition of the underlying data distribution.
@@ -366,7 +366,7 @@ g.fig.subplots_adjust(top=0.8)
 g.set_xlabels('MAE(Ordinal)-MAE(Model)')
 ```
 
-![png](/figures/ordinal_regression_files/ordinal_regression_11_1.png)
+![png](/figures/ordinal_regression_11_1.png)
 
 
 This post has shown how to write an optimizer to solve an ordinal regression model using a threshold approach which has $K-1$ intercepts (or thresholds) that ensure a positively increasing CDF to estimate the underlying ordinal labels. For outcomes where there is a natural and increasing order (like quantiles or ratings) an ordinal approach is well suited. Most importantly, the ordinal loss function encourages predicted labels to be *closer* to the actual label thereby reducing the likelihood of making large prediction errors (e.g. predicting 'medium' instead of 'high' when the actual label is 'low').
