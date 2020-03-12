@@ -60,7 +60,7 @@ $$
 
 The code block below creates the necessary functions to calculate the loss, gradient, and probabilities for an ordinal model. The `ordinal_reg` wrapper will allow us to fit an ordinal regression model for $p$-dimensional data and $K$ level classes. There are two technical notes for how to code was structured. First, the functions make use of a transformation between $\theta$ and $\alpha$, as it is easier to understand the loss and gradient functions using the original parametrization. Second, when the features are normalized there is no way to map back the coefficients to an equivalent optimization problem in the un-normalized space due to the non-linearities in $F_k(\cdot)-F_{k-1}(\cdot)$. This means that any standardization procedures must be applied to $\bx$ when doing inference.
 
-```
+```python
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
@@ -181,7 +181,7 @@ class ordinal_reg():
 The easiest way to visualize how an ordinal regression model works is to examine a single-feature model using $\bx$. This way the marginal probabilities can be visualized over the support of the single feature. In the code block below, a feature is drawn from a mixture of three standard normal distributions, each with a slightly different mean but all have some partial overlap: $\mu=[-2,0,2]$. The `ordinal_reg` function will estimate $\theta_1, \theta_2$, and $\beta$, and hopefully approximate the true underlying Gaussian mixture distribution. 
 
 
-```
+```python
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib import colors
@@ -205,7 +205,6 @@ df_1d_acc.index.name='Actual'
 df_1d_acc.columns.name='Predicted'
 print(df_1d_acc)
 ```
-
     Predicted   1   2   3
     Actual               
     lvls1      24   1   0
@@ -216,7 +215,7 @@ print(df_1d_acc)
 A confusion matrix shows that the predicted level $\tilde y$ aligns closely with the true label. Furthermore, there is a never a two-level error meaning $\tilde y=1$ when $y=3$ and vice-versa. 
 
 
-```
+```python
 # Function to map prob over histogram
 def dens_mapper(*args ,**kwargs):
     ax = plt.gca()
@@ -240,16 +239,7 @@ g_1d.set_ylabels('Density',size=12)
 g_1d.set_xlabels('x')
 ```
 
-
-
-
-    <seaborn.axisgrid.FacetGrid at 0x7f52d74d8668>
-
-
-
-
 ![png](/figures/ordinal_regression_files/ordinal_regression_5_1.png)
-
 
 Figure 1 shows the distribution of $x$, the density of the different classes represented by a colored histogram, and the underlying marginal probabilities learned from $\hat\theta_1, \hat\theta_2$, and $\hat\beta$. The predicted marginal probabilities align nicely with the true underlying densities showing that appropriate slope and intercept thresholds have been learned.
 
@@ -258,7 +248,7 @@ Figure 1 shows the distribution of $x$, the density of the different classes rep
 To further build intuition, an ordinal Gaussian mixture model where $p=2$ and $K=4$ can be generated with four increasing centroids. The code block below will generate the data, fit the model using `ordinal_reg` and then plot the two-dimensional decision boundaries. 
 
 
-```
+```python
 np.random.seed(1234)
 cov = np.array([[1,0.5],[0.5,1]])
 mus_2d = np.arange(-3,3+1,2)
@@ -291,22 +281,12 @@ fig.axes[0].legend_.get_texts()[0].set_text('Levels')
 fig.suptitle('Figure 2: Simulated 2D ordinal data',size=14,weight='bold')
 
 ```
-
     Predicted   1   2   3   4
     Actual                   
     lvls1      46   4   0   0
     lvls2       1  41   8   0
     lvls3       0   7  37   6
     lvls4       0   0   7  43
-    
-
-
-
-
-    Text(0.5, 0.98, 'Figure 2: Simulated 2D ordinal data')
-
-
-
 
 ![png](/figures/ordinal_regression_files/ordinal_regression_7_2.png)
 
@@ -318,7 +298,7 @@ As Figure 2 shows, the ordinal regression model has once again calculated reason
 While it is difficult to visualize the decision boundaries for datasets with $p>2$, an examination of the coefficients and performance of a model can indicate whether it is working well. To compare how ordinal regression fares to more common methods, housing prices from the [Boston housing](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html) dataset will be converted in different quantiles (bottom 10-20%, top 90+%, etc). The ordinal approach will be compared to a simple linear regression model where each quantile is treated as an integer ($y=[1,2,\dots,10]$) and a multinomial logistic regression where each class is treated as independently. To assess performance, the [mean-absolute error](https://en.wikipedia.org/wiki/Mean_absolute_error) (MAE) between the predicted and actual class will be used. For ordinal regression tasks, a metric like raw accuracy is less appealing as predicting 1 or 10 when $y=2$ receives the same score, when clearly predicting a quantile closer to the ground-truth level is more "accurate" even if it is not perfect. In the simulations below, a training/test split of 80/20% is used and run 125 times. Note that the house price label has added noise to it to ensure that quantiles can be calculated more smoothly.
 
 
-```
+```python
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -373,7 +353,7 @@ print(np.round(df_mae,1))
 The table above shows that, on average, the ordinal regression model is only off by 0.2 of a quantile whereas the multinomial model is off by 0.4 and the least-squares model is off by a whole level. Interestingly the raw accuracy of the ordinal and multinomial model is virtually identical in these simulations. However because the loss function does not penalize the multinomial model for being significantly off as opposed to just modestly off, it is more likely to make larger errors. Figure 3 shows that the ordinal regression model outperforms both the multinomial and linear regression model in every simulation iteration in terms of MAE.
 
 
-```
+```python
 df_diff = pd.concat(holder).melt('ord').assign(d_ord = lambda x: x.ord - x.value).rename(columns={'variable':'Model'})
 df_diff = df_diff.assign(Model = lambda x: x.Model.map(di_lbls))
 g = sns.FacetGrid(df_diff,hue='Model',col='Model',height=4,aspect=1.5,sharex=False)
@@ -385,14 +365,6 @@ g.fig.suptitle(t='Figure 3: Distribution of difference in MAE across simulations
 g.fig.subplots_adjust(top=0.8)
 g.set_xlabels('MAE(Ordinal)-MAE(Model)')
 ```
-
-
-
-
-    <seaborn.axisgrid.FacetGrid at 0x7f52d46428d0>
-
-
-
 
 ![png](/figures/ordinal_regression_files/ordinal_regression_11_1.png)
 
