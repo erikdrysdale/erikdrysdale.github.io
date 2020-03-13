@@ -349,8 +349,9 @@ print(np.round(df_mae,1))
     1        Multinomial  0.4
     2  Linear Regression  1.1
     
+![png](/figures/ordinal_regression_9_1.png)
 
-The table above shows that, on average, the ordinal regression model is only off by 0.2 of a quantile whereas the multinomial model is off by 0.4 and the least-squares model is off by a whole level. Interestingly the raw accuracy of the ordinal and multinomial model is virtually identical in these simulations. However because the loss function does not penalize the multinomial model for being significantly off as opposed to just modestly off, it is more likely to make larger errors. Figure 3 shows that the ordinal regression model outperforms both the multinomial and linear regression model in every simulation iteration in terms of MAE.
+The table above shows that, on average, the ordinal regression model is only off by 0.2 of a quantile whereas the multinomial model is off by 0.4 and the least-squares model is off by a whole level. Interestingly the raw accuracy of the ordinal and multinomial model is virtually identical in these simulations. However because the loss function does not penalize the multinomial model for being significantly off as opposed to just modestly off, it is more likely to make larger errors. Figure 3 shows that the range of coefficient estimates is fairly tight across the different training/test splits. The signs of the coefficients  also align with our intuition as the percent of poor population `LSTAT`, the amount of crime `CRIM`, and the property tax rate `TAX` all tend to decrease price quintiles whereas the average number of rooms `RM` and nearness to the Charles River `CHAS` tend to increase house price quintiles.
 
 
 ```python
@@ -369,4 +370,4 @@ g.set_xlabels('MAE(Ordinal)-MAE(Model)')
 ![png](/figures/ordinal_regression_11_1.png)
 
 
-This post has shown how to write an optimizer to solve an ordinal regression model using a threshold approach which has $K-1$ intercepts (or thresholds) that ensure a positively increasing CDF to estimate the underlying ordinal labels. For outcomes where there is a natural and increasing order (like quantiles or ratings) an ordinal approach is well suited. Most importantly, the ordinal loss function encourages predicted labels to be *closer* to the actual label thereby reducing the likelihood of making large prediction errors (e.g. predicting 'medium' instead of 'high' when the actual label is 'low').
+Figure 4 shows that the ordinal regression model outperforms both the multinomial and linear regression model in for every simulation iteration in terms of MAE. This post has shown how to write an optimizer to solve an ordinal regression model using a threshold approach which has $K-1$ intercepts (or thresholds) that ensure a positively increasing CDF to estimate the underlying ordinal labels. For outcomes where there is a natural and increasing order (like quantiles or ratings) an ordinal approach is well suited. Most importantly, the ordinal loss function encourages predicted labels to be *closer* to the actual label thereby reducing the likelihood of making large prediction errors (e.g. predicting 'medium' instead of 'high' when the actual label is 'low').
