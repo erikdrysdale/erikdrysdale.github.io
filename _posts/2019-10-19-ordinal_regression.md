@@ -315,7 +315,7 @@ yq = pd.cut(x=y,bins=thresholds,right=True,labels=['q'+str(z+1) for z in range(n
 yord = yq.astype('category').codes+1
 
 np.seterr(divide='ignore', invalid='ignore')
-holder = []
+holder, coef = [], []
 nsim = 125
 for ii in range(nsim):
   # Do a train/test split (80/20)
@@ -323,6 +323,7 @@ for ii in range(nsim):
   # Ordinal regression model
   mdl_ord = ordinal_reg()
   mdl_ord.fit(Xtrain, ytrain)
+  coef.append(alpha_beta_wrapper(mdl_ord.alpha_beta,Xtrain)[2])
   # Linear regression
   mdl_linreg = LinearRegression().fit(Xtrain, ytrain)
   # Multinomial regression
@@ -342,6 +343,17 @@ df_mae = pd.concat(holder).mean(axis=0).reset_index().rename(columns={'index':'m
 di_lbls = {'ord':'Ordinal','multi':'Multinomial','linreg':'Linear Regression'}
 df_mae = df_mae.assign(mdl=lambda x: x.mdl.map(di_lbls))
 print(np.round(df_mae,1))
+
+# Plot the coefficients
+cn = load_boston()['feature_names']
+df_coef = pd.DataFrame(np.concatenate(coef).reshape([nsim,len(cn)]),columns=cn)
+df_coef = df_coef.melt(var_name='cn',value_name='bhat')
+df_ord = df_coef.groupby('cn').bhat.mean().sort_values().reset_index()
+df_coef = df_coef.assign(cn = lambda x: pd.Categorical(x.cn, categories=df_ord['cn'], ordered=True))
+fig, ax = plt.subplots(figsize=(8,6))
+sns.boxplot(x='cn',y='bhat',data=df_coef,ax=ax)
+ax.set_xlabel('');ax.set_ylabel('beta')
+fig.suptitle(t='Figure 3: Distribution of training coefficients',size=14,weight='bold')
 ```
 
                      mdl  MAE
