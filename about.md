@@ -11,3 +11,4 @@ You can reach me here: [13ewd@queensu.ca](mailto:13ewd@queensu.ca)
 A copy of my CV can be found on [Google Drive](https://tinyurl.com/tcuteft)
 
 I also keep an informal blog [here](http://bioeconometrician.github.io)
+
