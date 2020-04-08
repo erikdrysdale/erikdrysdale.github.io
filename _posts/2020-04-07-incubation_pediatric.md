@@ -239,16 +239,13 @@ for ii, rr in df_txt.iterrows():
 ```
 <blockquote>
 A total of 30 unique studies
-
-
+>
 ----- Article: Incubation Period and Other Epidemiological Characteristics of 2019 Novel Coronavirus Infections with Right Truncation: A Statistical Analysis of Publicly Available Case Data -----
 Our results show that the <span style="color:red">incubation period</span> falls within the range of 2&amp;ndash;14 days with 95% confidence and has a mean of around 5 days when approximated using the best-fit lognormal distribution.
-
-
+>
 ----- Article: Incubation Period and Other Epidemiological Characteristics of 2019 Novel Coronavirus Infections with Right Truncation: A Statistical Analysis of Publicly Available Case Data -----
 The mean <span style="color:red">incubation period</span> was estimated at 5.0 days (95% credible interval [CI]: 4.2, 6.0) when excluding Wuhan residents (n = 52) and 5.6 days (95% CI: 5.0, 6.3) when including Wuhan residents (n = 158).
-
-
+>
 ----- Article: 2019-nCoV (Wuhan virus), a novel Coronavirus: Human-to-human transmission, travel-related cases, and vaccine readiness -----
 The mean <span style="color:red">incubation period</span> was estimated as 4.6 days with a range of 2 to 8 days between symptom onset and hospitalization.
 
