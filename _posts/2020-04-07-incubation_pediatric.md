@@ -237,161 +237,171 @@ for ii, rr in df_txt.iterrows():
     color_printer(idx_sentence)
     print('\n')
 ```
-<pre>A total of 30 unique studies
-
-
-
------ Article: Incubation Period and Other Epidemiological Characteristics of 2019 Novel Coronavirus Infections with Right Truncation: A Statistical Analysis of Publicly Available Case Data -----
-Our results show that the <span style="color:red">incubation period</span> falls within the range of 2&amp;ndash;14 days with 95% confidence and has a mean of around 5 days when approximated using the best-fit lognormal distribution.
-
-
------ Article: Incubation Period and Other Epidemiological Characteristics of 2019 Novel Coronavirus Infections with Right Truncation: A Statistical Analysis of Publicly Available Case Data -----
-The mean <span style="color:red">incubation period</span> was estimated at 5.0 days (95% credible interval [CI]: 4.2, 6.0) when excluding Wuhan residents (n = 52) and 5.6 days (95% CI: 5.0, 6.3) when including Wuhan residents (n = 158).
-
-
------ Article: 2019-nCoV (Wuhan virus), a novel Coronavirus: Human-to-human transmission, travel-related cases, and vaccine readiness -----
-The mean <span style="color:red">incubation period</span> was estimated as 4.6 days with a range of 2 to 8 days between symptom onset and hospitalization.
-
-
------ Article: The outbreak of COVID-19: An overview -----
-COVID-19 has a mean i<span style="color:red">ncubation period </span>of 5.2 days (95% confidence interval, 4.1-7.0).
-
-
------ Article: Clinical findings in a group of patients infected with the 2019 novel coronavirus (SARS-Cov-2) outside of Wuhan, China: retrospective case series -----
-Among 56 patients who could provide the exact date of close contact with someone with confirmed or suspected SARS-Cov-2 infection, the median <span style="color:red">incubation period</span> from exposure to symptoms was 4 days (interquartile range 3-5 days).
-
-
------ Article: COVID-19 outbreak on the Diamond Princess cruise ship: estimating the epidemic potential and effectiveness of public health countermeasures -----
-8 In the situation of no removal (ill persons taken off the ship to be isolated in a Japanese hospital), the <span style="color:red">incubation period</span> (or, the latent period), was estimated to be approximately 5 days (ranging from 2 to 14 days).
-
-
------ Article: Comparative genomic analysis revealed specific mutation pattern between human coronavirus SARS-CoV-2 and Bat-SARSr-CoV RaTG13 -----
-SARS-CoV-2 has a similar <span style="color:red">incubation period</span> (median, 3.0 days) and a relatively lower fatality rate than SARS-CoV or MERS-CoV (1), but it is estimated that the reproductive number of SARS-CoV-2 is higher than that of SARS-CoV (2) .
-
-
------ Article: The incubation period of 2019-nCoV infections among travellers from Wuhan, China -----
-Using the travel history and symptom onset of 88 confirmed cases that were detected outside Wuhan, we estimate the mean <span style="color:red">incubation period</span> to be 6.4 (5.6 - 7.7, 95% CI) days, ranging from 2.1 to 11.1 days (2.5th to 97.5th percentile).
-
-
------ Article: The incubation period of 2019-nCoV from publicly reported confirmed cases: estimation and application -----
-Here, we use data from public reports of 101 confirmed cases in 38 provinces, regions, and countries outside of Wuhan (Hubei province, China) with identifiable exposure windows and known dates of symptom onset to estimate the <span style="color:red">incubation period</span> of 2019-nCoV. We estimate the median <span style="color:red">incubation period</span> of 2019-nCoV to be 5.2 days (95% CI: 4.4, 6.0), and 97.5% of those who develop symptoms will do so within 10.5 days (95% CI: 7.3, 15.3) of infection.
-
-
------ Article: The incubation period of 2019-nCoV from publicly reported confirmed cases: estimation and application -----
-The estimated mean <span style="color:red">incubation period</span> was 5.5 days.
-
-
------ Article: The incubation period of 2019-nCoV from publicly reported confirmed cases: estimation and application -----
-Based on cases detected inside mainland China (n=29), the median <span style="color:red">incubation period</span> is 4.6 days (95% CI: 3.4, 6.0), with a 95% range of 2.7 (95% CI: 1.2, 4.6) to 7.9 (95% CI: 3.9, 13.1) days.
-
-
------ Article: Clinical characteristics of 2019 novel coronavirus infection in China -----
-The median <span style="color:red">incubation period</span> was 3.0 days (range, 0 to 24.0 days).
-
-
------ Article: The cross-sectional study of hospitalized coronavirus disease 2019 patients in Xiangyang, Hubei province -----
-<span style="color:red">Incubation time</span> ranged from one to twenty days with a mean period of 8.09 days (SD 4.99).
-
-
------ Article: A descriptive study of the impact of diseases control and prevention on the epidemics dynamics and clinical features of SARS-CoV-2 outbreak in Shanghai, lessons learned for metropolis epidemics prevention -----
-The mean <span style="color:red">incubation period</span> is 6.4 days (95% 175 CI 5.3 to 7.6) and the 5th and 95th percentile of the distribution was 0.97 and 13.10, 176 respectively ( Figure 3 -A).
-
-
------ Article: Epidemiological characteristics of 1212 COVID-19 patients in Henan, China -----
-The following findings are obtained: 1) COVID-19 patients in Henan show gender (55% vs 45%) and age (81% aged between 21 and 60) preferences, possible causes were explored; 2) Statistical analysis on 483 patients reveals that the estimated average, mode and median <span style="color:red">incubation periods</span> are 7.4, 4 and 7 days; <span style="color:red">Incubation periods</span> of 92% patients were no more than 14 days; 3) The epidemic of COVID-19 in Henan has undergone three stages and showed high correlations with the numbers of patients that recently return from Wuhan; 4) Network analysis on the aggregate outbreak phenomena of COVID-19 revealed that 208 cases were clustering infected, and various people's Hospital are the main force in treating patients.
-
-
------ Article: Evolving epidemiology of novel coronavirus diseases 2019 and possible interruption of local transmission outside Hubei Province in China: a descriptive and modeling study -----
-We estimated a mean <span style="color:red">incubation period</span> of 5.2 days (95%CI:1.8-12.4), with the 95th percentile of the distribution at 10.5 days.
-
-
------ Article: Epidemiologic and Clinical Characteristics of 91 Hospitalized Patients with COVID-19 in Zhejiang, China: A retrospective, multi-centre case series -----
-The median of <span style="color:red">incubation period</span> was 6 (IQR, 3-8) days and the median time from first visit to a doctor to confirmed diagnosis was 1 (1-2) days.
-
-
------ Article: Estimate the incubation period of coronavirus 2019 (COVID-19) -----
-Our results show the <span style="color:red">incubation mean</span> and median of COVID-19 are 5.84 and 5.0 days respectively and there is a statistical significance with the role of gender.
-
-
------ Article: Prevalence and clinical features of 2019 novel coronavirus disease (COVID-19) in the Fever Clinic of a teaching hospital in Beijing: a single-center, retrospective study -----
-An <span style="color:red">incubation period</span> was elicited from 12 patients (57.1%), ranging from 2 to 10 days with a median of 6.5 days.
-
-
------ Article: Transmission characteristics of the COVID-19 outbreak in China: a study driven by data -----
-The mean generation time is 3.3 days and the mean <span style="color:red">incubation period</span> is 7.2 days.
-
-
------ Article: Transmission characteristics of the COVID-19 outbreak in China: a study driven by data -----
-The best fit <span style="color:red">incubation period</span> distribution is a gamma distribution with a mean 7.2 (6.8, 7.6) days and a variance 16.9 (14.0, 20.2), which correspond to a shape parameter 3.07 (2.62, 3.56) and a scale parameter 2.35 (2.00, 2.75).
-
-
------ Article: Analysis of epidemiological characteristics of coronavirus 2019 infection and preventive measures in Shenzhen China: a heavy population city -----
-Taking account of the <span style="color:red">incubation period</span> (mostly 3-7 days, with mean of 3.7 days) and the time between symptom onset and confirm of the diagnosis (6 day on average) [9, 12] , the peak of new confirmed cases coincided with the implementation of serial preventive strategy and measures，indicating these preventive strategies and measures were effective in preventing transmission of COVID-19 in Shenzhen.
-
-
------ Article: Epidemiologic Characteristics of COVID-19 in Guizhou, China -----
-The median <span style="color:red">incubation period</span> was 8.2 days (95% CI: 155 7.9 -9.5) in our study, which is longer than a recent report of 425 patients (8.2 days 156 vs. 5.2 days), this may be a results of recall bias, during epidemiological investigation, symptoms does not yet infect others, which assumes that all index cases should show 165 symptoms before their secondary cases.
-
-
------ Article: The effect of human mobility and control measures on the COVID-19 epidemic in China -----
-Using detailed information on 38 cases for whom both the dates of entry to and exit from Wuhan are known, we estimate the mean <span style="color:red">incubation period</span> to be 5.1 days (std.
-
-
------ Article: Transmission interval estimates suggest pre-symptomatic spread of COVID-19 -----
-Results: The mean <span style="color:red">incubation period</span> was 7.1 (6.13, 8.25) days for Singapore and 9 (7.92, 10.2)days for Tianjin.
-
-
------ Article: Transmission interval estimates suggest pre-symptomatic spread of COVID-19 -----
-The estimated median <span style="color:red">incubation period</span> for pre-Jan 31 cases in Tianjin is 6.9 days; the q = (0.025, 0.975) quantiles are (2, 12.7) days.
-
-
------ Article: Transmission interval estimates suggest pre-symptomatic spread of COVID-19 -----
-The estimated median <span style="color:red">incubation time</span> is 5.46, with (0.025, 0.975) quantiles of (1.34, 11.1) days for early cases and 7.27 days (quantiles (1.31, 17.
-
-
------ Article: Transmission interval estimates suggest pre-symptomatic spread of COVID-19 -----
-In the Singapore dataset, we find that the median <span style="color:red">incubation period</span> is 6.55 days with the Weibull
-
-
------ Article: Transmission and clinical characteristics of coronavirus disease 2019 in 104 outside-Wuhan patients, China -----
-The median <span style="color:red">incubation period</span> was 6 (rang, 1-32) days, of 8 patients ranged from 18 to 32 days.
-
-
------ Article: Transmission of corona virus disease 2019 during the incubation period may lead to a quarantine loophole -----
-Results: The estimated mean <span style="color:red">incubation period</span> for COVID-19 was 4.9 days (95% confidence interval [CI], 4.4 to 5.4) days, ranging from 0.8 to 11.1 days (2.5th to 97.5th percentile).
-
-
------ Article: Estimation of incubation period distribution of COVID-19 using disease onset forward time: a novel cross-sectional and forward follow-up study -----
-The estimated median of <span style="color:red">incubation period</span> is 8.13 days (95% confidence interval [CI]: 7.37-8.91), the mean is 8.62 days (95% CI: 8.02-9.28), the 90th percentile is 14.65 days (95% CI: 14.00-15.26), and the 99th percentile is 20.59 days (95% CI: 19.47, 21.62).
-
-
------ Article: Clinical Characteristics of 34 Children with Coronavirus Disease-2019 in the West of China: a Multiple-center Case Series -----
-In accordance with the features of indirect contact exposure, the <span style="color:red">incubation period</span> was 10.50 (7.75 -25.25) days in paediatric patients, while 4.00 (2.00 -7.00) days of incubation was revealed for patients in all age groups [1] .
-
-
------ Article: Early Epidemiological and Clinical Characteristics of 28 Cases of Coronavirus Disease in South Korea -----
-The <span style="color:red">incubation period</span> was estimated to be 4.1 days based on the date of symptom onset and first exposure (among 9 patients, excluding 1 patient with an unclear date of onset) shown in Figure 1 and Table 2 .
-
-
------ Article: Early Epidemiological and Clinical Characteristics of 28 Cases of Coronavirus Disease in South Korea -----
-The estimated <span style="color:red">incubation period</span> was 4.6 days to develop COVID-19, which was shorter than the period of 5.2 days reported in China [5] .
-
-
------ Article: Investigation of three clusters of COVID-19 in Singapore: implications for surveillance and response measures -----
-The median <span style="color:red">incubation period</span> of SARS-CoV-2 was 4 days (IQR 3–6).
-
-
------ Article: Early epidemiological analysis of the coronavirus disease 2019 outbreak based on crowdsourced data: a population-level observational study -----
-On the basis of 33 patients with a travel history to Wuhan, we estimated the median i<span style="color:red">ncubation period </span>for COVID-19 to be 4·5 days (IQR 3·0-5·5; appendix p 2).
-
-
------ Article: Characteristics of COVID-19 infection in Beijing -----
-The median <span style="color:red">incubation period</span> was 6.7 days, the interval time from between illness onset and seeing a doctor was 4.5 days.
-
-
------ Article: Epidemiological and clinical features of COVID-19 patients with and without pneumonia in Beijing, China -----
-The mean <span style="color:red">incubation period</span> of COVID-19 was 8.42 days
-</pre>
+    ---- Title: 2019-nCoV (Wuhan virus), a novel Coronavirus: Human-to-human transmission, travel-related cases, and vaccine readiness, date: January 01, 2020 (3 of 38) ----
+    As with the SARS-CoV, infections in <span style="color:red">child</span>ren appear to be rare.
+    No fatalities were reported in young <span style="color:red">child</span>ren and adolescents and fatal disease was reported in 6.8% of patients < 60 years of age.
+    The mean <span style="color:red">incubation period</span> was estimated as 4.6 days with a range of 2 to 8 days between symptom onset and hospitalization.
+    Early symptoms of MERS include fever, chills, cough, shortness of breath, myalgia, and malaise following a mean <span style="color:red">incubation period</span> of 5 days, with a range of 2 to 13 days [23] .
+    
+    
+    ---- Title: Clinical findings in a group of patients infected with the 2019 novel coronavirus (SARS-Cov-2) outside of Wuhan, China: retrospective case series, date: January 01, 2020 (5 of 38) ----
+    Most of the infected individuals in Zhejiang province were male patients, but the age range of patients is large as SARS-Cov-2 also infected <span style="color:red">child</span>ren and those older than 65 years.
+    Data were collected from 10 January 2020 to 26 January 2020.Main outcome measures Clinical data, collected using a standardised case report form, such as temperature, history of exposure, <span style="color:red">incubation period</span>.
+    The <span style="color:red">incubation period</span> was defined as the time from exposure to the onset of illness, which was estimated among patients who could provide the exact date of close contact with individuals from Wuhan with confirmed or suspected SARS-Cov-2 infection.
+    Among 56 patients who could provide the exact date of close contact with someone with confirmed or suspected SARS-Cov-2 infection, the median <span style="color:red">incubation period</span> from exposure to symptoms was 4 days (interquartile range 3-5 days).
+    Among the 33 patients who had symptoms for more than 10 days after illness onset, the median <span style="color:red">incubation period</span> from exposure to symptoms was 3 days (interquartile range 3-4 days).
+    It is possible that an even greater number of infected patients exist without a diagnosis because their symptoms were less severe and because of the <span style="color:red">incubation period</span>.
+    
+    
+    ---- Title: Epidemiologic and Clinical Characteristics of 91 Hospitalized Patients with COVID-19 in Zhejiang, China: A retrospective, multi-centre case series, date: February 25, 2020 (17 of 38) ----
+    There was 1 <span style="color:red">child</span> (5 years .
+    The median of <span style="color:red">incubation period</span> was 6 (IQR, 3-8) days and the median time from first visit to a doctor to confirmed diagnosis was 1 (1-2) days.
+    11 They reported that the median age was 47.0 years, 41.90% were females, 31.30% had been to Wuhan and 71.80% had contacted people from Wuhan, and the average <span style="color:red">incubation period</span> was 3.0 days.
+    13,14 The <span style="color:red">incubation period</span> was defined as the time from the exposure to the confirmed or suspected transmission source to the onset of illness.
+    The median of <span style="color:red">incubation period</span> is 6 (IQR, 3-8) days, and number of days from first visit to a doctor till the case is confirmed is 1 (1-2).
+    The median of <span style="color:red">incubation period</span> was 6 (IQR, [3] [4] [5] [6] [7] [8] days and from first visit to a doctor to confirmed diagnosis was only 1 (1-2) days.
+    20 It appears that transmission is possible during the <span style="color:red">incubation period</span>, and the carrier cannot be spotted.
+    
+    
+    ---- Title: Estimate the incubation period of coronavirus 2019 (COVID-19), date: February 29, 2020 (18 of 38) ----
+    We found that the incubation periods of the groups with age>=40 years and <span style="color:red">age<</span>40 years demonstrated a statistically significant difference.
+    However, the incubation periods of the groups with age>=40 years and <span style="color:red">age<</span>40 years show a statistically significant difference.
+    To verify whether the incubation of the age>=40 group is different from that of the <span style="color:red">age<</span>40 group statistically, Figure 3 compares All rights reserved.
+    The Mann-Whitney rank test shows that there's a statistically significant difference between the incubation of <span style="color:red">age<</span>40 and age>=40 groups with the null hypothesis: the medians of incubation period between two groups are the same.
+    The p-values for corresponding alternative hypotheses: the <span style="color:red">age<</span>40 group has a smaller incubation median is 0.00474.
+    It suggests that the <span style="color:red">age<</span>40 group has a shorter incubation period than the age>=40 group.
+    Data is partitioned as the age>=40 and <span style="color:red">age<</span>40 groups in visualization.
+    However, we also find that the incubation data will no longer demonstrate the linear separability property when we partition it as age>=50 and <span style="color:red">age<</span>50 groups or age>=55 All rights reserved.
+    https://doi.org/10.1101/2020.02.24.20027474 doi: medRxiv preprint and <span style="color:red">age<</span>55 groups.
+    Our studies indicate that incubation periods of the age>=40 years and <span style="color:red">age<</span>40 years groups not only statistically significant but also linearly separable in machine learning.
+    Furthermore, different quarantine time should be applied to the age>=40 years and <span style="color:red">age<</span>40 years groups for their different incubation periods.
+    Accurate estimation of the <span style="color:red">incubation period</span> of the coronavirus is essential to the prevention and control.
+    However, it remains unclear about its exact <span style="color:red">incubation period</span> though it is believed that symptoms of COVID-19 can appear in as few as 2 days or as long as 14 or even more after exposure.
+    The accurate <span style="color:red">incubation period</span> calculation requires original chain-of-infection data that may not be fully available in the Wuhan regions.
+    In this study, we aim to accurately calculate the <span style="color:red">incubation period</span> of COVID-19 by taking advantage of the chain-of-infection data, which is well-documented and epidemiologically informative, outside the Wuhan regions.
+    To achieve the accurate calculation of the <span style="color:red">incubation period</span>, we only involved the officially confirmed cases with a clear history of exposure and time of onset.
+    Result: The <span style="color:red">incubation period</span> of COVID-19 did not follow general incubation distributions such as lognormal, Weibull, and Gamma distributions.
+    Result: The incubation period of COVID-19 did not follow general <span style="color:red">incubation distributions</span> such as lognormal, Weibull, and Gamma distributions.
+    We found that the <span style="color:red">incubation periods</span> of the groups with age>=40 years and age<40 years demonstrated a statistically significant difference.
+    The former group had a longer <span style="color:red">incubation period</span> and a larger variance than the latter.
+    It further suggested that different quarantine time should be applied to the groups for their different <span style="color:red">incubation periods</span>.
+    It is essential to know the accurate <span style="color:red">incubation period</span> of COVID-19 for the sake of deciphering dynamics of its spread.
+    The <span style="color:red">incubation period</span> is the time from infection to the onset of the disease.
+    Different viruses have different <span style="color:red">incubation periods</span> that determine their different dynamics epidemiologically.
+    The <span style="color:red">incubation period</span> of H7N9 (Human Avian Influenza A) is about 6.5 days, but the <span style="color:red">incubation period</span> for SARS-CoV is typically 2 to 7 days [5] [6] .
+    However, it remains unclear about its exact <span style="color:red">incubation period</span> of COVID-19, although WHO estimates it is between 2 to 14 days after exposure [8] .
+    https://doi.org/10.1101/2020.02.24.20027474 doi: medRxiv preprint <span style="color:red">incubation period</span> of COVID-19 by using original chain-of-infection data that may not be fully available in the Wuhan regions.
+    Furthermore, it is also unknown whether the <span style="color:red">incubation time</span> will show some statistically significant with respect to Age and Gender.
+    In this study, we aim to accurately estimate the <span style="color:red">incubation period</span> of COVID-19 by taking advantage of datasets with a well-documented history of exposure.
+    Our results show the <span style="color:red">incubation mean</span> and median of COVID-19 are 5.84 and 5.0 days respectively and there is a statistical significance with the role of gender.
+    However, the <span style="color:red">incubation periods</span> of the groups with age>=40 years and age<40 years show a statistically significant difference.
+    For those cases whose <span style="color:red">incubation periods</span> locate in an interval [ ! , " ],
+    $# " " to represent its <span style="color:red">incubation period</span>.
+    The incubation will be calculated as = We propose a Monte Carlo simulation approach that takes advantage of bootstrap techniques to estimate <span style="color:red">incubation median</span> and mean estimation for the small sample with 59 cases.
+    It indicates that the <span style="color:red">incubation period</span> median and mean of patients more than 40 years old are greater than those of patients less than 40 years old.
+    https://doi.org/10.1101/2020.02.24.20027474 doi: medRxiv preprint The incubation of COVID-19 is not subject to neither of the widely used <span style="color:red">incubation distributions</span> such as normal, lognormal, Gamma, and Weibull distributions well [12] .
+    Although we can't reject Gamma distributions for its boundary line p-value (0.06086), it can be risky to use it to fit and estimate the distribution of the <span style="color:red">incubation period</span> under a small sample size.
+    It suggests that that the <span style="color:red">incubation period</span> is somewhat correlated with age though not that strong.
+    https://doi.org/10.1101/2020.02.24.20027474 doi: medRxiv preprint their <span style="color:red">incubation periods</span> groups using different visualization tools.
+    It indicates that the younger group tends to have a shorter <span style="color:red">incubation period</span>.
+    The variance of their <span style="color:red">incubation period</span> also seems to be smaller.
+    The Mann-Whitney rank test shows that there's a statistically significant difference between the incubation of age<40 and age>=40 groups with the null hypothesis: the medians of <span style="color:red">incubation period</span> between two groups are the same.
+    The p-values for corresponding alternative hypotheses: the age<40 group has a smaller <span style="color:red">incubation median</span> is 0.00474.
+    It suggests that the age<40 group has a shorter <span style="color:red">incubation period</span> than the age>=40 group.
+    It suggests that COVID-19 could have a faster distribution speed than H7N9, but the same spread speed as SARS and MERS in terms of their <span style="color:red">incubation periods</span> [22] .
+    We also investigate the <span style="color:red">incubation period</span> of 12 family cases and 47 non-family cases in the dataset.
+    The Mann-Whitney rank test shows that there are not significant differences between family patients and non-family patients in terms of the median of <span style="color:red">incubation period</span>.
+    Our studies indicate that <span style="color:red">incubation periods</span> of the age>=40 years and age<40 years groups not only statistically significant but also linearly separable in machine learning.
+    It will be more interesting to estimate different <span style="color:red">incubation time</span> for them separately.
+    Furthermore, different quarantine time should be applied to the age>=40 years and age<40 years groups for their different <span style="color:red">incubation periods</span>.
+    Our ongoing work is to collect more qualified data to extend our existing results and investigate incubation of COVID-19 for different groups besides comparing our <span style="color:red">incubation estimation</span> with other studies [23] .
+    
+    
+    ---- Title: Prevalence and clinical features of 2019 novel coronavirus disease (COVID-19) in the Fever Clinic of a teaching hospital in Beijing: a single-center, retrospective study, date: February 27, 2020 (19 of 38) ----
+    <span style="color:red">Pediatric</span> patients were not included in our study.
+    An <span style="color:red">incubation period</span> was elicited from 12 patients (57.1%), ranging from 2 to 10 days with a median of 6.5 days.
+    Consistent to previous reports, the <span style="color:red">incubation period</span> of our cases was in a range of 2-10 days, with a median of 6.5 days [12] [13] [14] .
+    
+    
+    ---- Title: Analysis of epidemiological characteristics of coronavirus 2019 infection and preventive measures in Shenzhen China: a heavy population city, date: March 03, 2020 (22 of 38) ----
+    Compared with the reports from Wuhan, Hubei [11] , the age of infected population in Shenzhen was younger and decreasing gradually, in which 33 patients were <span style="color:red">child</span>ren.
+    Taking account of the <span style="color:red">incubation period</span> (mostly 3-7 days, with mean of 3.7 days) and the time between symptom onset and confirm of the diagnosis (6 day on average) [9, 12] , the peak of new confirmed cases coincided with the implementation of serial preventive strategy and measures，indicating these preventive strategies and measures were effective in preventing transmission of COVID-19 in Shenzhen.
+    
+    
+    ---- Title: Transmission and clinical characteristics of coronavirus disease 2019 in 104 outside-Wuhan patients, China, date: March 06, 2020 (29 of 38) ----
+    Mean age was 43 (rang, 8-84) years (including 3 <span style="color:red">child</span>ren) and 49 (47.12%) were male.
+    We surveyed eight infected couples, a total of 3 <span style="color:red">infant</span>s were closely lived with their parents, but none of them was infected.
+    Just 3 <span style="color:red">child</span>ren were infected from their parents or relatives.
+    These observations further demonstrated that <span style="color:red">infant</span> and <span style="color:red">child</span> are not so susceptible as adult, that is consistent with the previous reports 2,3,6,12 .
+    The median <span style="color:red">incubation period</span> was 6 (rang, 1-32) days, of 8 patients ranged from 18 to 32 days.
+    The <span style="color:red">incubation period</span> of 8 patients exceeded 14 days.. hospital-associated infections in Wuhan 2, 6 .
+    The median <span style="color:red">incubation duration</span> was 6 days, ranged from 1 to 32 days; 8 patients got more longer <span style="color:red">incubation duration</span> (18, 19, 20, 21, 23, 24 , 24 and 32 days) that more than 14 days.
+    The <span style="color:red">incubation duration</span> ranged from 1 to 32 days with the median time of 6 days which was similar to the reported patients 13 .
+    A recent report warned us the <span style="color:red">incubation duration</span> may extend to 24 days 14 .
+    We also found the <span style="color:red">incubation duration</span> of 8 patients ranged from 18 to 32 days, indicating that it may exceed 14 days which reported with the initial infections 3 .
+    
+    
+    ---- Title: Clinical Characteristics of 34 Children with Coronavirus Disease-2019 in the West of China: a Multiple-center Case Series, date: March 16, 2020 (32 of 38) ----
+    We describe the clinical and epidemiological characteristics of paediatric patients to provide valuable insight into early diagnosis of COVID-19 in <span style="color:red">child</span>ren, as well as epidemic control policy making.
+    • The epidemiological model in <span style="color:red">child</span>ren was characterized with dominant family cluster transmission and extended incubation period, which should be taken into consideration in policy making for epidemic control.
+    Admitted <span style="color:red">child</span>ren with laboratory-confirmed 2019-nCoV .
+    As mentioned in the literature review, the morbidity of COVID-19 was reported as 0.9% among <span style="color:red">child</span>ren age 0 -14 [1] .
+    So far, this is the largest case series to present the clinical and epidemiological characteristics in <span style="color:red">child</span>ren with COVID-19, as well as the first study to analyze the clinical features in .
+    The epidemiological features of paediatric patients indicated dynamic observation was necessary for suspected cases in <span style="color:red">child</span>ren due to extended incubation period.
+    The most common initial symptom, fever, was identified in 26 <span style="color:red">child</span>ren (76.47%) in our study, however it was presented in only 43.8% of adults patients on admission [1] .
+    Notwithstanding the relatively limited samples, our findings offer valuable insight into early diagnosis and epidemic control of COVID-19 in <span style="color:red">child</span>ren.
+    The median <span style="color:red">incubation period</span> was 10.50 (7.75 - 25.25) days.
+    The median <span style="color:red">incubation period</span> was 10.50 (7.75 -25.25) days.
+    • The epidemiological model in children was characterized with dominant family cluster transmission and extended <span style="color:red">incubation period</span>, which should be taken into consideration in policy making for epidemic control.
+    In addition, the median <span style="color:red">incubation period</span> and disease course were analysed for epidemiological and clinical features of paediatric patients with COVID-19.
+    Regarding the disease course, the median <span style="color:red">incubation period</span> was 10.50 (7.75 -25.25) days.
+    In accordance with the features of indirect contact exposure, the <span style="color:red">incubation period</span> was 10.50 (7.75 -25.25) days in paediatric patients, while 4.00 (2.00 -7.00) days of incubation was revealed for patients in all age groups [1] .
+    The epidemiological features of paediatric patients indicated dynamic observation was necessary for suspected cases in children due to extended <span style="color:red">incubation period</span>.
+    
+    
+    ---- Title: Investigation of three clusters of COVID-19 in Singapore: implications for surveillance and response measures, date: March 17, 2020 (35 of 38) ----
+    One case, a 6-month old male <span style="color:red">infant</span>, was asymptomatic until one spike of fever 2 days into hospital admission.
+    We reported the median (IQR) <span style="color:red">incubation period</span> of SARS-CoV-2.
+    The median <span style="color:red">incubation period</span> of SARS-CoV-2 was 4 days (IQR 3–6).
+    To answer these questions, we report data for the first three clusters of COVID-19 cases in Singapore, the epidemi ological and clinical investigations done to ascertain disease characteristics and exposure types, and summary statistics to characterise the <span style="color:red">incubation period</span> of severe acute respiratory syndrome coronavirus 2 (SARS-CoV-2) and the serial interval between trans mission pairs.
+    We reported the median (IQR) <span style="color:red">incubation period</span>, defined as the duration between estimated dates of infection and reported symptom onset, using R. We reported the serial interval range between transmission pairs in the household cluster.
+    The <span style="color:red">incubation periods</span> are plotted in figure 2 .
+    The median <span style="color:red">incubation period</span> was 4 days (IQR 3-6).
+    Other study limitations include the small sample size used to ascertain the <span style="color:red">incubation period</span>, because primary cases could not be identified with certainty.
+    Based on symptomonset dates of 17 local cases, the median <span style="color:red">incubation period</span> (4 days) corroborates other published findings.
+    
+    
+    ---- Title: Early epidemiological analysis of the coronavirus disease 2019 outbreak based on crowdsourced data: a population-level observational study, date: January 01, 2020 (36 of 38) ----
+    Few patients (13 [3%]) were younger than 15 years and the age profile of Chinese patients adjusted for baseline demographics confirmed a deficit of infections among <span style="color:red">child</span>ren.
+    Adjustment for the age demographics of China confirmed a deficit of infections among <span style="color:red">child</span>ren, with a RR below 0·5 in patients younger than 15 years (figure 1).
+    We found a heavy skew of infection towards older age groups, with substantially fewer <span style="color:red">child</span>ren infected.
+    However, a substantial portion of the patients in our database are travellers, a population that is usually predominantly adults (although does not exclude <span style="color:red">child</span>ren).
+    Nevertheless, we would also expect <span style="color:red">child</span>ren younger than 5 years to be at risk of severe outcomes and to be reported to the healthcare system, as is seen for other respiratory infections.
+    A detailed analysis of one of the early COVID-19 clusters by Chan and colleagues 19 revealed symptomatic infections in five adult members of the same household, while a <span style="color:red">child</span> in the same household aged 10 years was infected but remained asymptomatic, potentially indicating biological differences in the risk of clinical disease driven by age.
+    Previous immunity from infection with a related coronavirus has been speculated to potentially protect <span style="color:red">child</span>ren from SARS, 20, 21 and so might also have a role in COVID-19.
+    Patient-level information is important to estimate key time-to-delay events (such as the <span style="color:red">incubation period</span> and interval between symptom onset and visit to a hospital), analyse the age profile of infected patients, reconstruct epidemic curves by onset dates, and infer transmission parameters.
+    The estimated <span style="color:red">incubation period</span> in our data aligns with that of previous work.
+    We estimated the duration of the <span style="color:red">incubation period</span> on the basis of our line list data.
+    The <span style="color:red">incubation period</span> was estimated as the midpoint between the time spent in Wuhan and the date of symptom onset.
+    On the basis of 33 patients with a travel history to Wuhan, we estimated the median <span style="color:red">incubation period</span> for COVID-19 to be 4·5 days (IQR 3·0-5·5; appendix p 2).
+    A useful feature of our crowdsourced database was the availability of travel histories for patients returning from Wuhan, which, along with dates of symptom onset, allowed for estimation of the <span style="color:red">incubation period</span> here and in related work.
+    Several teams have used our dataset and datasets from others to estimate a mean <span style="color:red">incubation period</span> for COVID-19 to be 5-6 days (95% CI 2-11). [
+    13] [14] [15] [16] The <span style="color:red">incubation period</span> is a useful parameter to guide isolation and contact tracing; based on existing data, the disease status of a contact should be known with near certainty after a period of observation of 14 days.
+    
+    
+    ---- Title: Characteristics of COVID-19 infection in Beijing, date: February 27, 2020 (37 of 38) ----
+    The median age of patients was 47.5 years (rang 6 months to 94 years;95% CI:45.1 to 49.9, Table 1 ); of them, 8 (3.1%) were <span style="color:red">child</span>ren younger than 12 years old; 48 (18.3%) were 65 years age of older, 3 <span style="color:red">infant</span>s (two female, 6 months and 9 months respectively; a male 10 months) and a 25-year-old pregnant woman were infected, the gestational age was 33 weeks.
+    The median <span style="color:red">incubation period</span> was 6.7 days, the interval time from between illness onset and seeing a doctor was 4.5 days.
+    The median time from contact symptomatic case to illness onset, which is called the <span style="color:red">incubation period</span>, was 6.7 days, from illness onset to visit hospital was 4.5 days, from visit hospital to defined confirmed case was 2.1 days.
+    9 The median time of <span style="color:red">incubation period</span> was 6.7 days.
+    
+    
+    ---- Title: Epidemiological and clinical features of COVID-19 patients with and without pneumonia in Beijing, China, date: March 03, 2020 (38 of 38) ----
+    CD8+ T cell exhaustion might be critical in the development of COVID-19.. Before 2002, 4 kinds of coronaviruses (CoVs, namely HCoV 229E, NL63, OC43, and HKU1) were known to infect humans, causing 10%-30% mild upper respiratory infection in adults, occasionally severe pneumonia in elders, <span style="color:red">infant</span>s, and immunodeficient persons.
+    <span style="color:red">Incubation period</span> was calculated using the data of 31 cases with clear cutting time points of exposure and illness onset.
+    The mean <span style="color:red">incubation period</span> of COVID-19 was .
+    A previous study carried out in Wuhan indicated that the mean <span style="color:red">incubation period</span> was 5.2 days.
+    28 Finally, we characterized the epidemiological features including the <span style="color:red">incubation period</span>, time to RT-PCR conversion of SARS-CoV-2, COVID-19 course, and the transmissibility SARS-CoV-2 in asymptomatic carriers.
 
 
 
