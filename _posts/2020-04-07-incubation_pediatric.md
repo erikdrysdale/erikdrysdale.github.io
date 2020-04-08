@@ -241,7 +241,7 @@ for ii, rr in df_txt.iterrows():
     
     
     ----- Article: Incubation Period and Other Epidemiological Characteristics of 2019 Novel Coronavirus Infections with Right Truncation: A Statistical Analysis of Publicly Available Case Data -----
-    Our results show that the [31mincubation period[0m falls within the range of 2&ndash;14 days with 95% confidence and has a mean of around 5 days when approximated using the best-fit lognormal distribution.
+    Our results show that the <font color='red'>incubation</font> period[0m falls within the range of 2&ndash;14 days with 95% confidence and has a mean of around 5 days when approximated using the best-fit lognormal distribution.
     
     
     ----- Article: Incubation Period and Other Epidemiological Characteristics of 2019 Novel Coronavirus Infections with Right Truncation: A Statistical Analysis of Publicly Available Case Data -----
