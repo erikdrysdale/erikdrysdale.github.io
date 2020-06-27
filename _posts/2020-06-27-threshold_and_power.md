@@ -19,7 +19,7 @@ Assume that the goal of the clinical trial is to establish that an algorithm has
 
 An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold $\hat{t}_k$ that matches the empirical quantile of $(1-k)$%. This threshold will ensure that the sensitivity on the test set is exactly $k$%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because $\hat t_k$ is a random variable, it will have a large chance of being above the true value. 
 
-To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x\|y=1) \sim N(\mu_1, \sigma^2_1)$. A classifier with a threshold $t^*_k(\mu_1,\sigma_1) = \mu_1 + \sigma_1*\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat{t}_{0.95}$ to $t^*_{0.95}$ for 50 positive cases in the test set ($n=50$).
+To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x\|y=1) \sim N(\mu_1, \sigma^2_1)$. A classifier with a threshold $t^{\*}_k(\mu_1,\sigma_1) = \mu_1 + \sigma_1\cdot\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat{t}_{0.95}$ to $t^{\*}_{0.95}$ for 50 positive cases in the test set ($n=50$).
 
 
 
@@ -479,6 +479,6 @@ This post has explained what the main statistical challenges are for validating 
 
 [^2]: By pre-trained I mean that $\theta$ has been learned on data outside of the test set.
 
-[^3]: Remember that when $\hat t_k \textless t_k^{*}$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k \textgreater t_k^{*}$ the asymptotic sensitivity will be less than $k$%.
+[^3]: Remember that when $\hat t_k \textless t_k^{\*}$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k \textgreater t_k^{\*}$ the asymptotic sensitivity will be less than $k$%.
 
 [^4]: At this point it must be assumed that the threshold is less than equal to the true asymptotic threshold.
