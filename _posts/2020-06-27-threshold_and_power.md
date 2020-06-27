@@ -56,7 +56,7 @@ gg_thresh_sim = (ggplot(pd.DataFrame({'thresh':thresh_sim}),aes(x='thresh')) +
 gg_thresh_sim
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_2_0.png" width="100%"></p>
+<p align="center"><img src="/figures/power_calc_phn_2_0.png" width="50%"></p>
 
 Most of the time $\hat{t}_{0.95}$ would lead to long-run sensitivity of below 95%! Even if the 5th percentile were symmetric then at best $P(\hat{t} > t^*) = 0.5$
 
@@ -113,7 +113,6 @@ np.round(df_sim,2)
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: left;">
-      <th></th>
       <th>method</th>
       <th>lb</th>
       <th>error</th>
@@ -164,7 +163,7 @@ gg_bs = (ggplot(pd.DataFrame({'x':ex_stat}),aes(x='x')) +
 gg_bs
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_6_0.png" width="100%"></p>
+<p align="center"><img src="/figures/power_calc_phn_6_0.png" width="50%"></p>
 
 An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier $R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]$. This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the $r^{th}$ rank-order statistic from the distribution of positive labels: $\hat{\psi}_r=I(f_\theta(x)>\hat{p}^1_{(r)})$, where $\hat{p}^1_{(r)}$ is the r-th order statistic: $p^1_{(1)} \leq p^1_{(2)} \leq ... \leq p^1_{(n)}$. The umbrella algorithm appeals to a slight modification the CDF of rank-order stastistics:
 
@@ -203,7 +202,7 @@ gg_r = (ggplot(df_r,aes(x='n',y='r')) + geom_point() +
 gg_r
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_8_0.png" width="100%"></p>
+<p align="center"><img src="/figures/power_calc_phn_8_0.png" width="50%"></p>
 
 
 Notice that for 50 positive samples a rank-order of one (i.e. the minimum) is necessary to ensure that the sensitivity is at least 95%, 80% of the time. This ends up being a much tigther bound than what is actually needed. Even though the CDF is *exact*, because it is from a discrete distribution, for small sample sizes finding a value equal to exactly $(1-j)$% is impossible (i.e. there is no rank 1.5, only 1 or 2). The table below shows that for our considered sample size and sensitivity, $j$ needs to be either 92% or 72% for the NP-Umbrella to be efficient. 
@@ -307,7 +306,7 @@ gg_comp = (ggplot(df_comp,aes(x='value',fill='method')) +
 gg_comp
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_12_0.png" width="100%"></p>
+<p align="center"><img src="/figures/power_calc_phn_12_0.png" width="50%"></p>
 
 In summary picking a threshold is difficult because $\psi_t(\hat p_1)$ is what is observed from some random sample $\hat x$ whereas the distribution of $\psi_t(p_1)$ for all $x$ is needed to establish an asymptotically valid threshold. This fundamental uncertainty leads to a choice of $\hat t$ that is conservative so that the threshold statistic can obtain a targeted asymptotic sensitivity $j$% of the time. The BCa boostrap does a good job at this and has a more exact confidence bound than the NP-Umbrella for smaller-sized samples as well as being more efficient.
 
@@ -385,7 +384,7 @@ gg_n = (ggplot(params, aes(x='b',y='n')) +
 gg_n
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_15_0.png" width="100%"></p>
+<p align="center"><img src="/figures/power_calc_phn_15_0.png" width="50%"></p>
 
 Figure 5 shows three stylized facts. First, increasing $k$ makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 50%. Second, and obviously, lowering $\beta$ increases the number of samples needed. The third and most important factor is $b$. Increasing $b$ from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
 
@@ -429,7 +428,7 @@ gg_power = (ggplot(power_res, aes(x='beta',y='beta_hat')) +
 gg_power
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_18_0.png" width="100%"></p>
+<p align="center"><img src="/figures/power_calc_phn_18_0.png" width="50%"></p>
 
 ## (4) Applied example
 
@@ -480,6 +479,6 @@ This post has explained what the main statistical challenges are for validating 
 
 [^2]: By pre-trained I mean that $\theta$ has been learned on data outside of the test set.
 
-[^3]: Remember that when $\hat t_k \textless t^*_k$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k > t^*_k$ the asymptotic sensitivity will be less than $k$%.
+[^3]: Remember that when $\hat t_k \textless t_k^{*}$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k \textgreater t_k^{*}$ the asymptotic sensitivity will be less than $k$%.
 
 [^4]: At this point it must be assumed that the threshold is less than equal to the true asymptotic threshold.
