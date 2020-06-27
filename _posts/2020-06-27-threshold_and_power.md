@@ -19,7 +19,7 @@ Assume that the goal of the clinical trial is to establish that an algorithm has
 
 An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold $\hat{t}_k$ that matches the empirical quantile of $(1-k)$%. This threshold will ensure that the sensitivity on the test set is exactly $k$%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because $\hat t_k$ is a random variable, it will have a large chance of being above the true value. 
 
-To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x\|y=1)$, $\sim N(\mu_1, \sigma^{2}_{1})$. A classifier with a threshold $t^{\*}_k(\mu_1,\sigma_1) = \mu_1 + \sigma_1\cdot\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat{t}_{0.95}$ to $t^{\*}_{0.95}$ for 50 positive cases in the test set ($n=50$).
+To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x\|y=1)$, $\sim N(\mu_1, \sigma_1^{2})$. A classifier with a threshold $t^{\*}_k(\mu_1,\sigma_1) = \mu_1 + \sigma_1\cdot\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}\|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat{t}_{0.95}$ to $t^{\*}_{0.95}$ for 50 positive cases in the test set ($n=50$).
 
 
 
@@ -56,7 +56,7 @@ gg_thresh_sim = (ggplot(pd.DataFrame({'thresh':thresh_sim}),aes(x='thresh')) +
 gg_thresh_sim
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_2_0.png" width="50%"></p>
+<p align="center"><img src="/figures/power_calc_phn_2_0.png" width="75%"></p>
 
 Most of the time $\hat{t}_{0.95}$ would lead to long-run sensitivity of below 95%! Even if the 5th percentile were symmetric then at best $P(\hat{t} > t^*) = 0.5$
 
@@ -107,7 +107,7 @@ np.round(df_sim,2)
     }
 
     .dataframe thead th {
-        text-align: right;
+        text-align: left;
     }
 </style>
 <table border="1" class="dataframe">
@@ -163,7 +163,7 @@ gg_bs = (ggplot(pd.DataFrame({'x':ex_stat}),aes(x='x')) +
 gg_bs
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_6_0.png" width="50%"></p>
+<p align="center"><img src="/figures/power_calc_phn_6_0.png" width="75%"></p>
 
 An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier $R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]$. This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the $r^{th}$ rank-order statistic from the distribution of positive labels: $\hat{\psi}_r=I(f_\theta(x)>\hat{p}^1_{(r)})$, where $\hat{p}^1_{(r)}$ is the r-th order statistic: $p^1_{(1)} \leq p^1_{(2)} \leq ... \leq p^1_{(n)}$. The umbrella algorithm appeals to a slight modification the CDF of rank-order stastistics:
 
@@ -202,7 +202,7 @@ gg_r = (ggplot(df_r,aes(x='n',y='r')) + geom_point() +
 gg_r
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_8_0.png" width="50%"></p>
+<p align="center"><img src="/figures/power_calc_phn_8_0.png" width="75%"></p>
 
 
 Notice that for 50 positive samples a rank-order of one (i.e. the minimum) is necessary to ensure that the sensitivity is at least 95%, 80% of the time. This ends up being a much tigther bound than what is actually needed. Even though the CDF is *exact*, because it is from a discrete distribution, for small sample sizes finding a value equal to exactly $(1-j)$% is impossible (i.e. there is no rank 1.5, only 1 or 2). The table below shows that for our considered sample size and sensitivity, $j$ needs to be either 92% or 72% for the NP-Umbrella to be efficient. 
@@ -222,13 +222,12 @@ np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
     }
 
     .dataframe thead th {
-        text-align: right;
+        text-align: left;
     }
 </style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: left;">
-      <th></th>
       <th>rank</th>
       <th>pdf</th>
       <th>cdf</th>
@@ -306,7 +305,7 @@ gg_comp = (ggplot(df_comp,aes(x='value',fill='method')) +
 gg_comp
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_12_0.png" width="50%"></p>
+<p align="center"><img src="/figures/power_calc_phn_12_0.png" width="75%"></p>
 
 In summary picking a threshold is difficult because $\psi_t(\hat p_1)$ is what is observed from some random sample $\hat x$ whereas the distribution of $\psi_t(p_1)$ for all $x$ is needed to establish an asymptotically valid threshold. This fundamental uncertainty leads to a choice of $\hat t$ that is conservative so that the threshold statistic can obtain a targeted asymptotic sensitivity $j$% of the time. The BCa boostrap does a good job at this and has a more exact confidence bound than the NP-Umbrella for smaller-sized samples as well as being more efficient.
 
@@ -384,9 +383,9 @@ gg_n = (ggplot(params, aes(x='b',y='n')) +
 gg_n
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_15_0.png" width="50%"></p>
+<p align="center"><img src="/figures/power_calc_phn_15_0.png" width="75%"></p>
 
-Figure 5 shows three stylized facts. First, increasing $k$ makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 50%. Second, and obviously, lowering $\beta$ increases the number of samples needed. The third and most important factor is $b$. Increasing $b$ from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
+Figure 5 shows three stylized facts. First, increasing $k$ makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 75%. Second, and obviously, lowering $\beta$ increases the number of samples needed. The third and most important factor is $b$. Increasing $b$ from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
 
 The implications of this are that high sensitivity targets are difficult to prove because if $k-l$=95%, then $k$=100! Just as central banks can hit the [zero lower bound](https://en.wikipedia.org/wiki/Zero_lower_bound) when setting interest rate policies, there are some thresholds that cannot be establish if the nomial level is too high. Note that the sample-size formula $n^*$ is based on a normal approximation of a binomial propotion. The simulation below shows that this approximation is yields an estimate predicted power that is within 2% of the actual power target.
 
@@ -428,7 +427,7 @@ gg_power = (ggplot(power_res, aes(x='beta',y='beta_hat')) +
 gg_power
 ```
 
-<p align="center"><img src="/figures/power_calc_phn_18_0.png" width="50%"></p>
+<p align="center"><img src="/figures/power_calc_phn_18_0.png" width="75%"></p>
 
 ## (4) Applied example
 
