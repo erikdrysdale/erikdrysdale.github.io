@@ -15,18 +15,15 @@ Imagine that an algorithm has been developed for a clinical task. Its performanc
 
 ## (1) Why is picking a threshold difficult?
 
-Assume that the goal of the clinical trial is to establish that an algorithm has at least $k$% sensivity.[[^1]] To establish the notation that will be used in the rest of this post, assume there is a pre-trained model with parameters $\theta$ that maps an input to a continuous score $f_\theta(x): \mathbb{R}^p \to \mathbb{R}$.[[^3]] The classifier is a version of the model that maps the output score to a binary outcome $\psi_t(f)=I(f_\theta(x)>t)$, where $I(\cdot)$ is the indicator function. Clearly the functional $\psi$ derives its statistical properties from the choice of $t$. The goal is to pick $t$ so that the $k$% sensitivity target is established.
+Assume that the goal of the clinical trial is to establish that an algorithm has at least $k$% sensivity.[[^1]] To establish the notation that will be used in the rest of this post, assume there is a pre-trained model with parameters $\theta$ that maps an input to a continuous score $f_\theta(x): \mathbb{R}^p \to \mathbb{R}$.[[^2]] The classifier is a version of the model that maps the output score to a binary outcome $\psi_t(f)=I(f_\theta(x)>t)$, where $I(\cdot)$ is the indicator function. Clearly the functional $\psi$ derives its statistical properties from the choice of $t$. The goal is to pick $t$ so that the $k$% sensitivity target is established.
 
 An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold $\hat{t}_k$ that matches the empirical quantile of $(1-k)$%. This threshold will ensure that the sensitivity on the test set is exactly $k$%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because $\hat t_k$ is a random variable, it will have a large chance of being above the true value. 
 
-To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x|y=1) \sim N(\mu_1, \sigma^2_1)$. A classifier with a threshold $t^*_k(\mu_1,\sigma_1) = \mu_1 + \sigma_1*\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat{t}_{0.95}$ to $t^*_{0.95}$ for 50 positive cases in the test set ($n=50$).
-
-[^1]: Metrics other than sensitivity can be used of course: precision, specificity, etc. The math in the rest of the this post is based on this type-II error rate assumption, but can be adjusted for the appropriate metric.
-
-[^3]: By pre-trained I mean that $\theta$ has been learned on data outside of the test set.
+To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x\|y=1) \sim N(\mu_1, \sigma^2_1)$. A classifier with a threshold $t^*_k(\mu_1,\sigma_1) = \mu_1 + \sigma_1*\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat{t}_{0.95}$ to $t^*_{0.95}$ for 50 positive cases in the test set ($n=50$).
 
 
-```
+
+```python
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -59,21 +56,18 @@ gg_thresh_sim = (ggplot(pd.DataFrame({'thresh':thresh_sim}),aes(x='thresh')) +
 gg_thresh_sim
 ```
 
-![png](/figures/power_calc_phn_2_0.png)
-
+<p align="center"><img src="/figures/power_calc_phn_2_0.png" width="100%"></p>
 
 Most of the time $\hat{t}_{0.95}$ would lead to long-run sensitivity of below 95%! Even if the 5th percentile were symmetric then at best $P(\hat{t} > t^*) = 0.5$
 
 ## (2) Getting $k$% sensitivity $j$% of the time
 
-Since the intuitive approach will yield a threshold that will fail to give an asymptotic threshold target at least half of the time, a more robust method would be to select $\hat{t}$ so that it will achieve an asymptotic  sensitivity of **at least** $k\%$ for $j\%$ of the time (this is equivalent to a one-sided confidence interval). Of course picking a $t$ that is very small (e.g. $\hat{t}=\min[\hat{p}_1]-10$) will guarantee a sensivivity of at least $k\%$ close to 100% of the time, but this will yield unnessary false positives (as sensitivity increases, the false positive rate must necessarily as well). An ideal threshold estimator will have a $\hat t \leq t^*$ exactly $j\%$ of the time (no more and no less).[[^4]] This property is known as the [coverage](https://en.wikipedia.org/wiki/Coverage_probability).
+Since the intuitive approach will yield a threshold that will fail to give an asymptotic threshold target at least half of the time, a more robust method would be to select $\hat{t}$ so that it will achieve an asymptotic  sensitivity of **at least** $k\%$ for $j\%$ of the time (this is equivalent to a one-sided confidence interval). Of course picking a $t$ that is very small (e.g. $\hat{t}=\min[\hat{p}_1]-10$) will guarantee a sensivivity of at least $k\%$ close to 100% of the time, but this will yield unnessary false positives (as sensitivity increases, the false positive rate must necessarily as well). An ideal threshold estimator will have a $\hat t \leq t^*$ exactly $j\%$ of the time (no more and no less).[[^3]] This property is known as the [coverage](https://en.wikipedia.org/wiki/Coverage_probability).
 
 In order to find this one-sided confidence interval, the distribution of $\hat t_k$ has to be known. Unfortunately there is no parametric distribution for such a statistic. Instead non-parametric methods must be used. The first (and my preferred) approach is to use the bias-corrected and accelerated (BCa) bootstrap. Even before taking the bootstrap, the distribution of $\hat t_{0.95}$ is skewed as Figure 1 shows above. Simpler bootstrapping approaches will fail both because there is a bias in the boostrapped sample (the mean of the boostrapped quantiles is larger than the empiricial quantile) and because there is a right-skew in the data. The simulations below will show that the BCa gets close to the target coverage of $j=80$%.
 
-[^4]: Remember that when $\hat t_k < t^*_k$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k > t^*_k$ the asymptotic sensitivity will be less than $k$%.
 
-
-```
+```python
 from arch.bootstrap import IIDBootstrap
 
 # "Confidence" of sensivitiy
@@ -118,7 +112,7 @@ np.round(df_sim,2)
 </style>
 <table border="1" class="dataframe">
   <thead>
-    <tr style="text-align: right;">
+    <tr style="text-align: left;">
       <th></th>
       <th>method</th>
       <th>lb</th>
@@ -127,25 +121,21 @@ np.round(df_sim,2)
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
       <td>bca</td>
       <td>0.78</td>
       <td>-2.0</td>
     </tr>
     <tr>
-      <th>1</th>
       <td>norm</td>
       <td>0.68</td>
       <td>-11.6</td>
     </tr>
     <tr>
-      <th>2</th>
       <td>basic</td>
       <td>0.65</td>
       <td>-14.8</td>
     </tr>
     <tr>
-      <th>3</th>
       <td>percentile</td>
       <td>0.64</td>
       <td>-16.0</td>
@@ -158,7 +148,7 @@ np.round(df_sim,2)
 The BCa boostrap gets a coverage of 78% for a target of 80% which is very good, especially considereing the small sample size and skewed/biased distribution of the test statistic (see example below).
 
 
-```
+```python
 ex_stat = bs.apply(func=np.quantile, reps=nboot, extra_kwargs={'q':1-k}).flatten()
 
 tit2 = ('Figure 2: Skewed distribtution of the bootstrapped 5th percentile\n'
@@ -174,10 +164,9 @@ gg_bs = (ggplot(pd.DataFrame({'x':ex_stat}),aes(x='x')) +
 gg_bs
 ```
 
-![png](/figures/power_calc_phn_6_0.png)
+<p align="center"><img src="/figures/power_calc_phn_6_0.png" width="100%"></p>
 
-
-An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier $R(\psi(f)) = E[\hat \psi(f(x)) \neq y | y=1]$. This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the $r^{th}$ rank-order statistic from the distribution of positive labels: $\hat{\psi}_r=I(f_\theta(x)>\hat{p}^1_{(r)})$, where $\hat{p}^1_{(r)}$ is the r-th order statistic: $p^1_{(1)} \leq p^1_{(2)} \leq ... \leq p^1_{(n)}$. The umbrella algorithm appeals to a slight modification the CDF of rank-order stastistics:
+An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier $R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]$. This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the $r^{th}$ rank-order statistic from the distribution of positive labels: $\hat{\psi}_r=I(f_\theta(x)>\hat{p}^1_{(r)})$, where $\hat{p}^1_{(r)}$ is the r-th order statistic: $p^1_{(1)} \leq p^1_{(2)} \leq ... \leq p^1_{(n)}$. The umbrella algorithm appeals to a slight modification the CDF of rank-order stastistics:
 
 $$
 \begin{align*}
@@ -188,7 +177,7 @@ $$
 To find the rank $r$ that leads to a type-II less than $(1-j)$% of the time the goal is to find $r^* = \max_r [v(r) \leq 1-j]$. The function below shows the relationship between the sample size and the require rank needed to obtain this bound.
 
 
-```
+```python
 from scipy.special import comb
 
 def umbrella_thresh(n,k,j, ret_df=False):
@@ -214,12 +203,12 @@ gg_r = (ggplot(df_r,aes(x='n',y='r')) + geom_point() +
 gg_r
 ```
 
-![png](/figures/power_calc_phn_8_0.png)
+<p align="center"><img src="/figures/power_calc_phn_8_0.png" width="100%"></p>
 
 
 Notice that for 50 positive samples a rank-order of one (i.e. the minimum) is necessary to ensure that the sensitivity is at least 95%, 80% of the time. This ends up being a much tigther bound than what is actually needed. Even though the CDF is *exact*, because it is from a discrete distribution, for small sample sizes finding a value equal to exactly $(1-j)$% is impossible (i.e. there is no rank 1.5, only 1 or 2). The table below shows that for our considered sample size and sensitivity, $j$ needs to be either 92% or 72% for the NP-Umbrella to be efficient. 
 
-```
+```python
 np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
 ```
 
@@ -239,7 +228,7 @@ np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
 </style>
 <table border="1" class="dataframe">
   <thead>
-    <tr style="text-align: right;">
+    <tr style="text-align: left;">
       <th></th>
       <th>rank</th>
       <th>pdf</th>
@@ -249,28 +238,24 @@ np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
       <td>1</td>
       <td>0.20</td>
       <td>0.92</td>
       <td>0.08</td>
     </tr>
     <tr>
-      <th>2</th>
       <td>2</td>
       <td>0.26</td>
       <td>0.72</td>
       <td>0.28</td>
     </tr>
     <tr>
-      <th>3</th>
       <td>3</td>
       <td>0.22</td>
       <td>0.46</td>
       <td>0.54</td>
     </tr>
     <tr>
-      <th>4</th>
       <td>4</td>
       <td>0.14</td>
       <td>0.24</td>
@@ -284,7 +269,7 @@ np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
 Figure 4 below shows, as the above table would suggest, that the NP-Umbrella gets an actual of $j$=92% using a rank-order of one as a threhold, leading to a distribution of thresholds that is too conservative. Note that even if the mean of the NP-Umbrella thresholds was shifted to the right so that $j$=80%, the variance of the thresholds would still be larger. If the code-block below is changed so that $j$=92%, the variance of the NP-Umbrella can still be shown to be larger using [Levene's test](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html).
 
 
-```
+```python
 seed = 1234
 np.random.seed(seed)
 
@@ -322,8 +307,7 @@ gg_comp = (ggplot(df_comp,aes(x='value',fill='method')) +
 gg_comp
 ```
 
-![png](/figures/power_calc_phn_12_0.png)
-
+<p align="center"><img src="/figures/power_calc_phn_12_0.png" width="100%"></p>
 
 In summary picking a threshold is difficult because $\psi_t(\hat p_1)$ is what is observed from some random sample $\hat x$ whereas the distribution of $\psi_t(p_1)$ for all $x$ is needed to establish an asymptotically valid threshold. This fundamental uncertainty leads to a choice of $\hat t$ that is conservative so that the threshold statistic can obtain a targeted asymptotic sensitivity $j$% of the time. The BCa boostrap does a good job at this and has a more exact confidence bound than the NP-Umbrella for smaller-sized samples as well as being more efficient.
 
@@ -331,7 +315,7 @@ In summary picking a threshold is difficult because $\psi_t(\hat p_1)$ is what i
 
 The final stage of designing an evaluation trial for a machine learning algorithm is similar to a standard clinical trial: sample-size justifications based on a power analysis. Sections (1) and (2) showed how to pick a threshold $\hat t$ that will obtain a sensitivity bound with high probability. Now assume that the model possesses an aymptotic sensitivity of $k$%. To establish statistical significance a null hypothesis of the form $H_0: k_0 \leq l$  in favour of $H_A: k_0 > l$. Unfortunately $l$ cannot be set to $k$, because the null would not be rejected as the number of samples increased because the null would be true! Could the failure to reject the null be considered evidence in favour of the hypothesis? Unfortunately not not rejecting can be caused by either a lack of samples or a true null.
 
-By setting $l=k-b < k$ then a sufficient number of samples will lead to a rejection of the null.[[^2]] As the $b$% buffer grows the null hypothesis becomes easier to reject, but the uncertainty around how close the model is to its desired performance level will increase. Ideally $b \to 0$, but this would require $n \to \infty$. There is no free lunch! 
+By setting $l=k-b < k$ then a sufficient number of samples will lead to a rejection of the null.[[^4]] As the $b$% buffer grows the null hypothesis becomes easier to reject, but the uncertainty around how close the model is to its desired performance level will increase. Ideally $b \to 0$, but this would require $n \to \infty$. There is no free lunch! 
 
 Because sensitivity is a binomial propotion, its distributional form can be [approximated](https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval). If $\hat s$ is the observed sensitivity of the trial, then the statistic $s_0$ has a normal distribution unde the null:
 
@@ -372,10 +356,8 @@ $$
 
 The plots below will show how different levels of $k$, $b$, and $\beta$ lead to different requirements for $n^*$.
 
-[^2]: At this point it must be assumed that the threshold is less than equal to the true asymptotic threshold.
 
-
-```
+```python
 def n_star(k, b, beta, alpha):
   assert (b > 0) & (b < k)
   l = k - b
@@ -403,16 +385,14 @@ gg_n = (ggplot(params, aes(x='b',y='n')) +
 gg_n
 ```
 
-
-![png](/figures/power_calc_phn_15_0.png)
-
+<p align="center"><img src="/figures/power_calc_phn_15_0.png" width="100%"></p>
 
 Figure 5 shows three stylized facts. First, increasing $k$ makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 50%. Second, and obviously, lowering $\beta$ increases the number of samples needed. The third and most important factor is $b$. Increasing $b$ from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
 
 The implications of this are that high sensitivity targets are difficult to prove because if $k-l$=95%, then $k$=100! Just as central banks can hit the [zero lower bound](https://en.wikipedia.org/wiki/Zero_lower_bound) when setting interest rate policies, there are some thresholds that cannot be establish if the nomial level is too high. Note that the sample-size formula $n^*$ is based on a normal approximation of a binomial propotion. The simulation below shows that this approximation is yields an estimate predicted power that is within 2% of the actual power target.
 
 
-```
+```python
 np.random.seed(1234)  # For reproducability
 
 nsim = 5000
@@ -436,7 +416,7 @@ power_res = pd.concat(power_sim,1).T
 ```
 
 
-```
+```python
 plotnine.options.figure_size = (5,3)
 yt = list(np.arange(0.05, 0.251, 0.05))
 gg_power = (ggplot(power_res, aes(x='beta',y='beta_hat')) + 
@@ -449,16 +429,14 @@ gg_power = (ggplot(power_res, aes(x='beta',y='beta_hat')) +
 gg_power
 ```
 
-
-![png](/figures/power_calc_phn_18_0.png)
-
+<p align="center"><img src="/figures/power_calc_phn_18_0.png" width="100%"></p>
 
 ## (4) Applied example
 
 To conclude the post we will use the tools discussed in sections (1)-(3) to design and evaluate how well the threshold and sample size calculations works for a specific example. Assume the algorithm has a target sensitivity of 95%, the null hypothesis is set to 90% with a 5% type-I error rate. The desired power is 80%. The threshold is going to be generated based on 50 positive test set samples with 80% confidence. The `n_star` function tells us that a total of 184 positive class patients will be needed to reject the null 80% of the time.
 
 
-```
+```python
 k, l, alpha, beta, j = 0.95, 0.90, 0.05, 1-0.8, 0.8
 b = k - l
 n_study = int(np.ceil(n_star(k,b,beta,alpha)))
@@ -495,3 +473,13 @@ print('Reject the null %0.1f%% of the time\nAverage sensitivity: %0.1f%%' %
 The threshold obtained by the bootstrapping method obtains an average sensitivity of 96.4%, just slightly higher than the targeted level of 95%, highlighting the importance of using the lower-bound on the threshold to ensure a slightly conservative measure. The study was slightly overpowered as the null is rejected 83.5% of the time. This overshoot is due to a combination of the normal approximation error in the binomial proportion statistic as well as the the conservatism in the threshold. Nevertheless it is better to be over- rather than under-powered when designing a trial to validate an important algorithm that could have significant effect on a patient population.
 
 This post has explained what the main statistical challenges are for validating a binary classifier in a statistical trial and the two-step process needed to 1) find an appropriate threshold, and 2) find an appropriate sample size. As machine learning models become used in more domains, having a rigorous statistical procedure for their adoption will become increasingly important.
+
+* * * 
+
+[^1]: Metrics other than sensitivity can be used of course: precision, specificity, etc. The math in the rest of the this post is based on this type-II error rate assumption, but can be adjusted for the appropriate metric.
+
+[^2]: By pre-trained I mean that $\theta$ has been learned on data outside of the test set.
+
+[^3]: Remember that when $\hat t_k \textless t^*_k$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k > t^*_k$ the asymptotic sensitivity will be less than $k$%.
+
+[^4]: At this point it must be assumed that the threshold is less than equal to the true asymptotic threshold.
