@@ -19,8 +19,8 @@ In this post I will briefly review the frequentist paradigm that is used to cond
 
 In summary this post will provide to explicit formulas for: 
 
-1. **The relationship between power and effect size bias \eqref{eq:power}.**
-2. **An effect size adjuster for single test statistic results \eqref{eq:deflator}.**
+1. **The relationship between power and effect size bias \eqref{eq:power}**
+2. **An effect size adjuster for single test statistic results \eqref{eq:deflator}**
 
 In the sections below the examples and math will be kept as simple as possible. All null and alternative hypothesis will come from a Gaussian distribution. Variances will be fixed and known. All hypothesis will be one-sided. Each of these assumptions can be relaxed without any change to the implications of the examples below, but do require a bit more math. Also note that $\Phi$ refers to the standard normal CDF and its quantile function $\Phi^{-1}$. 
 
@@ -114,7 +114,7 @@ $$
 \end{align*}
 $$
 
-Notice that the **smallest observable and statistically significant** mean difference will be at least $c_\alpha$ root-$n$ normalized standard deviations above zero. Because $\bar d$ has a Gaussian distribution, $\bar d^*$ has a [truncated](https://en.wikipedia.org/wiki/Truncated_normal_distribution) Gaussian distribution:
+Notice that the **smallest observable and statistically significant** mean difference will be at least $c_\alpha$ root-$n$ normalized standard deviations above zero. Because $\bar d$ has a Gaussian distribution, $\bar{d}^\*$ has a [truncated](https://en.wikipedia.org/wiki/Truncated_normal_distribution) Gaussian distribution:
 
 $$
 \begin{align}
@@ -375,7 +375,7 @@ gg_res
 
 <p align="center"><img src="/figures/winners_curse_12_0.png" width="75%"></p>
 
-But if multiple samples are unavailable to estimate $\hat{\bar d}^*$, then can the value of $d$ ever be estimated? A naive reproach using only a single value to find $d^*$ via an MLE approach of equation \eqref{eq:MLE} yields negative estimates when $\mu \approx 0$ because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
+But if multiple samples are unavailable to estimate $\hat{\bar{d}}^\*$, then can the value of $d$ ever be estimated? A naive reproach using only a single value to find $d^\*$ via an MLE approach of equation \eqref{eq:MLE} yields negative estimates when $\mu \approx 0$ because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
 
 
 ```python
@@ -400,15 +400,15 @@ pl2
 
 <p align="center">
 <figure>
-  <img src="/figures/winners_curse_14_0.png" width="60%" style="float: left" />
-  <img src="/figures/winners_curse_15_0.png" width="60%" />
+  <img src="/figures/winners_curse_14_0.png" width="30%" style="float: left" />
+  <img src="/figures/winners_curse_15_0.png" width="30%" />
 </figure>
 </p>
 
 
 ## (4) Approaches to de-biasing single-test statistic results
 
-A conservative method to ensure that $E[ \bar d^* -d ] \leq 0$ when $d\geq 0$ is to subtract off the bias when the null is zero: $(\sigma \cdot \phi(c_\alpha)) / (\sqrt{n}\cdot\Phi(-c_\alpha))$. The problem with this approach is that for true effect ($d>0$), the bias estimate will be too large and the estimate of the true effect will actually be too small as Figure 4 shows. 
+A conservative method to ensure that $E[ \bar{d}^\* -d ] \leq 0$ when $d\geq 0$ is to subtract off the bias when the null is zero: $(\sigma \cdot \phi(c_\alpha)) / (\sqrt{n}\cdot\Phi(-c_\alpha))$. The problem with this approach is that for true effect ($d>0$), the bias estimate will be too large and the estimate of the true effect will actually be too small as Figure 4 shows. 
 
 
 ```python
@@ -428,7 +428,7 @@ gg_bias1
 
 <p align="center"><img src="/figures/winners_curse_17_0.png" width="50%"></p>
 
-A better approach I have devised is to weight the statistically significant observation by where it falls in the cdf of truncated Gaussian for $d=0$. When $d>0$ most $\bar d^*$ will be above this range and receive little penalty, whereas for values of $d \approx 0$ they will tend to receive a stronger deflation.
+A better approach I have devised is to weight the statistically significant observation by where it falls in the cdf of truncated Gaussian for $d=0$. When $d>0$ most $\bar{d}^\*$ will be above this range and receive little penalty, whereas for values of $d \approx 0$ they will tend to receive a stronger deflation.
 
 $$
 \begin{align}
@@ -479,7 +479,7 @@ gg_bias2 = (ggplot(df_defl,aes(x='d',y='mu',color='tt')) + theme_bw() +
 gg_bias2
 ```
 
-<p align="center"><img src="/figures/winners_curse_19_0.png" width="65%"></p>
+<p align="center"><img src="/figures/winners_curse_19_0.png" width="85%"></p>
 
 
 Figure 5 shows that the bias for values of $d \geq 0$ is now conservative and limited. Especially for larger samples, a large and otherwise highly significant effect will be brought much closer to its true value. The primary drawback to using the WCA from equation \eqref{eq:deflator} is that it adds further noise to the point estimate. While this is statistically problematic, from an epistemological viewpoint it could be useful to reduce the confidence of researchers in their "significant" findings that are unlikely to replicate at an equivalent level. 
