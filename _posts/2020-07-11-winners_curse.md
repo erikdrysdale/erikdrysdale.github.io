@@ -191,7 +191,7 @@ gg_ratio
     Empirical bias-ratio: 1.67, theoretical power: 1.67
 
 
-<p align="center"><img src="/figures/winners_curse_7_1.png" width="65%"></p>
+<p align="center"><img src="/figures/winners_curse_7_1.png" width="75%"></p>
 
 Figure 1 shows that while there is not a one-to-one relationship between the power and the bias ratio, generally speaking the higher the power the lower the ratio. The variation in low powered tests is driven by the sample size. Tests that have low power because they have a large sample sizes but small effect size will have a much smaller bias than equivalently powered tests with large effect sizes and small sample sizes. The tables below highlight this fact by showing the range in power for tests with similar bias ratios, the range in bias ratios for similarly powered tests.
 
@@ -325,7 +325,7 @@ np.round(df_ratio[(df_ratio.power > 0.45) & (df_ratio.power < 0.52)].sort_values
 
 ## (3) Why estimating the bias of statistically significant effects is hard!
 
-If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of $\bar{d}^*$ so that the empirical mean $\hat{\bar{d}}^*$  could be used by optimization methods to estimate $d$ using the formula for the mean of a truncated Gaussian.
+If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of $\bar{d}^\*$ so that the empirical mean $\hat{\bar{d}}^\*$  could be used by optimization methods to estimate $d$ using the formula for the mean of a truncated Gaussian.
 
 $$
 \begin{align}
@@ -373,7 +373,7 @@ gg_res = (ggplot(df_res, aes(y='estimate',x='actual')) + geom_point() +
 gg_res
 ```
 
-<p align="center"><img src="/figures/winners_curse_12_0.png" width="65%"></p>
+<p align="center"><img src="/figures/winners_curse_12_0.png" width="75%"></p>
 
 But if multiple samples are unavailable to estimate $\hat{\bar d}^*$, then can the value of $d$ ever be estimated? A naive reproach using only a single value to find $d^*$ via an MLE approach of equation \eqref{eq:MLE} yields negative estimates when $\mu \approx 0$ because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
 
@@ -397,35 +397,13 @@ ggtitle('Figure 3B: Distribution under d=0'))
 plt1
 pl2
 ```
-<html>
-<head>
-  <title>
-  </title>
-  <style>
-  .boxes{
-  width:50%;
-  float:left;
-  }
-  #mainDiv{
-    width:50%;
-margin:auto;
-  }
-  img{
-    max-width:100%;
-  }
-</style>
-</head>
-<body>
-<div id="mainDiv">
-    <div id="divOne" class="boxes">
-  <img src="/figures/winners_curse_14_0.png" width="35%">
-    </div>
-    <div id="divTwo" class="boxes">
-  <img src="/figures/winners_curse_15_0.png" width="35%">
-    </div>
-</div>
-</body>
-<html>
+
+<p align="center">
+<figure>
+  <img src="/figures/winners_curse_14_0.png" width="60%" style="float: left" />
+  <img src="/figures/winners_curse_15_0.png" width="60%" />
+</figure>
+</p>
 
 
 ## (4) Approaches to de-biasing single-test statistic results
@@ -448,7 +426,7 @@ gg_bias1 = (ggplot(df_bias,aes(x='d',y='deflated')) + theme_bw() +
 gg_bias1
 ```
 
-<p align="center"><img src="/figures/winners_curse_17_0.png" width="65%"></p>
+<p align="center"><img src="/figures/winners_curse_17_0.png" width="50%"></p>
 
 A better approach I have devised is to weight the statistically significant observation by where it falls in the cdf of truncated Gaussian for $d=0$. When $d>0$ most $\bar d^*$ will be above this range and receive little penalty, whereas for values of $d \approx 0$ they will tend to receive a stronger deflation.
 
