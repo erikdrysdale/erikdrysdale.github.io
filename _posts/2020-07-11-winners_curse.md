@@ -1,5 +1,5 @@
 ---
-title: 'A winner's curse adjustment for a single test statistic'
+title: "A winner's curse adjustment for a single test statistic"
 output: html_document
 fontsize: 12pt
 published: true
@@ -19,8 +19,8 @@ In this post I will briefly review the frequentist paradigm that is used to cond
 
 In summary this post will provide to explicit formulas for: 
 
-1. **The relationship between power and effect size bias (equation (1)).**
-2. **An effect size adjuster for single test statistic results (equation Y).**
+1. **The relationship between power and effect size bias \eqref{eq:power}.**
+2. **An effect size adjuster for single test statistic results \eqref{eq:deflator}.**
 
 In the sections below the examples and math will be kept as simple as possible. All null and alternative hypothesis will come from a Gaussian distribution. Variances will be fixed and known. All hypothesis will be one-sided. Each of these assumptions can be relaxed without any change to the implications of the examples below, but do require a bit more math. Also note that $\Phi$ refers to the standard normal CDF and its quantile function $\Phi^{-1}$. 
 
@@ -117,21 +117,21 @@ $$
 Notice that the **smallest observable and statistically significant** mean difference will be at least $c_\alpha$ root-$n$ normalized standard deviations above zero. Because $\bar d$ has a Gaussian distribution, $\bar d^*$ has a [truncated](https://en.wikipedia.org/wiki/Truncated_normal_distribution) Gaussian distribution:
 
 $$
-\begin{align*}
-\bar d^* &\sim TN(\mu, \sigma^2, l, u) \\
-&\sim TN(d, \sigma^2 / n, \sigma \cdot c_\alpha / \sqrt{n}, \infty) \\
-a &= \frac{l - \mu}{\sigma} = c_\alpha - \sqrt{n}\cdot d / \sigma = \Phi^{-1}(\beta) \\
-E[\bar d^*] &= d + \frac{\phi(a)}{1 - \Phi(a)} \cdot (\sigma/\sqrt{n}) \\
-&= d + \underbrace{\frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{\sqrt{n}(1 - \beta)}}_{\text{bias}}
-\end{align*}
+\begin{align}
+\bar d^* &\sim TN(\mu, \sigma^2, l, u) \nonumber \\
+&\sim TN(d, \sigma^2 / n, \sigma \cdot c_\alpha / \sqrt{n}, \infty) \nonumber \\
+a &= \frac{l - \mu}{\sigma} = c_\alpha - \sqrt{n}\cdot d / \sigma = \Phi^{-1}(\beta) \nonumber \\
+E[\bar d^*] &= d + \frac{\phi(a)}{1 - \Phi(a)} \cdot (\sigma/\sqrt{n}) \nonumber \\
+&= d + \underbrace{\frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{\sqrt{n}(1 - \beta)}}_{\text{bias}} \label{eq:power}
+\end{align}
 $$
 
 The bias of the truncated Gaussian is shown to be related to a handful of statistical parameters including the power of the test! The bias can also be expressed as a ratio of the mean of the statistically significant effect size to the true one, what I will call the bias ratio,
 
 $$
-\begin{align}
-\text{R}(\beta;n,d,\sigma) &= \frac{E[\bar d^*]}{d} = 1 + \frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{d\cdot\sqrt{n}\cdot(1 - \beta)}
-\end{align}
+\begin{align*}
+\text{R}(\beta;n,d,\sigma) &= \frac{E[\bar d^*]}{d} = 1 + \frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{d\cdot\sqrt{n}\cdot(1 - \beta)} 
+\end{align*}
 $$
 
 where $\beta = f(n,d,\sigma)$, and $R$ is ultimately a function of the sample size, true effect size, and measurement error. The simulations below show the relationship between the bias ratio and power for different effect and sample sample sizes.
@@ -321,15 +321,16 @@ np.round(df_ratio[(df_ratio.power > 0.45) & (df_ratio.power < 0.52)].sort_values
 </table>
 </div>
 
+<br>
 
 ## (3) Why estimating the bias of statistically significant effects is hard!
 
-If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of $\bar d^*$ so that the empirical mean $\hat{\bar d}^*$  could be used by optimization methods to estimate $d$ using the formula for the mean of a truncated Gaussian.
+If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of $\bar{d}^*$ so that the empirical mean $\hat{\bar{d}}^*$  could be used by optimization methods to estimate $d$ using the formula for the mean of a truncated Gaussian.
 
 $$
-\begin{align*}
-d^* &= \arg\min_d \hspace{2mm} \Bigg[ \hat{\bar d}^* - \Bigg( d + \frac{\phi(c_\alpha-\sqrt{n}\cdot d/\sigma)}{1 - \Phi(c_\alpha-\sqrt{n}\cdot d/\sigma)} \cdot (\sigma/\sqrt{n}) \Bigg) \Bigg]^2
-\end{align*}
+\begin{align}
+d^* &= \arg\min_d \hspace{2mm} \Bigg[ \hat{\bar d}^* - \Bigg( d + \frac{\phi(c_\alpha-\sqrt{n}\cdot d/\sigma)}{1 - \Phi(c_\alpha-\sqrt{n}\cdot d/\sigma)} \cdot (\sigma/\sqrt{n}) \Bigg) \Bigg]^2 \label{eq:MLE}
+\end{align}
 $$
 
 The simulations below show that with enough hypothesis rejections, the true value of $d$ could be determined. However if the null could be sampled multiple times then the exact value of $d$ could be determined by just looking at $\bar d$! The code is merely to highlight the principle.
@@ -374,7 +375,7 @@ gg_res
 
 <p align="center"><img src="/figures/winners_curse_12_0.png" width="65%"></p>
 
-But if multiple samples are unavailable to estimate $\hat{\bar d}^*$, then can the value of $d$ ever be estimated? A naive reproach using only a single value to find $d^*$ from the equation above yields negative estimates when $\mu \approx 0$ because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
+But if multiple samples are unavailable to estimate $\hat{\bar d}^*$, then can the value of $d$ ever be estimated? A naive reproach using only a single value to find $d^*$ via an MLE approach of equation \eqref{eq:MLE} yields negative estimates when $\mu \approx 0$ because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
 
 
 ```python
@@ -453,12 +454,12 @@ A better approach I have devised is to weight the statistically significant obse
 
 $$
 \begin{align}
-b_0 &= \frac{\sigma}{\sqrt{n}} \frac{\phi(c_\alpha)}{\Phi(-c_\alpha)} = \text{bias}(\bar d^* | d=0) \\
-d^* &= \bar d^* - 2\cdot[1 - F_{\bar d>c_\alpha\sigma/\sqrt{n}}(\bar d^*|d=0)] \cdot b_0
+b_0 &= \frac{\sigma}{\sqrt{n}} \frac{\phi(c_\alpha)}{\Phi(-c_\alpha)} = \text{bias}(\bar d^* | d=0) \nonumber \\
+d^* &= \bar d^* - 2\cdot[1 - F_{\bar d>c_\alpha\sigma/\sqrt{n}}(\bar d^*|d=0)] \cdot b_0 \label{eq:deflator}
 \end{align}
 $$
 
-The simulations below implement the deflation procedure suggested by equation (2) for a single point estimate for different sample and effect sizes.
+The simulations below implement the deflation procedure suggested by equation \eqref{eq:deflator} for a single point estimate for different sample and effect sizes.
 
 
 ```python
@@ -503,7 +504,7 @@ gg_bias2
 <p align="center"><img src="/figures/winners_curse_19_0.png" width="65%"></p>
 
 
-Figure 5 shows that the bias for values of $d \geq 0$ is now conservative and limited. Especially for larger samples, a large and otherwise highly significant effect will be brought much closer to its true value. The primary drawback to using the WCA from equation (2) is that it adds further noise to the point estimate. While this is statistically problematic, from an epistemological viewpoint it could be useful to reduce the confidence of researchers in their "significant" findings that are unlikely to replicate at an equivalent level. 
+Figure 5 shows that the bias for values of $d \geq 0$ is now conservative and limited. Especially for larger samples, a large and otherwise highly significant effect will be brought much closer to its true value. The primary drawback to using the WCA from equation \eqref{eq:deflator} is that it adds further noise to the point estimate. While this is statistically problematic, from an epistemological viewpoint it could be useful to reduce the confidence of researchers in their "significant" findings that are unlikely to replicate at an equivalent level. 
 
 ## (5) Summary
 
@@ -546,7 +547,7 @@ print('Baseline effect: %0.3f, P-value: %0.3f\nBias when d=0: %0.3f\nDeflator: %
 
 [^1]: Note that the Winner's Curse in [economics](https://en.wikipedia.org/wiki/Winner%27s_curse) is a different but related phenomenon.
 
-[^2]: There is an approach with uses a simple MLE to invert the observed mean of a truncated Gaussian, but as I discuss below this approach has signficant drawbacks when the true effect size is zero or small.
+[^2]: There is an approach with uses a simple MLE to invert the observed mean of a truncated Gaussian (see equation \eqref{eq:MLE}, but as I discuss below this approach has signficant drawbacks when the true effect size is zero or small.
 
 [^3]: If the variances were unknown, then the difference in means would have a student-t distribution with slightly fatter tails. 
 
