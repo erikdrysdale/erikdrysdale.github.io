@@ -35,7 +35,7 @@ import plotnine
 from plotnine import *
 import pandas as pd
 ```
-
+<br>
 ## (1) Review of Type-I and Type-II errors
 
 Imagine a simple hypothesis test: to determine whether one Gaussian distribution, with a known variance, has a larger mean than another: $y_{i1} \sim N(\mu_A, \sigma^2/2)$ and $y_{i2} \sim N(\mu_B, \sigma^2/2)$, then $\bar y_i \sim N(\mu_i, \sigma^2/n)$ and $\bar d = \bar y_1 - \bar y_2 \sim N(\mu_A, \sigma^2/n)$. The sample mean (difference) will have a variance of $\sigma^2/n$.[[^3]]
@@ -100,7 +100,7 @@ print('Empirical type-II error rate: %0.3f\nExpected type-II error rate: %0.3f' 
     Empirical type-II error rate: 0.274
     Expected type-II error rate: 0.273
 
-
+<br>
 ## (2) Relationship between power and effect size bias
 
 Most practitioners of applied statistics will be familiar with type-I and type-II error rates and will use these to interpret the results of studies and design trials. In most disciplines it is common that only statistically significant results (i.e. those ones that that reject the null) are analysed. In research domains where there are many hypothesis tests under consideration (such as genomics), multiple testing [adjustments](https://en.wikipedia.org/wiki/Multiple_comparisons_problem) are made so that the number of aggregate false discoveries is bounded. Note that such adjustments are equivalent to increasing the value of $c_\alpha$ and will lower the power of each test.
@@ -322,7 +322,6 @@ np.round(df_ratio[(df_ratio.power > 0.45) & (df_ratio.power < 0.52)].sort_values
 </div>
 
 <br>
-
 ## (3) Why estimating the bias of statistically significant effects is hard!
 
 If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of $\bar{d}^\*$ so that the empirical mean $\hat{\bar{d}}^\*$  could be used by optimization methods to estimate $d$ using the formula for the mean of a truncated Gaussian.
@@ -400,12 +399,12 @@ pl2
 
 <p align="center">
 <figure>
-  <img src="/figures/winners_curse_14_0.png" width="30%" style="float: left" />
-  <img src="/figures/winners_curse_15_0.png" width="30%" />
+  <img src="/figures/winners_curse_14_0.png" width="45%" style="float: left" />
+  <img src="/figures/winners_curse_15_0.png" width="45%" />
 </figure>
 </p>
 
-
+<br>
 ## (4) Approaches to de-biasing single-test statistic results
 
 A conservative method to ensure that $E[ \bar{d}^\* -d ] \leq 0$ when $d\geq 0$ is to subtract off the bias when the null is zero: $(\sigma \cdot \phi(c_\alpha)) / (\sqrt{n}\cdot\Phi(-c_\alpha))$. The problem with this approach is that for true effect ($d>0$), the bias estimate will be too large and the estimate of the true effect will actually be too small as Figure 4 shows. 
@@ -484,17 +483,16 @@ gg_bias2
 
 Figure 5 shows that the bias for values of $d \geq 0$ is now conservative and limited. Especially for larger samples, a large and otherwise highly significant effect will be brought much closer to its true value. The primary drawback to using the WCA from equation \eqref{eq:deflator} is that it adds further noise to the point estimate. While this is statistically problematic, from an epistemological viewpoint it could be useful to reduce the confidence of researchers in their "significant" findings that are unlikely to replicate at an equivalent level. 
 
+<br>
 ## (5) Summary
 
 WCAs for single test results are much more challenging that those for repeated test measurements due to a lack of measured information. I have proposed a simple formula (2) that can be used on all statistically significant results requiring only the observed effect size, type-I error rate, sample size, and noise estimate. For small to medium sample sizes this deflator leads to additional noise in the point estimate, but may have a humbling effect of researcher confidence. While it has no doubt been expressed before, I also derive the analytical relationship between power and effect size bias (2). 
 
-As a final motivating example consider the well-regarded paper [Labour Market Returns to Early Childhood Stimulation](https://irle.berkeley.edu/files/2013/Labor-Market-Returns-to-Early-Childhood-Stimulation.pdf) by Gertler et. al (2013) which includes a Nobel-prize winning economist in its author list. They claim to show that an educational intervention using randomized control trial improved long-run income earnings by 42%. This is a huge increase. 
+As a final motivating example consider the well-regarded paper [Labour Market Returns to Early Childhood Stimulation](https://irle.berkeley.edu/files/2013/Labor-Market-Returns-to-Early-Childhood-Stimulation.pdf) by Gertler et. al (2013) which includes a Nobel-prize winning economist in its author list. They claim to show that an educational intervention using randomized control trial improved long-run income earnings by 42%. This is a huge increase as the author's note: *[t]hese findings show that psychosocial stimulation early in childhood in disadvantaged settings can have substantial effects on labour market outcomes and reduce later life inequality*
 
-> These findings show that psychosocial stimulation early in childhood in disadvantaged settings can have substantial effects on labour market outcomes and reduce later life inequality.
+> The results ... show that the impact on earnings remains large and statistically significant
 
-Note that in the paper the authors state: "*The results ... show that the impact on earnings remains large and statistically significant*". As this post has discussed, it is quite likely that they should have said *these results are statistically significant because they were large*. 
-
-For the main effect, Table 3 in the paper shows a p-value for 0.01 a sample size of 105, implying that $1 - \Phi(0.42/(1.9/\sqrt{105})) \approx 0.01$, with a z-score of around 2.7. The code below shows that if there were no effect, then the average statistically significant effect that would be observed would be 0.372. However because the result (42%) is in the 80th percentile of such a distribution, the adjustment procedure suggests removing only 15% off of the point estimate. Using a WCA adjustment for this paper reduces the findings to 27%, which is still quite high and respectable. I hope this post will help to raise awareness of of how the winner's curse affects applied statistical research.
+As this post has discussed, it is quite likely that they should have said *these results are statistically significant because they were large*. For the main effect, Table 3 in the paper shows a p-value for 0.01 a sample size of 105, implying that $1 - \Phi(0.42/(1.9/\sqrt{105})) \approx 0.01$, with a z-score of around 2.7. The code below shows that if there were no effect, then the average statistically significant effect that would be observed would be 0.372. However because the result (42%) is in the 80th percentile of such a distribution, the adjustment procedure suggests removing only 15% off of the point estimate. Using a WCA adjustment for this paper reduces the findings to 27%, which is still quite high and respectable. I hope this post will help to raise awareness of of how the winner's curse affects applied statistical research.
 
 
 ```python
@@ -525,7 +523,7 @@ print('Baseline effect: %0.3f, P-value: %0.3f\nBias when d=0: %0.3f\nDeflator: %
 
 [^1]: Note that the Winner's Curse in [economics](https://en.wikipedia.org/wiki/Winner%27s_curse) is a different but related phenomenon.
 
-[^2]: There is an approach with uses a simple MLE to invert the observed mean of a truncated Gaussian (see equation \eqref{eq:MLE}, but as I discuss below this approach has signficant drawbacks when the true effect size is zero or small.
+[^2]: There is an approach with uses a simple MLE to invert the observed mean of a truncated Gaussian (see equation \eqref{eq:MLE}, but as I discuss this approach has signficant drawbacks when the true effect size is zero or small.
 
 [^3]: If the variances were unknown, then the difference in means would have a student-t distribution with slightly fatter tails. 
 
