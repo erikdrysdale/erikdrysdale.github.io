@@ -27,7 +27,7 @@ In the case where the dataset has many features, often exceeding the sample size
 
 ## (1) Linear Exponential model
 
-This first section will show how to fit a simple low-dimensional Exponential model using maximum likelihood optimization. The (log-)likelihood for such a model with a $n$ i.i.d. samples can be written as: 
+This first section will show how to fit a simple low-dimensional Exponential model using maximum likelihood optimization. The (log-)likelihood for such a model with a \\(n\\) i.i.d. samples can be written as: 
 
 $$
 \begin{align*}
