@@ -21,7 +21,7 @@ In this post I will briefly review the frequentist paradigm that is used to cond
 
 In summary this post will provide to explicit formulas for: 
 
-1. **The relationship between power and effect size bias \eqref{eq:power}**
+1. **The relationship between power and effect size bias \\(\eqref{eq:power}\\)**
 2. **An effect size deflator for single test statistic results \eqref{eq:deflator}**
 
 In the sections below the examples and math will be kept as simple as possible. All null and alternative hypothesis will come from a Gaussian distribution. Variances will be fixed and known. All hypothesis will be one-sided. Each of these assumptions can be relaxed without any change to the implications of the examples below, but do require a bit more math. Also note that \\(\Phi\\) refers to the standard normal CDF and its quantile function \\(\Phi^{-1}\\). 
