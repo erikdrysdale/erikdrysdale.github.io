@@ -118,15 +118,15 @@ $$
 
 Notice that the **smallest observable and statistically significant** mean difference will be at least \\(c_\alpha\\) root-\\(n\\) normalized standard deviations above zero. Because \\(\bar d\\) has a Gaussian distribution, \\(\bar{d}^\*\\) has a [truncated](https://en.wikipedia.org/wiki/Truncated_normal_distribution) Gaussian distribution:
 
-$$
-\begin{equation}
+<script type="math/tex; mode=display">
+\begin{align}
 \bar d^* &\sim TN(\mu, \sigma^2, l, u) \nonumber \\
 &\sim TN(d, \sigma^2 / n, \sigma \cdot c_\alpha / \sqrt{n}, \infty) \nonumber \\
 a &= \frac{l - \mu}{\sigma} = c_\alpha - \sqrt{n}\cdot d / \sigma = \Phi^{-1}(\beta) \nonumber \\
 E[\bar d^*] &= d + \frac{\phi(a)}{1 - \Phi(a)} \cdot (\sigma/\sqrt{n}) \nonumber \\
 &= d + \underbrace{\frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{\sqrt{n}(1 - \beta)}}_{\text{bias}} \label{eq:power}
-\end{equation}
-$$
+\end{align}
+</script>
 
 The bias of the truncated Gaussian is shown to be related to a handful of statistical parameters including the power of the test! The bias can also be expressed as a ratio of the mean of the statistically significant effect size to the true one, what I will call the bias ratio,
 
