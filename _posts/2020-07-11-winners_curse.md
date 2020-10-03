@@ -24,7 +24,7 @@ In summary this post will provide to explicit formulas for:
 1. **The relationship between power and effect size bias \eqref{eq:power}**
 2. **An effect size deflator for single test statistic results \eqref{eq:deflator}**
 
-In the sections below the examples and math will be kept as simple as possible. All null and alternative hypothesis will come from a Gaussian distribution. Variances will be fixed and known. All hypothesis will be one-sided. Each of these assumptions can be relaxed without any change to the implications of the examples below, but do require a bit more math. Also note that $\Phi$ refers to the standard normal CDF and its quantile function $\Phi^{-1}$. 
+In the sections below the examples and math will be kept as simple as possible. All null and alternative hypothesis will come from a Gaussian distribution. Variances will be fixed and known. All hypothesis will be one-sided. Each of these assumptions can be relaxed without any change to the implications of the examples below, but do require a bit more math. Also note that \\(\Phi\\) refers to the standard normal CDF and its quantile function \\(\Phi^{-1}\\). 
 
 
 ```python
@@ -40,7 +40,7 @@ import pandas as pd
 <br>
 ## (1) Review of Type-I and Type-II errors
 
-Imagine a simple hypothesis test: to determine whether one Gaussian distribution, with a known variance, has a larger mean than another: $y_{i1} \sim N(\mu_A, \sigma^2/2)$ and $y_{i2} \sim N(\mu_B, \sigma^2/2)$, then $\bar y_i \sim N(\mu_i, \sigma^2/n)$ and $\bar d = \bar y_1 - \bar y_2 \sim N(\mu_A, \sigma^2/n)$. The sample mean (difference) will have a variance of $\sigma^2/n$.[[^3]]
+Imagine a simple hypothesis test: to determine whether one Gaussian distribution, with a known variance, has a larger mean than another: \\(y_{i1} \sim N(\mu_A, \sigma^2/2)\\) and \\(y_{i2} \sim N(\mu_B, \sigma^2/2)\\), then \\(\bar y_i \sim N(\mu_i, \sigma^2/n)\\) and \\(\bar d = \bar y_1 - \bar y_2 \sim N(\mu_A, \sigma^2/n)\\). The sample mean (difference) will have a variance of \\(\sigma^2/n\\).[[^3]]
 
 $$
 \begin{align*}
@@ -49,7 +49,7 @@ $$
 \end{align*}
 $$
 
-The null hypothesis is that: $H_0: \mu_A \leq \mu_B$, with the alternative hypothesis that $\mu_A > \mu_B$ (equivalent to $d \leq 0$ and $d >0$, respectively). Recall that in frequentist statistical paradigm, the goal is find a rejection region of the test statistic ($z$) that bounds the type-I error rate and maximizes power. When the null is true ($d\leq 0$) then setting $c_\alpha = \Phi_{1-\alpha}^{-1}$, and rejecting the null when $\bar z > c_\alpha$ will obtain a type-I error rate of exactly $\alpha$.[[^4]]
+The null hypothesis is that: \\(H_0: \mu_A \leq \mu_B\\), with the alternative hypothesis that \\(\mu_A > \mu_B\\) (equivalent to \\(d \leq 0\\) and \\(d >0\\), respectively). Recall that in frequentist statistical paradigm, the goal is find a rejection region of the test statistic (\\(z\\)) that bounds the type-I error rate and maximizes power. When the null is true (\\(d\leq 0\\)) then setting \\(c_\alpha = \Phi_{1-\alpha}^{-1}\\), and rejecting the null when \\(\bar z > c_\alpha\\) will obtain a type-I error rate of exactly \\(\alpha\\).[[^4]]
 
 $$
 \begin{align*}
@@ -72,14 +72,14 @@ print('Empirical type-I error rate: %0.3f\nExpected type-I error rate: %0.3f' % 
     Expected type-I error rate: 0.050
 
 
-In the event that the null is not true $(d > 0)$ then power of the test will depend four things:
+In the event that the null is not true \\((d > 0)\\) then power of the test will depend four things:
 
-1. The magnitude of the effect (the bigger the value of $d$ the better)
+1. The magnitude of the effect (the bigger the value of \\(d\\) the better)
 2. The number of samples (the more the better)
 3. The type-I error rate (the larger the better)
 4. The magnitude of the variance (the smaller the better)
 
-Defining the empirical test statistic as $\bar z$, the type-II error rate is: 
+Defining the empirical test statistic as \\(\bar z\\), the type-II error rate is: 
 
 $$
 \begin{align*}
@@ -105,7 +105,7 @@ print('Empirical type-II error rate: %0.3f\nExpected type-II error rate: %0.3f' 
 <br>
 ## (2) Relationship between power and effect size bias
 
-Most practitioners of applied statistics will be familiar with type-I and type-II error rates and will use these to interpret the results of studies and design trials. In most disciplines it is common that only statistically significant results (i.e. those ones that that reject the null) are analysed. In research domains where there are many hypothesis tests under consideration (such as genomics), multiple testing [adjustments](https://en.wikipedia.org/wiki/Multiple_comparisons_problem) are made so that the number of aggregate false discoveries is bounded. Note that such adjustments are equivalent to increasing the value of $c_\alpha$ and will lower the power of each test.
+Most practitioners of applied statistics will be familiar with type-I and type-II error rates and will use these to interpret the results of studies and design trials. In most disciplines it is common that only statistically significant results (i.e. those ones that that reject the null) are analysed. In research domains where there are many hypothesis tests under consideration (such as genomics), multiple testing [adjustments](https://en.wikipedia.org/wiki/Multiple_comparisons_problem) are made so that the number of aggregate false discoveries is bounded. Note that such adjustments are equivalent to increasing the value of \\(c_\alpha\\) and will lower the power of each test.
 
 Unfortunately few researchers in my experience understand the relationship between power and effect size bias. Even though rigorously pre-specified research designs will likely have an accurate number of "true discoveries", the distribution of significant effect sizes will almost certainly be overstated. An example will help to illustrate. Returning to the difference in Gaussian sample means, the distribution of statistically significant means will follow the following conditional distribution:
 
@@ -116,7 +116,7 @@ $$
 \end{align*}
 $$
 
-Notice that the **smallest observable and statistically significant** mean difference will be at least $c_\alpha$ root-$n$ normalized standard deviations above zero. Because $\bar d$ has a Gaussian distribution, $\bar{d}^\*$ has a [truncated](https://en.wikipedia.org/wiki/Truncated_normal_distribution) Gaussian distribution:
+Notice that the **smallest observable and statistically significant** mean difference will be at least \\(c_\alpha\\) root-\\(n\\) normalized standard deviations above zero. Because \\(\bar d\\) has a Gaussian distribution, \\(\bar{d}^\*\\) has a [truncated](https://en.wikipedia.org/wiki/Truncated_normal_distribution) Gaussian distribution:
 
 $$
 \begin{align}
@@ -136,7 +136,7 @@ $$
 \end{align*}
 $$
 
-where $\beta = f(n,d,\sigma)$, and $R$ is ultimately a function of the sample size, true effect size, and measurement error. The simulations below show the relationship between the bias ratio and power for different effect and sample sample sizes.
+where \\(\beta = f(n,d,\sigma)\\), and \\(R\\) is ultimately a function of the sample size, true effect size, and measurement error. The simulations below show the relationship between the bias ratio and power for different effect and sample sample sizes.
 
 
 ```python
@@ -326,7 +326,7 @@ np.round(df_ratio[(df_ratio.power > 0.45) & (df_ratio.power < 0.52)].sort_values
 <br>
 ## (3) Why estimating the bias of statistically significant effects is hard!
 
-If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of $\bar{d}^\*$ so that the empirical mean $\hat{\bar{d}}^\*$  could be used by optimization methods to estimate $d$ using the formula for the mean of a truncated Gaussian.
+If the true effect size were known, then it would be possible to explicitly calculate the bias term. Unfortunately this parameter is never known in the real world. If there happened to be multiple draws from the same hypothesis then an estimate of the true mean could be found. With multiple draws, there will be an observed distribution of \\(\bar{d}^\*\\) so that the empirical mean \\(\hat{\bar{d}}^\*\\)  could be used by optimization methods to estimate \\(d\\) using the formula for the mean of a truncated Gaussian.
 
 $$
 \begin{align}
@@ -334,7 +334,7 @@ d^* &= \arg\min_d \hspace{2mm} \Bigg[ \hat{\bar d}^* - \Bigg( d + \frac{\phi(c_\
 \end{align}
 $$
 
-The simulations below show that with enough hypothesis rejections, the true value of $d$ could be determined. However if the null could be sampled multiple times then the exact value of $d$ could be determined by just looking at $\bar d$! The code is merely to highlight the principle.
+The simulations below show that with enough hypothesis rejections, the true value of \\(d\\) could be determined. However if the null could be sampled multiple times then the exact value of \\(d\\) could be determined by just looking at \\(\bar d\\)! The code is merely to highlight the principle.
 
 
 ```python
@@ -376,7 +376,7 @@ gg_res
 
 <p align="center"><img src="/figures/winners_curse_12_0.png" width="75%"></p>
 
-But if multiple samples are unavailable to estimate $\hat{\bar{d}}^\*$, then can the value of $d$ ever be estimated? A naive reproach using only a single value to find $d^\*$ via an MLE approach of equation \eqref{eq:MLE} yields negative estimates when $\mu \approx 0$ because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
+But if multiple samples are unavailable to estimate \\(\hat{\bar{d}}^\*\\), then can the value of \\(d\\) ever be estimated? A naive reproach using only a single value to find \\(d^\*\\) via an MLE approach of equation \eqref{eq:MLE} yields negative estimates when \\(\mu \approx 0\\) because many values below the median of the truncated normal with a small mean have will match a large and negative mean for another truncated normal. Figures 3A and 3B show this asymmetric phenomenon.
 
 
 ```python
@@ -409,7 +409,7 @@ pl2
 <br>
 ## (4) Approaches to de-biasing single-test statistic results
 
-A conservative method to ensure that $E[ \bar{d}^\* -d ] \leq 0$ when $d\geq 0$ is to subtract off the bias when the null is zero: $(\sigma \cdot \phi(c_\alpha)) / (\sqrt{n}\cdot\Phi(-c_\alpha))$. The problem with this approach is that for true effect ($d>0$), the bias estimate will be too large and the estimate of the true effect will actually be too small as Figure 4 shows. 
+A conservative method to ensure that \\(E[ \bar{d}^\* -d ] \leq 0\\) when \\(d\geq 0\\) is to subtract off the bias when the null is zero: \\((\sigma \cdot \phi(c_\alpha)) / (\sqrt{n}\cdot\Phi(-c_\alpha))\\). The problem with this approach is that for true effect (\\(d>0\\)), the bias estimate will be too large and the estimate of the true effect will actually be too small as Figure 4 shows. 
 
 
 ```python
@@ -429,7 +429,7 @@ gg_bias1
 
 <p align="center"><img src="/figures/winners_curse_17_0.png" width="50%"></p>
 
-A better approach I have devised is to weight the statistically significant observation by where it falls in the cdf of truncated Gaussian for $d=0$. When $d>0$ most $\bar{d}^\*$ will be above this range and receive little penalty, whereas for values of $d \approx 0$ they will tend to receive a stronger deflation.
+A better approach I have devised is to weight the statistically significant observation by where it falls in the cdf of truncated Gaussian for \\(d=0\\). When \\(d>0\\) most \\(\bar{d}^\*\\) will be above this range and receive little penalty, whereas for values of \\(d \approx 0\\) they will tend to receive a stronger deflation.
 
 $$
 \begin{align}
@@ -483,7 +483,7 @@ gg_bias2
 <p align="center"><img src="/figures/winners_curse_19_0.png" width="85%"></p>
 
 
-Figure 5 shows that the bias for values of $d \geq 0$ is now conservative and limited. Especially for larger samples, a large and otherwise highly significant effect will be brought much closer to its true value. The primary drawback to using the WCA from equation \eqref{eq:deflator} is that it adds further noise to the point estimate. While this is statistically problematic, from an epistemological viewpoint it could be useful to reduce the confidence of researchers in their "significant" findings that are unlikely to replicate at an equivalent level. 
+Figure 5 shows that the bias for values of \\(d \geq 0\\) is now conservative and limited. Especially for larger samples, a large and otherwise highly significant effect will be brought much closer to its true value. The primary drawback to using the WCA from equation \eqref{eq:deflator} is that it adds further noise to the point estimate. While this is statistically problematic, from an epistemological viewpoint it could be useful to reduce the confidence of researchers in their "significant" findings that are unlikely to replicate at an equivalent level. 
 
 <br>
 ## (5) Summary
@@ -494,7 +494,7 @@ As a final motivating example consider the well-regarded paper [Labour Market Re
 
 > The results ... show that the impact on earnings remains large and statistically significant
 
-As this post has discussed, it is quite likely that they should have said *these results are statistically significant because they were large*. For the main effect, Table 3 in the paper shows a p-value for 0.01 a sample size of 105, implying that $1 - \Phi(0.42/(1.9/\sqrt{105})) \approx 0.01$, with a z-score of around 2.7. The code below shows that if there were no effect, then the average statistically significant effect that would be observed would be 0.372 (note that the median bias would be lower because of the right-skew of the truncated normal distribution). However because the result (42%) is in the 80th percentile of such a distribution, the adjustment procedure suggests removing only 15% off of the point estimate. Using a WCA adjustment for this paper reduces the findings to 27%, which is still quite high and respectable. I hope this post will help to raise awareness of of how the Winner's Curse affects applied statistical research.
+As this post has discussed, it is quite likely that they should have said *these results are statistically significant because they were large*. For the main effect, Table 3 in the paper shows a p-value for 0.01 a sample size of 105, implying that \\(1 - \Phi(0.42/(1.9/\sqrt{105})) \approx 0.01\\), with a z-score of around 2.7. The code below shows that if there were no effect, then the average statistically significant effect that would be observed would be 0.372 (note that the median bias would be lower because of the right-skew of the truncated normal distribution). However because the result (42%) is in the 80th percentile of such a distribution, the adjustment procedure suggests removing only 15% off of the point estimate. Using a WCA adjustment for this paper reduces the findings to 27%, which is still quite high and respectable. I hope this post will help to raise awareness of of how the Winner's Curse affects applied statistical research.
 
 
 ```python
@@ -529,4 +529,4 @@ print('Baseline effect: %0.3f, P-value: %0.3f\nBias when d=0: %0.3f\nDeflator: %
 
 [^3]: If the variances were unknown, then the difference in means would have a student-t distribution with slightly fatter tails. 
 
-[^4]: If $c > c_\alpha$, then the type-I error rate would be lower (which is good), but, the power would also be lower in the event that the null were false. It is therefore desirable the rejection region obtain the exactly desired type-I error rate, and then the statistician can decide what type-I level to choose.
+[^4]: If \\(c > c_\alpha\\), then the type-I error rate would be lower (which is good), but, the power would also be lower in the event that the null were false. It is therefore desirable the rejection region obtain the exactly desired type-I error rate, and then the statistician can decide what type-I level to choose.

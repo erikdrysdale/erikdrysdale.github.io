@@ -37,7 +37,7 @@ L(\lambda) &=  \prod_{i=1}^n \hspace{1mm} f(\lambda;t_i)^{\delta_i} S(\bbeta;t_i
 \end{align*}
 $$
 
-Where $\delta_i$, $t_i$, and $\lambda$, are a censoring indicator, measurement time, and rate parameter, respectively ($\delta_i=0$ indicates censoring). The density, survival (one minus the CDF), and hazard functions of the exponential distribution are $f(t_i;\lambda)=\lambda \exp(-\lambda t_i)$, $S(t_i;\lambda)=\exp(-\lambda t_i)$, and $h(t_i; \lambda) = \lambda$, respectively. A linear Exponential model parameterizes $h(\bbeta; t_i) = \lambda_i = \exp(\bx^T \bbeta)$, where $\eta_i = \bx_i^T \bbeta = \sum_{j=0}^p \beta_jx_j$, and $S(\bbeta; t_i) = \exp(- \lambda_i t_i)= \exp(-e^{\eta_i} t_i)$. The fully parameterized log-likelihood is therefore:
+Where \\(\delta_i\\), \\(t_i\\), and \\(\lambda\\), are a censoring indicator, measurement time, and rate parameter, respectively (\\(\delta_i=0\\) indicates censoring). The density, survival (one minus the CDF), and hazard functions of the exponential distribution are \\(f(t_i;\lambda)=\lambda \exp(-\lambda t_i)\\), \\(S(t_i;\lambda)=\exp(-\lambda t_i)\\), and \\(h(t_i; \lambda) = \lambda\\), respectively. A linear Exponential model parameterizes \\(h(\bbeta; t_i) = \lambda_i = \exp(\bx^T \bbeta)\\), where \\(\eta_i = \bx_i^T \bbeta = \sum_{j=0}^p \beta_jx_j\\), and \\(S(\bbeta; t_i) = \exp(- \lambda_i t_i)= \exp(-e^{\eta_i} t_i)\\). The fully parameterized log-likelihood is therefore:
 
 $$
 \begin{align*}
@@ -57,7 +57,7 @@ H_\bbeta &=  \bX^T \bW \bX, \hspace{2mm} \text{diag}(\bW)_i = [e^{\eta_i} t_i ]
 \end{align*}
 $$
 
-Notice that if $\delta_i=1$ then the gradient would also be zero if $t_i = 1 / e^{\eta_i}$. This makes sense as the $E[t_i] = \eta^{-1}$ in generalized linear model theory. The only difference here being that we have parameterized the rate parameter as $e^{\bx^T\bbeta}$ to ensure all values will conform to the support of the distribution. To visualize how well the model is fitting the data one could look a whether $\log t_i \approx - \eta_i$ (for the non-censored values at least). To find the optimal $\bbeta$, [Newton's method](https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization) can be used where the update state at the $t+1$ iteration can be written as:
+Notice that if \\(\delta_i=1\\) then the gradient would also be zero if \\(t_i = 1 / e^{\eta_i}\\). This makes sense as the \\(E[t_i] = \eta^{-1}\\) in generalized linear model theory. The only difference here being that we have parameterized the rate parameter as \\(e^{\bx^T\bbeta}\\) to ensure all values will conform to the support of the distribution. To visualize how well the model is fitting the data one could look a whether \\(\log t_i \approx - \eta_i\\) (for the non-censored values at least). To find the optimal \\(\bbeta\\), [Newton's method](https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization) can be used where the update state at the \\(t+1\\) iteration can be written as:
 
 $$
 \begin{align*}
@@ -80,9 +80,9 @@ Notice that a weighted least-squares problem is equivalent to a normal least-squ
 
 ## (2) Optimization approaches
 
-Section (1) showed that the linear exponential model can be solved through either gradient or hessian-based methods as well as its reformulation via IRLS. The first code block below will demonstrate how to generate exponential data with a given censoring rate. The observed time will be: $t_i = \min[c_i, u_i]$, where $u_i \sim \text{Exp}(\lambda_i)$, $\lambda_i = e^{\eta_i}$ and $c_i\sim \text{Exp}(\lambda_c)$ . The probability that one exponential distribution will be greater than another is $P(c_i > u_i) = \frac{\lambda_i}{\lambda_i+\lambda_c}=1-\alpha_i$. A given value of $\lambda_c$ will obtain an average censoring rate of $\alpha(\lambda_c) = n^{-1}\sum_i\alpha_i$. A simple univariate optimization procedure can find that value of $\lambda_c$ such that the averaging censoring rate of $\alpha$ is achieved. 
+Section (1) showed that the linear exponential model can be solved through either gradient or hessian-based methods as well as its reformulation via IRLS. The first code block below will demonstrate how to generate exponential data with a given censoring rate. The observed time will be: \\(t_i = \min[c_i, u_i]\\), where \\(u_i \sim \text{Exp}(\lambda_i)\\), \\(\lambda_i = e^{\eta_i}\\) and \\(c_i\sim \text{Exp}(\lambda_c)\\) . The probability that one exponential distribution will be greater than another is \\(P(c_i > u_i) = \frac{\lambda_i}{\lambda_i+\lambda_c}=1-\alpha_i\\). A given value of \\(\lambda_c\\) will obtain an average censoring rate of \\(\alpha(\lambda_c) = n^{-1}\sum_i\alpha_i\\). A simple univariate optimization procedure can find that value of \\(\lambda_c\\) such that the averaging censoring rate of \\(\alpha\\) is achieved. 
 
-Optimization methods can be sped up and made more robust by normalizing the features of the data so that the gradients are numerically stable and within reasonable ranges. If the columns of the data are standardized to have a mean and standard deviation of zero and one, respectively, and the measurement time is divided by its largest value to ensure $t_i \in (0,1]$, then it is easy to show that the following post-optimization transformation would recover the original un-normalized solution:
+Optimization methods can be sped up and made more robust by normalizing the features of the data so that the gradients are numerically stable and within reasonable ranges. If the columns of the data are standardized to have a mean and standard deviation of zero and one, respectively, and the measurement time is divided by its largest value to ensure \\(t_i \in (0,1]\\), then it is easy to show that the following post-optimization transformation would recover the original un-normalized solution:
 
 $$
 \begin{align*}
@@ -283,7 +283,7 @@ $$
 \end{align*}
 $$
 
-Where $\bbeta_1$ denotes that the norms are not calculated over the intercept (indexed to column 0). The Newton update will be equavilent to solving a least-squares Lasso problem at each iteration as before.
+Where \\(\bbeta_1\\) denotes that the norms are not calculated over the intercept (indexed to column 0). The Newton update will be equavilent to solving a least-squares Lasso problem at each iteration as before.
 
 $$
 \begin{align}
@@ -291,10 +291,10 @@ $$
 \end{align}
 $$
 
-The `ElasticNet` class from `sklearn` has very fast coordinate descent solvers for this type of optimization problem. Somewhat confusingly, what `sklearn` calls `alpha` and the `l1_ratio` what is usually referred to as `lambda` and `alpha`, respectively. The code below will show how to the use this function class and solve the coefficient solution path for a sequence of $\lambda$ values where $\lambda_{\text{min}}=0$ implies no regularization and $\lambda_{\text{max}}=\|\bX^T (\bdelta - \bz_0) \|_\infty/n$ is the infimum which achieves sparsity for all non-intercept values. The `linear_wrapper` class contains the `fit_elnet` attribute which implements the IRLS approach to solving this optimization problem. Note that after the initial `fit` attribute is called, the intercept is re-fit solving its closed form solution without regularization to ensure the model has converged: $\beta_0 = \log \frac{\sum_i \delta_i}{\sum_i t_i e^{\bx_i^T \bbeta_1}}$.
+The `ElasticNet` class from `sklearn` has very fast coordinate descent solvers for this type of optimization problem. Somewhat confusingly, what `sklearn` calls `alpha` and the `l1_ratio` what is usually referred to as `lambda` and `alpha`, respectively. The code below will show how to the use this function class and solve the coefficient solution path for a sequence of \\(\lambda\\) values where \\(\lambda_{\text{min}}=0\\) implies no regularization and \\(\lambda_{\text{max}}=\|\bX^T (\bdelta - \bz_0) \|_\infty/n\\) is the infimum which achieves sparsity for all non-intercept values. The `linear_wrapper` class contains the `fit_elnet` attribute which implements the IRLS approach to solving this optimization problem. Note that after the initial `fit` attribute is called, the intercept is re-fit solving its closed form solution without regularization to ensure the model has converged: \\(\beta_0 = \log \frac{\sum_i \delta_i}{\sum_i t_i e^{\bx_i^T \bbeta_1}}\\).
 
 
-We can visualize the Lasso solution path seen above for different values of $\alpha$ for a well-known [survival dataset](https://lifelines.readthedocs.io/en/latest/lifelines.datasets.html#lifelines.datasets.load_gbsg2).
+We can visualize the Lasso solution path seen above for different values of \\(\alpha\\) for a well-known [survival dataset](https://lifelines.readthedocs.io/en/latest/lifelines.datasets.html#lifelines.datasets.load_gbsg2).
 
 
 ```python

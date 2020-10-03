@@ -43,7 +43,7 @@ $$
 \end{align}
 $$
  
-The stratified log-likelihood shown in equation \eqref{eq:stratacox} is the sum over $K$ datasets of each $N_k$ summands. But because $y_{j,k}(t_{i,k})$, the indicator as to whether patient $j$ from dataset $k$ was alive at time $t_i$ in dataset $k$, the relative rank orderings are all dataset specific. Also notice that there is a single $p$-dimensional $\bbeta \in \mathbb{R}^p$ parameter vector that is shared by all the datasets. The final estimate of $\hat \bbeta$ will therefore be determined by the direction of all $K$ gradients. Specifically the gradient will be:
+The stratified log-likelihood shown in equation \eqref{eq:stratacox} is the sum over \\(K\\) datasets of each \\(N_k\\) summands. But because \\(y_{j,k}(t_{i,k})\\), the indicator as to whether patient \\(j\\) from dataset \\(k\\) was alive at time \\(t_i\\) in dataset \\(k\\), the relative rank orderings are all dataset specific. Also notice that there is a single \\(p\\)-dimensional \\(\bbeta \in \mathbb{R}^p\\) parameter vector that is shared by all the datasets. The final estimate of \\(\hat \bbeta\\) will therefore be determined by the direction of all \\(K\\) gradients. Specifically the gradient will be:
  
 $$
 \begin{align*}
@@ -54,35 +54,35 @@ $$
 \end{align*}
 $$
  
-In the presence of regularization it is easy to see that if the effects of feature $j$ differ between the datasets (i.e. they increase the hazard in some but decrease it in others), then coefficient will be rapidly shrunk to zero. A regularized stratified survival model therefore encourages coefficients weights only on features with consistent effects across the datasets.
+In the presence of regularization it is easy to see that if the effects of feature \\(j\\) differ between the datasets (i.e. they increase the hazard in some but decrease it in others), then coefficient will be rapidly shrunk to zero. A regularized stratified survival model therefore encourages coefficients weights only on features with consistent effects across the datasets.
  
 ## Multitask learning
  
-In the classical statistical learning framework we make the assumption that our observations are independently drawn from some distribution: $(y,\bx) \sim P(y,\bX)$, and we are trying to learn some some statistical regularities in the data in order to make predictions on new data. However our dataset may be made up of different samples, and the statistical relationship between the labels and the features will be similar but not exact between these different domains. In the case of the relationship between rental prices and the size of the apartment, in one city it may be that an extra square-foot of apartment space raises the price by \\$1.50 whereas in another it could be \\$2.75. The philosophy of multitask learning framework is that similar tasks (predicting prices in different cities) can be combined in an intelligent way by building some sort of shared representation to improve the learning process and ultimately generalization accuracy. 
+In the classical statistical learning framework we make the assumption that our observations are independently drawn from some distribution: \\((y,\bx) \sim P(y,\bX)\\), and we are trying to learn some some statistical regularities in the data in order to make predictions on new data. However our dataset may be made up of different samples, and the statistical relationship between the labels and the features will be similar but not exact between these different domains. In the case of the relationship between rental prices and the size of the apartment, in one city it may be that an extra square-foot of apartment space raises the price by \\$1.50 whereas in another it could be \\$2.75. The philosophy of multitask learning framework is that similar tasks (predicting prices in different cities) can be combined in an intelligent way by building some sort of shared representation to improve the learning process and ultimately generalization accuracy. 
  
 There is a tension however between capturing idiosyncratic representations specific to each dataset and those of a single shared representation. For example, if we were building a rental price predictor for the cities of Vancouver and Toronto we could either: (i) train two completely separate models, (ii) a single model using all the data, or (iii) two separate models whose optimization procedures are influenced by information from the other datasets. Case (iii) would be an instance of multitask learning. 
-Notice that that stratified partial likelihood formulation is a form of multitask learning because all $K$ datasets share one representation, a parameter $\beta_j$, for the $j^{th}$ feature. As an alternative approach, we could give each dataset its own set of $p$ parameters and then use $\ell_{2,1}$-norm regularization to share information across datasets. For example using the least-squares regression case:
+Notice that that stratified partial likelihood formulation is a form of multitask learning because all \\(K\\) datasets share one representation, a parameter \\(\beta_j\\), for the \\(j^{th}\\) feature. As an alternative approach, we could give each dataset its own set of \\(p\\) parameters and then use \\(\ell_{2,1}\\)-norm regularization to share information across datasets. For example using the least-squares regression case:
  
 $$
 \begin{align*}
-&\text{Multitask learning with the $\ell_{2,1}$-norm} \\
+&\text{Multitask learning with the \\(\ell_{2,1}\\)-norm} \\
 \ell(\bB) &= \frac{1}{2} \sum_{k=1}^K \frac{1}{N_k} \|\by - \bX_k \bbeta_k \|_2^2 +  \lambda \|\bB\|_{2,1} \\
 \bB &= [\bbeta_1 \dots \bbeta_K] \\
 \|\bB\|_{2,1} &= \sum_{j=1}^p \| \bB_{j\cdot} \|_2 = \sum_{j=1}^p \Bigg( \sum_{k=1}^K \beta_{j,k}^2 \Bigg)^{1/2}
 \end{align*}
 $$
  
-Since the $j^{th}$ row of $\bB$ represents the $K$ different coefficient values for the $j^{th}$ feature across all $K$ datasets, the $\ell_{2,1}$ norm is simply a sum of $\ell_2$ norms across all the rows. Readers familiar with the [group Lasso](https://en.wikipedia.org/wiki/Lasso_(statistics)#Group_lasso) should note that this will encourage group-wise sparsity across the datasets: i.e. all coefficients are thresholded to zero, or are all non-zero. In other words, if the the $j^{th}$ feature has a limited effect in many of the datasets, it will be forced to zero for all datasets. To see how this technically occurs, consider the (sub)gradient for the $j^{th}$ feature in the $k^{th}$ dataset.
+Since the \\(j^{th}\\) row of \\(\bB\\) represents the \\(K\\) different coefficient values for the \\(j^{th}\\) feature across all \\(K\\) datasets, the \\(\ell_{2,1}\\) norm is simply a sum of \\(\ell_2\\) norms across all the rows. Readers familiar with the [group Lasso](https://en.wikipedia.org/wiki/Lasso_(statistics)#Group_lasso) should note that this will encourage group-wise sparsity across the datasets: i.e. all coefficients are thresholded to zero, or are all non-zero. In other words, if the the \\(j^{th}\\) feature has a limited effect in many of the datasets, it will be forced to zero for all datasets. To see how this technically occurs, consider the (sub)gradient for the \\(j^{th}\\) feature in the \\(k^{th}\\) dataset.
  
 $$
 \begin{align*}
-&\text{Multitask learning with the $\ell_{2,1}$-norm} \\
+&\text{Multitask learning with the \\(\ell_{2,1}\\)-norm} \\
 \partial_{\beta_{j,k}} \ell(\bB) &= -\bX^T_{j,k}(\by - \bX_k\bbeta_k) + \lambda \partial_{\beta_{j,k}} \Bigg(\sum_{q=1}^K \beta_{j,q} \Bigg)^{1/2}
 \end{align*}
 $$
  
  
-The subdifferential for any of the parameters from the $k^{th}$ dataset contains only the response and design matrix data from that datasets, *but*, contains the parameter information across all datasets. This encourages only features will consistent effects across the datasets to be selected. If we assume that $\beta_{j,k} \sim N(\beta_j,\sigma_j^2)$ then this will reduce the variance of the model estimates by averaging over several measurements. Alternatively, we could think of it as a technique which focuses our coefficient budget on only the most statistically reliable features.
+The subdifferential for any of the parameters from the \\(k^{th}\\) dataset contains only the response and design matrix data from that datasets, *but*, contains the parameter information across all datasets. This encourages only features will consistent effects across the datasets to be selected. If we assume that \\(\beta_{j,k} \sim N(\beta_j,\sigma_j^2)\\) then this will reduce the variance of the model estimates by averaging over several measurements. Alternatively, we could think of it as a technique which focuses our coefficient budget on only the most statistically reliable features.
  
 ## Transfer learning
  
@@ -114,7 +114,7 @@ $$
  
 In the following transfer learning framework for the stratified survival model I outline an algorithm that has the following desirable properties: (i) some sort of shared representation (multitask), (ii)  able to handle data-set specific features, and (iii) has adaptability between pure multitask and data-set specific modelling. For the first property, the stratified approach already shares a single covariate vector and this can be used as is. To handle features which may only appear in some datasets, we'll need to encode "missing data" with zeros, but then adjust during our algorithmic procedures. Lastly, we can use relative weighting schemes between the different likelihoods to shift the balance between the source and target datasets.
  
-To (re)establish the notation, suppose that we have $k=1,\dots,K$ datasets each with an $N_k \times p$ design matrix $\bX_k$ and survival information $(\bt_k,\bdelta_k)$. Note that if a dataset does not contain the $j^{th}$ feature, its is given a column of zeros in this location. Later we will show how to address this seeming problem. There is a single target dataset $T \in \{1,\dots,K\}$ and the remaining datasets are the source $S = \\{1,\dots,K\\} \setminus T$. To simplify notation we'll assume that the target dataset is $T=1$ and $S=\\{2,\dots,K\\}$.
+To (re)establish the notation, suppose that we have \\(k=1,\dots,K\\) datasets each with an \\(N_k \times p\\) design matrix \\(\bX_k\\) and survival information \\((\bt_k,\bdelta_k)\\). Note that if a dataset does not contain the \\(j^{th}\\) feature, its is given a column of zeros in this location. Later we will show how to address this seeming problem. There is a single target dataset \\(T \in \{1,\dots,K\}\\) and the remaining datasets are the source \\(S = \\{1,\dots,K\\} \setminus T\\). To simplify notation we'll assume that the target dataset is \\(T=1\\) and \\(S=\\{2,\dots,K\\}\\).
  
 $$
 \begin{align}
@@ -125,9 +125,9 @@ $$
 \end{align}
 $$
  
-The transfer-stratified likelihood approach seen in equation \eqref{eq:trans_strat} is still the sum over the $K$ different datasets with the only (current) difference that we add a hyperparameter $\tau$ which captures the degree of transfer. When $\tau=0$, the model becomes the stratified approach where each dataset is weighted by its number of relative observations. If $\tau=1$ then the dataset reverts to a Cox model estimated on only the target dataset. When $\tau \in (0,1)$ then the target dataset will receive a weight above is "fair share" $N_T/N$. The more similar the data generating process is between the source and the target distributions, the more it makes sense to set $\tau$ close to zero, although in practice the parameter $\tau$ should be determined by cross-validation. What is cool about this transfer learning approach is that it is very close to a free lunch. If the source datasets are useless, $\tau$ will be revealed to be close to zero, and if there is shareable information it can be optimized to some non-zero value. Of course hyperparameter selection is inherently noisy, but the downsides are very small. 
+The transfer-stratified likelihood approach seen in equation \eqref{eq:trans_strat} is still the sum over the \\(K\\) different datasets with the only (current) difference that we add a hyperparameter \\(\tau\\) which captures the degree of transfer. When \\(\tau=0\\), the model becomes the stratified approach where each dataset is weighted by its number of relative observations. If \\(\tau=1\\) then the dataset reverts to a Cox model estimated on only the target dataset. When \\(\tau \in (0,1)\\) then the target dataset will receive a weight above is "fair share" \\(N_T/N\\). The more similar the data generating process is between the source and the target distributions, the more it makes sense to set \\(\tau\\) close to zero, although in practice the parameter \\(\tau\\) should be determined by cross-validation. What is cool about this transfer learning approach is that it is very close to a free lunch. If the source datasets are useless, \\(\tau\\) will be revealed to be close to zero, and if there is shareable information it can be optimized to some non-zero value. Of course hyperparameter selection is inherently noisy, but the downsides are very small. 
  
-For the inclusion of an elastic net penalty term we will need to add a term to adjust for the fact that some columns of $\bX$ will be zero for some of the datasets (since we encoded zeros into variables that were not found in some datasets). As that the gradient of the likelihood for the $j^{th}$ covariate in the $k^{th}$ dataset is $\bX_{j,k}^T(\bdelta_k - \bP_k \bdelta_k)$, than if $\bX_{j,k}^T$ is a vector of zeros, there will be no contribution to the overall gradient in the $j^{th}$ direction from that dataset. But in the presence of regularization the magnitude of the gradients matters for the relative amount of shrinkage, so we need to ensure that variables are not shrunk simply because they are only found in a fraction of the datasets.
+For the inclusion of an elastic net penalty term we will need to add a term to adjust for the fact that some columns of \\(\bX\\) will be zero for some of the datasets (since we encoded zeros into variables that were not found in some datasets). As that the gradient of the likelihood for the \\(j^{th}\\) covariate in the \\(k^{th}\\) dataset is \\(\bX_{j,k}^T(\bdelta_k - \bP_k \bdelta_k)\\), than if \\(\bX_{j,k}^T\\) is a vector of zeros, there will be no contribution to the overall gradient in the \\(j^{th}\\) direction from that dataset. But in the presence of regularization the magnitude of the gradients matters for the relative amount of shrinkage, so we need to ensure that variables are not shrunk simply because they are only found in a fraction of the datasets.
  
 $$
 \begin{align}
@@ -137,7 +137,7 @@ $$
 \end{align}
 $$
  
-By including the diagonal matrix $\Gamma$ in equation \eqref{eq:trans_enet} we ensure that the regularization terms are shrunk by an amount proportional to the "missingness" of the variable across datasets. It is useful to see the (sub)gradient of our model to see how we will perform the gradient updates.
+By including the diagonal matrix \\(\Gamma\\) in equation \eqref{eq:trans_enet} we ensure that the regularization terms are shrunk by an amount proportional to the "missingness" of the variable across datasets. It is useful to see the (sub)gradient of our model to see how we will perform the gradient updates.
  
 $$
 \begin{align*}
@@ -146,7 +146,7 @@ $$
 \end{align*}
 $$
  
-The gradient for this stratified-transfer model is identical to the regularized stratified partial likelihood with two exceptions: it allows for a non-proportional weighting scheme by setting $\tau \neq 0$ and it includes a "missing variable" offset term. However because the loss function is convex (because a non-negative weighted sum of convex functions is convex), proximal gradient descent methods can be used to be an efficient method to finding the $\arg \min$.
+The gradient for this stratified-transfer model is identical to the regularized stratified partial likelihood with two exceptions: it allows for a non-proportional weighting scheme by setting \\(\tau \neq 0\\) and it includes a "missing variable" offset term. However because the loss function is convex (because a non-negative weighted sum of convex functions is convex), proximal gradient descent methods can be used to be an efficient method to finding the \\(\arg \min\\).
  
 ## Conclusion
  

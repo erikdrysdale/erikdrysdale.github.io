@@ -13,14 +13,14 @@ The rest of the post will proceed with the following sections: (1) the notation 
  
 ## (1) Notational overview[[^2]]
  
-Logistic regression (LR) models a function of the probability of $K$ discrete classes with a linear combination of $p$ or $p+1$ features $x=(x_1,\dots,x_p)^T$ or $x=(1,x_1,\dots,x_p)^T$[[^3]]. When the response (or dependent) variable is discrete and categorical, the prediction task is referred to as classification (as opposed to regression which has a numerical and continuous response). One approach to performing classification is to use a linear regression model but encode the response variable as a matrix in the one-hot encoding format (dimension $N \times K$), and then estimate $K \times p$ coefficients. For a given vector $x$, classification is done according to which ever fitted value (there will be $K$ of them) is the largest. There are two issues with this approach: first, some classes may never be predicted (a problem known as masking) and second, the fitted values do not align with intuitions about probability[[^4]]. 
+Logistic regression (LR) models a function of the probability of \\(K\\) discrete classes with a linear combination of \\(p\\) or \\(p+1\\) features \\(x=(x_1,\dots,x_p)^T\\) or \\(x=(1,x_1,\dots,x_p)^T\\)[[^3]]. When the response (or dependent) variable is discrete and categorical, the prediction task is referred to as classification (as opposed to regression which has a numerical and continuous response). One approach to performing classification is to use a linear regression model but encode the response variable as a matrix in the one-hot encoding format (dimension \\(N \times K\\)), and then estimate \\(K \times p\\) coefficients. For a given vector \\(x\\), classification is done according to which ever fitted value (there will be \\(K\\) of them) is the largest. There are two issues with this approach: first, some classes may never be predicted (a problem known as masking) and second, the fitted values do not align with intuitions about probability[[^4]]. 
  
 <br>
 <h5><p align="center">Figure 1: The one-hot-encoding format</p></h5>
 <p align="center"><img src="/figures/one_hot_encoding.png" width="40%"> </p>
 <br>
  
-Unlike linear regression, LR ensures that the fitted values are bounded between $[0,1]$, as the log-odds form of the model allows for a mapping to the [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) for the probability values. Notationally, the form of the multinomial logistic regression model is shown below where $\beta_i^T=(\beta_{i1},\dots,\beta_{ip})$. 
+Unlike linear regression, LR ensures that the fitted values are bounded between \\([0,1]\\), as the log-odds form of the model allows for a mapping to the [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) for the probability values. Notationally, the form of the multinomial logistic regression model is shown below where \\(\beta_i^T=(\beta_{i1},\dots,\beta_{ip})\\). 
  
 $$
 \begin{align*}
@@ -30,7 +30,7 @@ $$
 \end{align*}
 $$
  
-For the $i^{th}$ equation, the dependent variable is the log of the probability of class $i$ relative to class $K$ (i.e. the odds), conditional on some feature vector $x$. Since both an odds and a log transformation are [monotonic](https://en.wikipedia.org/wiki/Monotonic_function), the probability of the $i^{th}$ class can always be recovered from the log-odds. While class $K$ is used in the denominator above, using the final encoded class is arbitrary, and the the estimated coefficients are equivariant under this choice. While there are $\frac{K!}{2!(K-2)!}$ relationships in a $K$-class LR model[[^5]], only $K-1$ equations are actually needed. For example, in the $K=3$ situation, it is easy to see that the log-odds relationship between classes 1 & 2 can be recovered from the log-odds relationship of classes 1 & 3 and 2 & 3.
+For the \\(i^{th}\\) equation, the dependent variable is the log of the probability of class \\(i\\) relative to class \\(K\\) (i.e. the odds), conditional on some feature vector \\(x\\). Since both an odds and a log transformation are [monotonic](https://en.wikipedia.org/wiki/Monotonic_function), the probability of the \\(i^{th}\\) class can always be recovered from the log-odds. While class \\(K\\) is used in the denominator above, using the final encoded class is arbitrary, and the the estimated coefficients are equivariant under this choice. While there are \\(\frac{K!}{2!(K-2)!}\\) relationships in a \\(K\\)-class LR model[[^5]], only \\(K-1\\) equations are actually needed. For example, in the \\(K=3\\) situation, it is easy to see that the log-odds relationship between classes 1 & 2 can be recovered from the log-odds relationship of classes 1 & 3 and 2 & 3.
  
 $$
 \begin{align*}
@@ -39,7 +39,7 @@ $$
 \end{align*}
 $$
  
-Having one less equation than classes ensures that the probabilities sum to one, as the probability of the $K^{th}$ class is defined as: $P(G=K\|X=x)=1-\sum_{l=1}^{K-1} P(G=l\|X=x)$. In the multinomial setting, the parameter $\theta$ will be used to show that there are actually $(K-1) \times p$ parameters: $\theta=(\beta_{10},\beta_1^T,\dots,\beta_{(K-1)0},\beta_{K-1}^T )$ that define the system. To save on space, the conditional likelihood may also be denoted as: $p_k(x;\theta)=P(G=k\|X=x)$. After solving the log-odds equations, the probability of each class is:
+Having one less equation than classes ensures that the probabilities sum to one, as the probability of the \\(K^{th}\\) class is defined as: \\(P(G=K\|X=x)=1-\sum_{l=1}^{K-1} P(G=l\|X=x)\\). In the multinomial setting, the parameter \\(\theta\\) will be used to show that there are actually \\((K-1) \times p\\) parameters: \\(\theta=(\beta_{10},\beta_1^T,\dots,\beta_{(K-1)0},\beta_{K-1}^T )\\) that define the system. To save on space, the conditional likelihood may also be denoted as: \\(p_k(x;\theta)=P(G=k\|X=x)\\). After solving the log-odds equations, the probability of each class is:
  
 $$
 \begin{align*}
@@ -48,9 +48,9 @@ p_K(x;\theta) &= \frac{1}{1+\sum_{l=1}^{K-1}\exp(\beta_{l0}+\beta_{l}^Tx)}
 \end{align*}
 $$
  
-In the $K=2$ situation, the above equations result in the well known sigmoid function: $p=[1+e^{-(\beta^T x)}]^{-1}$. In classification problems, the function which is used to make the classification choice is referred to as the discriminant function $\delta$, and it can only be a function of the data. For LR, $\delta_k(x) = p_k(x;\hat{\theta})$, where the discriminant problem is $\underset{i}{\text{arg}\max} \hspace{2mm} \delta_i(x), \hspace{2mm} i = 1,\dots,K$. When there are no higher order terms of the features (such as $x_{i1}^2$), the LR classification decision boundary is linear. 
+In the \\(K=2\\) situation, the above equations result in the well known sigmoid function: \\(p=[1+e^{-(\beta^T x)}]^{-1}\\). In classification problems, the function which is used to make the classification choice is referred to as the discriminant function \\(\delta\\), and it can only be a function of the data. For LR, \\(\delta_k(x) = p_k(x;\hat{\theta})\\), where the discriminant problem is \\(\underset{i}{\text{arg}\max} \hspace{2mm} \delta_i(x), \hspace{2mm} i = 1,\dots,K\\). When there are no higher order terms of the features (such as \\(x_{i1}^2\\)), the LR classification decision boundary is linear. 
  
-For an example, the [Iris data set](https://archive.ics.uci.edu/ml/datasets/Iris) is considered, where the classification problem is determining whether a flower is of the Versicolor or Virginica species using information regarding petal and sepal width. Figure 2A shows the linear decision boundary using the estimated coefficients. For the two class case it is easy to see that the decision boundary occurs where $\hat{\beta}^T x > 0$. At the decision boundary, the fitted probabilities are exactly one-half and therefore the flower is classified as the Versicolor species whenever the estimated probability is greater than $1/2$.
+For an example, the [Iris data set](https://archive.ics.uci.edu/ml/datasets/Iris) is considered, where the classification problem is determining whether a flower is of the Versicolor or Virginica species using information regarding petal and sepal width. Figure 2A shows the linear decision boundary using the estimated coefficients. For the two class case it is easy to see that the decision boundary occurs where \\(\hat{\beta}^T x > 0\\). At the decision boundary, the fitted probabilities are exactly one-half and therefore the flower is classified as the Versicolor species whenever the estimated probability is greater than \\(1/2\\).
  
 <br>
 <h5><p align="center">Figure 2: Using LR for flower classification</p></h5>
@@ -59,7 +59,7 @@ For an example, the [Iris data set](https://archive.ics.uci.edu/ml/datasets/Iris
  
 ## (2) The classical approach to estimating LR coefficients
  
-The parameters of a LR  model, $\theta$, are estimated by the [maximum likelihood](https://en.wikipedia.org/wiki/Maximum_likelihood_estimation) approach. For the two-class (binary) case, $\theta=\beta=\\{\beta_{10},\beta_1\\}$, and the probability of class $K=2$ in the denominator can be represented by one less the probability of the first class. Given a data set with a sample of $N$ independent observations and a vector of inputs $x_i$ (which includes an intercept), the equation for each observation is:
+The parameters of a LR  model, \\(\theta\\), are estimated by the [maximum likelihood](https://en.wikipedia.org/wiki/Maximum_likelihood_estimation) approach. For the two-class (binary) case, \\(\theta=\beta=\\{\beta_{10},\beta_1\\}\\), and the probability of class \\(K=2\\) in the denominator can be represented by one less the probability of the first class. Given a data set with a sample of \\(N\\) independent observations and a vector of inputs \\(x_i\\) (which includes an intercept), the equation for each observation is:
  
 $$
 \begin{align*}
@@ -67,13 +67,13 @@ $$
 \end{align*}
 $$
  
-To simplify computations, data are assumed to aggregated so that each observation is a distinct "population", with $m_i$ observations associated with a population and $y_i$ "successes" (the binomial count for each population)[[^6]]. If $y_i \in \\{0,1\\} \hspace{2mm} \forall i$ then no observations are aggregated, which is the case for most ML data sets. This leads to following a joint binomial pmf:
+To simplify computations, data are assumed to aggregated so that each observation is a distinct "population", with \\(m_i\\) observations associated with a population and \\(y_i\\) "successes" (the binomial count for each population)[[^6]]. If \\(y_i \in \\{0,1\\} \hspace{2mm} \forall i\\) then no observations are aggregated, which is the case for most ML data sets. This leads to following a joint binomial pmf:
  
 $$
 f(\boldsymbol y|\beta) = \prod_{i=1}^N p(x_i;\beta)^{y_i}(1-p(x_i;\beta))^{1 - y_i}
 $$
  
-Conditioning on a given realization of the data and then expressing the joint distribution as a function of the parameters leads to the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function). Taking the log of this function yields the log-likelihood function, and finding the vector $\beta$ which maximizes the log-likelihood function will also maximize the likelihood function since a log-transformation is monotonic[[^7]]. Equation $\eqref{eq:ll}$ shows that the log-likelihood is a non-linear function for each parameter in $\beta$. Numerical methods will therefore be needed to find the vector $\beta$ which maximizes the function.
+Conditioning on a given realization of the data and then expressing the joint distribution as a function of the parameters leads to the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function). Taking the log of this function yields the log-likelihood function, and finding the vector \\(\beta\\) which maximizes the log-likelihood function will also maximize the likelihood function since a log-transformation is monotonic[[^7]]. Equation \\(\eqref{eq:ll}\\) shows that the log-likelihood is a non-linear function for each parameter in \\(\beta\\). Numerical methods will therefore be needed to find the vector \\(\beta\\) which maximizes the function.
  
 $$
 \begin{align}
@@ -83,7 +83,7 @@ l(\beta|\textbf{y}) &= \log L(\beta|\textbf{y}) \nonumber \\
 \end{align}
 $$
  
-The classical approach for multivariate numerical estimation relies on the gradient (or score vector) and hessian (or information matrix) of the log-likelihood function. The former is a vector of partial derivatives and latter is a matrix of all second-order partial derivatives. The $j^{th}$ and $jk^{th}$ element of the gradient and hessian are shown in equations $\eqref{eq:scorej}$ and $\eqref{eq:hessjk}$, respectively.
+The classical approach for multivariate numerical estimation relies on the gradient (or score vector) and hessian (or information matrix) of the log-likelihood function. The former is a vector of partial derivatives and latter is a matrix of all second-order partial derivatives. The \\(j^{th}\\) and \\(jk^{th}\\) element of the gradient and hessian are shown in equations \\(\eqref{eq:scorej}\\) and \\(\eqref{eq:hessjk}\\), respectively.
  
 $$
 \begin{align}
@@ -128,7 +128,7 @@ H(\beta) &= - \mathbf{X}^T \mathbf{W} \mathbf{X} \label{eq:hess}
 \end{align}
 $$
  
-The ML estimate $\hat{\beta}$ is found where $\partial l(\hat{\beta}\|\textbf{y}) / \partial \beta_j =0$ for $j=0,\dots,p$. Specifically, the classical approach uses [Newton-Raphson algorithm](https://en.wikipedia.org/wiki/Newton%27s_method) to find the ML estimate. This method appeals to the use of a Taylor expansion of the score vector about the point $\beta_0$ (this is a vector point not a scalar).
+The ML estimate \\(\hat{\beta}\\) is found where \\(\partial l(\hat{\beta}\|\textbf{y}) / \partial \beta_j =0\\) for \\(j=0,\dots,p\\). Specifically, the classical approach uses [Newton-Raphson algorithm](https://en.wikipedia.org/wiki/Newton%27s_method) to find the ML estimate. This method appeals to the use of a Taylor expansion of the score vector about the point \\(\beta_0\\) (this is a vector point not a scalar).
  
 $$
 \begin{align}
@@ -204,7 +204,7 @@ round(beta.new,3)
 ## age        0.043
 {% endhighlight %}
  
-An alternative approach which yields identical results is to substitute  in $\eqref{eq:score}$ and $\eqref{eq:hess}$ into $\eqref{eq:nr}$ and then re-define some terms to get the "iteratively reweighted least squares" (IRLS) algorithm. Equation $\eqref{eq:irls}$ shows that at each step of the IRLS, the new vector is the solution to the weighted [OLS](https://en.wikipedia.org/wiki/Ordinary_least_squares) regression on the adjusted response vector $\mathbf{z}$. It is easy to show that show that equation $\eqref{eq:irls}$ is equivalent to $\underset{\beta}{\text{arg}\min} (\mathbf{z}-\mathbf{X}\beta)^T\mathbf{W} (\mathbf{z}-\mathbf{X}\beta)$
+An alternative approach which yields identical results is to substitute  in \\(\eqref{eq:score}\\) and \\(\eqref{eq:hess}\\) into \\(\eqref{eq:nr}\\) and then re-define some terms to get the "iteratively reweighted least squares" (IRLS) algorithm. Equation \\(\eqref{eq:irls}\\) shows that at each step of the IRLS, the new vector is the solution to the weighted [OLS](https://en.wikipedia.org/wiki/Ordinary_least_squares) regression on the adjusted response vector \\(\mathbf{z}\\). It is easy to show that show that equation \\(\eqref{eq:irls}\\) is equivalent to \\(\underset{\beta}{\text{arg}\min} (\mathbf{z}-\mathbf{X}\beta)^T\mathbf{W} (\mathbf{z}-\mathbf{X}\beta)\\)
  
 $$
 \begin{align}
@@ -272,7 +272,7 @@ round(beta.new,3)
  
 ## (3) South African Hearth Disease Data Set
  
-This section will consider how LR can be used to estimate the risk of coronary heart disease (CHD) using the `SAheart` data set that is part of the `ElemStatLearn` library as well as how the coefficients of the LR model can be interpreted when performing statistical inference. This data set has $N=462$ observations for white males (ages 15-64) with a response variable of whether they have a type of coronary heart disease: myocardial infarction (`chd`) along with seven control variables including systolic blood pressure (`sbp`), low density lipoprotein cholesterol (`ldl`), and body fat (`adiposity`).
+This section will consider how LR can be used to estimate the risk of coronary heart disease (CHD) using the `SAheart` data set that is part of the `ElemStatLearn` library as well as how the coefficients of the LR model can be interpreted when performing statistical inference. This data set has \\(N=462\\) observations for white males (ages 15-64) with a response variable of whether they have a type of coronary heart disease: myocardial infarction (`chd`) along with seven control variables including systolic blood pressure (`sbp`), low density lipoprotein cholesterol (`ldl`), and body fat (`adiposity`).
  
 
 {% highlight text %}
@@ -337,7 +337,7 @@ Three variables are dropped after the backward selection procedure, and the rema
 <tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr></table>
 <br> 
  
-How can one specifically interpret the coefficients from a logistic regression, such as the $\hat{\beta}\_{\text{age}}=0.044$ result from Table 1B? Consider two input vectors $x_a$ and $x_b$ that share the same covariate values except that the individual associated with $x_a$ is one year older. By subtracting the two fitted values, it is easy to see that the difference is equal to $\hat{\beta}_{\text{age}}$. Therefore, the coefficient results of a LR model should be interpreted as follows: a one unit change in a feature $j$ leads to a $\hat{\beta}_j$ increase in the log-odds (also known as the log-odds ratio) of the condition.
+How can one specifically interpret the coefficients from a logistic regression, such as the \\(\hat{\beta}\_{\text{age}}=0.044\\) result from Table 1B? Consider two input vectors \\(x_a\\) and \\(x_b\\) that share the same covariate values except that the individual associated with \\(x_a\\) is one year older. By subtracting the two fitted values, it is easy to see that the difference is equal to \\(\hat{\beta}_{\text{age}}\\). Therefore, the coefficient results of a LR model should be interpreted as follows: a one unit change in a feature \\(j\\) leads to a \\(\hat{\beta}_j\\) increase in the log-odds (also known as the log-odds ratio) of the condition.
  
 $$
 \begin{align*}
@@ -367,16 +367,16 @@ $$
  
 ## (4) Alternative estimation procedures
  
-LR was developed well before the big data era, when observations tended to number in the hundreds and features in the dozens. The classical estimation approach to LR begins to breakdown when $p$ grows as finding the inverse of the $H$ or $X^T W X$ term for the Newton-Raphson or IRLS algorithm is an $O(p^3)$ problem. When $N$ gets very large, calculating the $\sum_{i=1}^N p(x_i;\beta)$ term can be computationally time consuming too. This section will discuss using the techniques of gradient descent for the large-$p$ problem and stochastic gradient descent for the large-$N$ problem.
+LR was developed well before the big data era, when observations tended to number in the hundreds and features in the dozens. The classical estimation approach to LR begins to breakdown when \\(p\\) grows as finding the inverse of the \\(H\\) or \\(X^T W X\\) term for the Newton-Raphson or IRLS algorithm is an \\(O(p^3)\\) problem. When \\(N\\) gets very large, calculating the \\(\sum_{i=1}^N p(x_i;\beta)\\) term can be computationally time consuming too. This section will discuss using the techniques of gradient descent for the large-\\(p\\) problem and stochastic gradient descent for the large-\\(N\\) problem.
  
-For [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), the Hessian is ignored and some  step size $\eta$ is used to update the Newton-Raphson algorithm: $\beta^{\text{new}} = \beta^{\text{old}} - \eta \frac{-\partial l(\beta)}{\partial\beta}$. The method is called gradient "descent" because the negative log-likelihood is used so that the score vector points in the direction which minimizes the negative log-likelihood (and maximizes the log-likelihood) function. Gradient descent will generally converge to the global minima when the step size is small enough and the likelihood space is convex (i.e. it looks like a valley). The figure below shows gradient descent with an intercept and the `age` variable (normalized) from the SA heart data set at various starting points with $\eta=0.5$. The choice of step size and stopping criterion is akin to selecting hyperparameters for ML algorithms. Data-driven methods like cross-validation will likely select parameters that stop "too soon" for any given realization, but have better generalization performance. In this sense, gradient descent can function as a type of [regularization](https://en.wikipedia.org/wiki/Regularization_(mathematics)#Early_stopping).
+For [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), the Hessian is ignored and some  step size \\(\eta\\) is used to update the Newton-Raphson algorithm: \\(\beta^{\text{new}} = \beta^{\text{old}} - \eta \frac{-\partial l(\beta)}{\partial\beta}\\). The method is called gradient "descent" because the negative log-likelihood is used so that the score vector points in the direction which minimizes the negative log-likelihood (and maximizes the log-likelihood) function. Gradient descent will generally converge to the global minima when the step size is small enough and the likelihood space is convex (i.e. it looks like a valley). The figure below shows gradient descent with an intercept and the `age` variable (normalized) from the SA heart data set at various starting points with \\(\eta=0.5\\). The choice of step size and stopping criterion is akin to selecting hyperparameters for ML algorithms. Data-driven methods like cross-validation will likely select parameters that stop "too soon" for any given realization, but have better generalization performance. In this sense, gradient descent can function as a type of [regularization](https://en.wikipedia.org/wiki/Regularization_(mathematics)#Early_stopping).
  
 <br>
 <h5><p align="center">Figure 4: An example of gradient descent </p></h5>
 <p align="center"><img src="/figures/gd_saheart.png" width="75%"> </p>
 <br>
  
-The log-likelihood is always made up of $N$ "summand functions": $\sum_{i=1}^N Q_i$, where $Q_i=y_i [\beta^T x_i] - \log [1+\exp(\beta^Tx_i)]$ for the binary LR model. With [stochastic gradient descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent) (SGD), only one (or a batch) of these summand functions are (randomly) selected to be used in the update of the gradient descent algorithm. In addition to the initial learning rate, a decay rate must be chosen for SGD so that the step size decreases over time: $\eta_t=\delta\eta_{t-1}$. Figure 5 shows the SGD approach is able to achieve a similar result to the gradient descent or the classical Newton-Raphson approach but at a much lower computational cost[[^8]]. 
+The log-likelihood is always made up of \\(N\\) "summand functions": \\(\sum_{i=1}^N Q_i\\), where \\(Q_i=y_i [\beta^T x_i] - \log [1+\exp(\beta^Tx_i)]\\) for the binary LR model. With [stochastic gradient descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent) (SGD), only one (or a batch) of these summand functions are (randomly) selected to be used in the update of the gradient descent algorithm. In addition to the initial learning rate, a decay rate must be chosen for SGD so that the step size decreases over time: \\(\eta_t=\delta\eta_{t-1}\\). Figure 5 shows the SGD approach is able to achieve a similar result to the gradient descent or the classical Newton-Raphson approach but at a much lower computational cost[[^8]]. 
  
 <br>
 <h5><p align="center">Figure 5: An example of stochastic gradient descent </p></h5>
@@ -385,7 +385,7 @@ The log-likelihood is always made up of $N$ "summand functions": $\sum_{i=1}^N Q
  
 ## (5) Multinomial Logistic Regression
  
-When the number of classes is greater than two, several modifications need to be made to both the likelihood and matrix formulation of the Newton-Raphson estimation procedure. The rest of this section will show the mathematical and matrix calculations needed to handle this slightly more complex LR form. The responses are now one-hot encoded in an $N \times (K-1)$ matrix, $\mathbf{Y}$, whose $i^{th}$ row, $\mathbf{y}_i$, is a $K-1$ row vector, whose $j^{th}$ element is only equal to one if it belongs to class $j$.
+When the number of classes is greater than two, several modifications need to be made to both the likelihood and matrix formulation of the Newton-Raphson estimation procedure. The rest of this section will show the mathematical and matrix calculations needed to handle this slightly more complex LR form. The responses are now one-hot encoded in an \\(N \times (K-1)\\) matrix, \\(\mathbf{Y}\\), whose \\(i^{th}\\) row, \\(\mathbf{y}_i\\), is a \\(K-1\\) row vector, whose \\(j^{th}\\) element is only equal to one if it belongs to class \\(j\\).
  
 $$
 \begin{align*}
@@ -393,7 +393,7 @@ $$
 \end{align*}
 $$
  
-The joint pmf becomes the multinomial rather than the binomial distribution, whose $i^{th}$ contribution to the product of terms is shown below.
+The joint pmf becomes the multinomial rather than the binomial distribution, whose \\(i^{th}\\) contribution to the product of terms is shown below.
  
 $$
 \begin{align*}
@@ -401,7 +401,7 @@ p_{\mathbf{y}_i}(x_i) &= P(G=1|X=x_i)^{y_{i1}} \times \cdots \times P(G=K-1|X=x_
 \end{align*}
 $$
  
-Hence, the $i^{th}$ summand of the log-likelihood is going to be:
+Hence, the \\(i^{th}\\) summand of the log-likelihood is going to be:
  
 $$
 \begin{align*}
@@ -416,7 +416,7 @@ l(\theta|\mathbf{Y}) &= \sum_{i=1}^N \Bigg[\sum_{l=1}^{K-1} [\beta_l^T x_i]y_{il
 $$
  
  
-To actually estimate the parameters, it will be useful to vertically "stack" all the observations and parameters. There will be $K-1$ vertical blocks of $p+1$ parameters for the different classes.
+To actually estimate the parameters, it will be useful to vertically "stack" all the observations and parameters. There will be \\(K-1\\) vertical blocks of \\(p+1\\) parameters for the different classes.
  
 $$
 \begin{align*}
@@ -424,7 +424,7 @@ $$
 \end{align*}
 $$
  
-Consider the $p+1$ partial derivatives for the score vector for the $l^{th}$ block of parameters.
+Consider the \\(p+1\\) partial derivatives for the score vector for the \\(l^{th}\\) block of parameters.
  
 $$
 \begin{align*}
@@ -449,7 +449,7 @@ $$
 \end{align*}
 $$
  
-The final score vector of length $(p+1)\times (K-1)$ will take the following form:
+The final score vector of length \\((p+1)\times (K-1)\\) will take the following form:
  
 $$
 \begin{align*}
@@ -468,7 +468,7 @@ $$
 \begin{align*}
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_l^T}\ &= -\sum_{i=1}^N \frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T} x_i \\
 \frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T}  &= \begin{bmatrix} \frac{\partial}{\partial \beta_{l0} } & \dots  & \frac{\partial}{\partial \beta_{lp} }\end{bmatrix} \frac{\exp\{\beta_l^T x_i\}}{1+\sum_{l'=1}^{K-1}\exp\{\beta_{l'}^T x_i\}} \\
-&\text{The $j^{th}$ element is going to be:} \\
+&\text{The \\(j^{th}\\) element is going to be:} \\
 \Big[\frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T}\Big]_j &= \frac{\exp\{\beta_l^T x_i\}}{1+\sum_{l'=1}^{K-1}\exp\{\beta_{l'}^T x_i\}}x_{ij} - \Bigg(\frac{\exp\{\beta_l^T x_i\}}{1+\sum_{l'=1}^{K-1}\exp\{\beta_{l'}^T x_i\}}\Bigg)^2 x_{ij} \\
 \frac{\partial P(G=l|X=x_i)}{\partial \beta_l^T} &= P(G=l|X=x_i)(1-P(G=l|X=x_i)) x_i^T \\
 \frac{\partial^2l(\theta)}{\partial \beta_l \partial \beta_l^T}\ &= - \sum_{i=1}^N  P(G=l|X=x_i)(1-P(G=l|X=x_i)) x_i x_i^T
@@ -487,7 +487,7 @@ $$
 \end{align*}
 $$
  
-The final Hessian will therefore be made up $K-1 \times K-1$ matrices.
+The final Hessian will therefore be made up \\(K-1 \times K-1\\) matrices.
  
 $$
 \begin{align*}
@@ -581,14 +581,14 @@ LR remains popular in both the social sciences for performing statistical infere
  
 [^2]: The notation used will largely follow that of [Elements of Statistical Learning](https://statweb.stanford.edu/~tibs/ElemStatLearn/); a popular machine learning textbook.
  
-[^3]: Unless written out, $x$ is usually assumed to incorporate an intercept.
+[^3]: Unless written out, \\(x\\) is usually assumed to incorporate an intercept.
  
-[^4]: For example, if the response is numerically encoded as $\\{0,1\\}$, then the fitted values may be below 0 or above 1.
+[^4]: For example, if the response is numerically encoded as \\(\\{0,1\\}\\), then the fitted values may be below 0 or above 1.
  
-[^5]: In the $K=4$ situation, for example, there are six relationships between classes 1 & 2, 1 & 3, 1 & 4, 2 & 3, 2 & 4, and 3 & 4, although there are only three equations.
+[^5]: In the \\(K=4\\) situation, for example, there are six relationships between classes 1 & 2, 1 & 3, 1 & 4, 2 & 3, 2 & 4, and 3 & 4, although there are only three equations.
  
-[^6]: Suppose an experiment were carried out in ten Petri dishes containing one-hundred cells each to see how many cells divided depending on the concentration of a chemical. Now for a given $x_i$, the chemical level, there would be some $y_i$ number of divided cells out of $m_i=100$ potential divisions. 
+[^6]: Suppose an experiment were carried out in ten Petri dishes containing one-hundred cells each to see how many cells divided depending on the concentration of a chemical. Now for a given \\(x_i\\), the chemical level, there would be some \\(y_i\\) number of divided cells out of \\(m_i=100\\) potential divisions. 
  
-[^7]: A log transformation is taken to transform the product of $N$ terms into the sum of the $N$ terms, which is more computationally tractable.
+[^7]: A log transformation is taken to transform the product of \\(N\\) terms into the sum of the \\(N\\) terms, which is more computationally tractable.
  
-[^8]: Consider that only $10\times 75= 750$ observations were used, which is less than two iterations of gradient descent. 
+[^8]: Consider that only \\(10\times 75= 750\\) observations were used, which is less than two iterations of gradient descent. 

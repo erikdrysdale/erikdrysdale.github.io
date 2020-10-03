@@ -40,9 +40,9 @@ The superior prediction accuracy that machine learning (ML) models tend to have 
  
 Many ML are overdetermined in that it is easy for them to completly "master" any training data set they are given by overfitting the data. This leads to poor generalization accuracy because parameter weights are trained on noise which fails to extrapolate to new observations. Therefore models are [regularized](https://en.wikipedia.org/wiki/Regularization_(mathematics)) to prevent them from over-fitting. The intensity of regularization is usually governed by [hyperparameters](https://en.wikipedia.org/wiki/Hyperparameter_(machine_learning)), which are themselves tuned via [cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics)) (CV) or risk estimators such as AIC, BIC, or [SURE](https://en.wikipedia.org/wiki/Stein%27s_unbiased_risk_estimate). While statisticians may be more likely to use risk estimators over computer scientists, CV is by far the most common approach today.
  
-What form can hyperparameters take? They range from weights which determine the balance between the $\ell_1$ and $\ell_2$ coefficient budget size and training loss in penalized regression to the bandwidth employed by a kernel regression. When a model has a single hyperparameter, a simple line search over a range of values can be performed, where each value of the hyperparameter is given a validation score as measured by a hold-out sample or CV. Below is the pipeline that will often be employed by a ML researcher to train a model for prediction tasks, where $\bbeta$ is the parameter weights, $\by$ is the response measures, $\bX$ is the design matrix, $\mathcal{L}$ is the loss function, $P()$ is some penalty measure against overfitting, and $\lambda$ is the hyperparameter. 
+What form can hyperparameters take? They range from weights which determine the balance between the \\(\ell_1\\) and \\(\ell_2\\) coefficient budget size and training loss in penalized regression to the bandwidth employed by a kernel regression. When a model has a single hyperparameter, a simple line search over a range of values can be performed, where each value of the hyperparameter is given a validation score as measured by a hold-out sample or CV. Below is the pipeline that will often be employed by a ML researcher to train a model for prediction tasks, where \\(\bbeta\\) is the parameter weights, \\(\by\\) is the response measures, \\(\bX\\) is the design matrix, \\(\mathcal{L}\\) is the loss function, \\(P()\\) is some penalty measure against overfitting, and \\(\lambda\\) is the hyperparameter. 
  
-* Step 1: Pick a value for $\lambda$ and solve the constrained minization problem on the training (R) data
+* Step 1: Pick a value for \\(\lambda\\) and solve the constrained minization problem on the training (R) data
  
 $$
 \begin{align*}
@@ -50,9 +50,9 @@ $$
 \end{align*}
 $$
  
-* Step 2: Evaluate the model on the test (T) data: $\LT(\bbetahl,\bX_T,\by_T)$
+* Step 2: Evaluate the model on the test (T) data: \\(\LT(\bbetahl,\bX_T,\by_T)\\)
  
-* Step 3: Do a line search across a range of $\lambda$'s $\mathcal{D}=\\{\lambda_1,\dots,\lambda_m \\}$ and find the value that minimizes the test error
+* Step 3: Do a line search across a range of \\(\lambda\\)'s \\(\mathcal{D}=\\{\lambda_1,\dots,\lambda_m \\}\\) and find the value that minimizes the test error
  
 $$
 \begin{align*}
@@ -60,9 +60,9 @@ $$
 \end{align*}
 $$
  
-In the steps above I omitted the details of the inner loop that Steps 1-2 have with CV as well as and that $\lambda$ can be a vector, but the same principle applies. Notice that $\bbetahl$ is indexed by $\lambda$, because for a given value of the hyperparameter, $\bbetahl$ has a unique solution.
+In the steps above I omitted the details of the inner loop that Steps 1-2 have with CV as well as and that \\(\lambda\\) can be a vector, but the same principle applies. Notice that \\(\bbetahl\\) is indexed by \\(\lambda\\), because for a given value of the hyperparameter, \\(\bbetahl\\) has a unique solution.
  
-As the number of hyperparameters increases, line/grid search becomes costly. For example, searching over 100 values of $\lambda$ and $\alpha$ for the hyperparameters of the [Elastic Net](https://en.wikipedia.org/wiki/Elastic_net_regularization) algorithm whilst using 10-fold cross validation requires estimating 100,000 models. Even though this algorithm has a lightning fast convex optimization procedure, searching across the hyperparameter space neither scales well nor lends itself to more complex models.
+As the number of hyperparameters increases, line/grid search becomes costly. For example, searching over 100 values of \\(\lambda\\) and \\(\alpha\\) for the hyperparameters of the [Elastic Net](https://en.wikipedia.org/wiki/Elastic_net_regularization) algorithm whilst using 10-fold cross validation requires estimating 100,000 models. Even though this algorithm has a lightning fast convex optimization procedure, searching across the hyperparameter space neither scales well nor lends itself to more complex models.
  
 In addition to grid search (described above) or random search (as the name implies), gradient-based optimization[[^1]] can also be used. In a future post I'll summarize some of the work that has already been done which can be implemented on a broader scale, but I wanted to review some first principles in this post and show how this can be done for ridge regression due to the unique properties of the estimator. As in the above pipeline we'll assume there's a training and a test set, but the underlying principle can be applied to both CV or risk estimators. 
  
@@ -86,16 +86,16 @@ $$
 \end{align}
 $$
  
-Equation \eqref{eq:minmin} looks somewhat odd as there is an $\arg \min$ inside the function we are trying to minimize. All it means is that $\bbetah$ will get passed to $\LT(\cdot)$ and that it is a function of the outer optimization parameter $\bbetah(\lambda)$, where $\bbetah$ is the solution to $\frac{\partial}{\bbeta}\Bigg( \LR + P(\lambda,\bbeta) \Bigg)=\mathbf{0}$. 
+Equation \eqref{eq:minmin} looks somewhat odd as there is an \\(\arg \min\\) inside the function we are trying to minimize. All it means is that \\(\bbetah\\) will get passed to \\(\LT(\cdot)\\) and that it is a function of the outer optimization parameter \\(\bbetah(\lambda)\\), where \\(\bbetah\\) is the solution to \\(\frac{\partial}{\bbeta}\Bigg( \LR + P(\lambda,\bbeta) \Bigg)=\mathbf{0}\\). 
  
-<!-- We will be able to solve for $\hlam$ if we know how to evaluate $\partial \mathcal{L}_T / \partial \lambda = (\partial \LT / \partial \bbetah) (\partial \bbetah/\partial \lambda) =  0$. This chain rule makes intuitive sense: as we change $\lambda$ we case $\bbetah$ to change which in turn cases the test loss to change.  -->
+<!-- We will be able to solve for \\(\hlam\\) if we know how to evaluate \\(\partial \mathcal{L}_T / \partial \lambda = (\partial \LT / \partial \bbetah) (\partial \bbetah/\partial \lambda) =  0\\). This chain rule makes intuitive sense: as we change \\(\lambda\\) we case \\(\bbetah\\) to change which in turn cases the test loss to change.  -->
  
 <!-- To be able to solve this, we will appeal to the implicit function theorem.  -->
  
  
 ## Example: ridge regression
  
-Because any value of $\lambda$ is awarded a unique $\bbetah$, to be able to minimize equation \eqref{eq:bi1} we need to solve: 
+Because any value of \\(\lambda\\) is awarded a unique \\(\bbetah\\), to be able to minimize equation \eqref{eq:bi1} we need to solve: 
  
 $$
 \begin{align}
@@ -103,7 +103,7 @@ $$
 \end{align}
 $$
  
-Equation \eqref{eq:deriv} has a nice interpration: a change in $\lambda$ first causes a change in $\bbetah$ which then causes a change in the fitted value and hence prediction loss. The first term in the chain rule can be easy to determine (depends on the loss function), whereas the second term $\partial \bbetah / \partial \lambda$ is non-trivial as we need the figure out the relationship between how a change in $\lambda$ changes the coefficients weights to the  *penalized regression* problem. Luckily in the case of ridge regression, this derivative can be analytically derived.
+Equation \eqref{eq:deriv} has a nice interpration: a change in \\(\lambda\\) first causes a change in \\(\bbetah\\) which then causes a change in the fitted value and hence prediction loss. The first term in the chain rule can be easy to determine (depends on the loss function), whereas the second term \\(\partial \bbetah / \partial \lambda\\) is non-trivial as we need the figure out the relationship between how a change in \\(\lambda\\) changes the coefficients weights to the  *penalized regression* problem. Luckily in the case of ridge regression, this derivative can be analytically derived.
  
 $$
 \begin{align*}
@@ -112,7 +112,7 @@ $$
 \end{align*}
 $$
  
-The loss function has taken the form of the sum-of-squares with the fitted values taking a linear form (weighted by $\bbeta$), and the penalty term is the $\ell_2$ norm of the coefficients weighted by $\lambda$. Ridge regression is one of the few ML estimators that has a closed-form solution,[[^2]] revealing the direct link between $\lambda$ and its solution. 
+The loss function has taken the form of the sum-of-squares with the fitted values taking a linear form (weighted by \\(\bbeta\\)), and the penalty term is the \\(\ell_2\\) norm of the coefficients weighted by \\(\lambda\\). Ridge regression is one of the few ML estimators that has a closed-form solution,[[^2]] revealing the direct link between \\(\lambda\\) and its solution. 
  
 $$
 \begin{align*}
@@ -120,7 +120,7 @@ $$
 \end{align*}
 $$
  
-It will be useful to do a [SVD decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition) of $\bX = \bU \bD \bV^T$ to make the partial derivative easier to calculate.
+It will be useful to do a [SVD decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition) of \\(\bX = \bU \bD \bV^T\\) to make the partial derivative easier to calculate.
  
 $$
 \begin{align*}
@@ -176,7 +176,7 @@ round(head(data.frame(glmnet=beta.ridge.glmnet,approach1=beta.ridge1,
 ## 8   0.81      0.80      0.80      0.80
 {% endhighlight %}
  
-As long as $N \gg p$ (so that we can use $\bbetah^{\text{ols}}$)[[^3]] the derivative from equation \eqref{eq:deriv} for the ridge estimator becomes:
+As long as \\(N \gg p\\) (so that we can use \\(\bbetah^{\text{ols}}\\))[[^3]] the derivative from equation \eqref{eq:deriv} for the ridge estimator becomes:
  
 $$
 \begin{align*}
@@ -194,7 +194,7 @@ $$
 \end{align}
 $$
  
-While equation \eqref{eq:ridge_deriv} cannot be solved in closed form, it's easy enough to write a gradient descent procedure to solve for $\hlam$.
+While equation \eqref{eq:ridge_deriv} cannot be solved in closed form, it's easy enough to write a gradient descent procedure to solve for \\(\hlam\\).
  
 $$
 \newcommand{\lkp}{\lambda_{(k+1)}}
@@ -208,7 +208,7 @@ $$
 \end{align*}
 $$
  
-There are several methods to pick the step-size $\gamk$, but I will just rely on the [Backtracking-line search](https://www.cs.cmu.edu/~ggordon/10725-F12/slides/05-gd-revisited.pdf). 
+There are several methods to pick the step-size \\(\gamk\\), but I will just rely on the [Backtracking-line search](https://www.cs.cmu.edu/~ggordon/10725-F12/slides/05-gd-revisited.pdf). 
  
 $$
 \begin{align*}
@@ -219,7 +219,7 @@ $$
 \end{align*}
 $$
  
-Let's write some `R` code and solve for $\hlam$ after splitting the data into a training and test set.
+Let's write some `R` code and solve for \\(\hlam\\) after splitting the data into a training and test set.
  
  
 
@@ -321,7 +321,7 @@ print(sprintf('Lambda hat is: %0.2f',lam.hat))
 ## [1] "Lambda hat is: 40.06"
 {% endhighlight %}
  
-Now that we have our $\hlam$, we can check that this aligns with the minimum point for test set loss.
+Now that we have our \\(\hlam\\), we can check that this aligns with the minimum point for test set loss.
  
 
 {% highlight r %}
@@ -344,7 +344,7 @@ abline(v=lam.hat,col='red')
  
 ## Conclusion
  
-The post has shown that if the derivative of coefficient vector from the inner optimization problem can be derived, one does not need to line/grid search across the held-out data set to determine which $\lambda$ will minimize the squared error loss. One caveat to this is that the relationship between the hyperparameter and the coefficient weights is smooth, and to ensure a global minimum it must also be convex. Furthermore, this technique is not needed for ridge regression because a line search across $\lambda$'s is trivial to perform. In future posts I'll try to show how this principle can be extended to inexact gradients and the use of multiple hyperparameters.
+The post has shown that if the derivative of coefficient vector from the inner optimization problem can be derived, one does not need to line/grid search across the held-out data set to determine which \\(\lambda\\) will minimize the squared error loss. One caveat to this is that the relationship between the hyperparameter and the coefficient weights is smooth, and to ensure a global minimum it must also be convex. Furthermore, this technique is not needed for ridge regression because a line search across \\(\lambda\\)'s is trivial to perform. In future posts I'll try to show how this principle can be extended to inexact gradients and the use of multiple hyperparameters.
  
  
 * * * 
@@ -370,4 +370,4 @@ The post has shown that if the derivative of coefficient vector from the inner o
  
 [^2]: Other examples would include the LASSO with orthonormal features.
  
-[^3]: Note that even if $p \gg N$, one must simply use $\bU^T\by$ instead of $\bV^T \bbetah^{\text{ols}}$. 
+[^3]: Note that even if \\(p \gg N\\), one must simply use \\(\bU^T\by\\) instead of \\(\bV^T \bbetah^{\text{ols}}\\). 

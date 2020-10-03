@@ -21,7 +21,7 @@ The most well-known method for accounting for confounding effects is multiple li
  
 One statistical solution as discussed in Cole and Hernan (2004) is to adjust the Cox PH model by using [IPWs](https://en.wikipedia.org/wiki/Inverse_probability_weighting) so that only a single exposure covariate is included. By conditioning on IPWs, the probability of receiving the treatment a given individual actually received conditional on baseline confounders, the Cox model need only use the fitted values at the different levels of the exposure, and their effect on survival can be generalized outside of specific confounding covariate values[[^3]]. IPWs are used in a variety of statistical procedures, but can broadly be thought of as "upweighting" unlikely observations (such as receiving a drug usually reserved for late-Stage cancer patients if you are Stage I) so that the weighted distribution of features between different exposure levels in an observational study more closely resembles that of a randomized control trial.
  
-To provide a motivating example with some simulations, consider a theoretical survival curve from an [accelerated failure time model](https://en.wikipedia.org/wiki/Accelerated_failure_time_model): $S(t;x,z)=S_0(t e^{\beta x + \gamma z})$, where $x=1$ encodes a smoker, $z=1$ encodes a male, $\beta$ and $\gamma>0$ but $\text{cor}(x,z) < 0$. In other words, being a smoker and a male "accelerates" the survival path (i.e. one dies faster), but it is assumed that men are less likely to be smokers[[^4]]. The values $\beta,\gamma$ were specifically chosen so that the average survival times between smokers and non-smokers would be comparable. In other words, by having three-quarters of the smokers be female, this toy example provides enough of a confounding relationship to mask the true effect of smoking when seen through the lens of a KM survival curve. Figure 1A displays the result of this confounding, as evidenced by the statistically insignificant [log-rank test](https://en.wikipedia.org/wiki/Log-rank_test) between the two curves. However, if the KM survival curves are stratified by gender, the true effect of smoking reveals itself, and the log-rank test is able to decisively reject the null of no difference between smokers and non-smokers as Figures 1B and 1C show.
+To provide a motivating example with some simulations, consider a theoretical survival curve from an [accelerated failure time model](https://en.wikipedia.org/wiki/Accelerated_failure_time_model): \\(S(t;x,z)=S_0(t e^{\beta x + \gamma z})\\), where \\(x=1\\) encodes a smoker, \\(z=1\\) encodes a male, \\(\beta\\) and \\(\gamma>0\\) but \\(\text{cor}(x,z) < 0\\). In other words, being a smoker and a male "accelerates" the survival path (i.e. one dies faster), but it is assumed that men are less likely to be smokers[[^4]]. The values \\(\beta,\gamma\\) were specifically chosen so that the average survival times between smokers and non-smokers would be comparable. In other words, by having three-quarters of the smokers be female, this toy example provides enough of a confounding relationship to mask the true effect of smoking when seen through the lens of a KM survival curve. Figure 1A displays the result of this confounding, as evidenced by the statistically insignificant [log-rank test](https://en.wikipedia.org/wiki/Log-rank_test) between the two curves. However, if the KM survival curves are stratified by gender, the true effect of smoking reveals itself, and the log-rank test is able to decisively reject the null of no difference between smokers and non-smokers as Figures 1B and 1C show.
  
  
 <h3><p align="center">Figure 1: Confounding *in silico* </p></h3>
@@ -38,9 +38,9 @@ The statistical solution as proposed by Cole and Hernan (2004) is a three-step p
 2. Estimate a weighted Cox PH model with only one treatment variable.
 3. Adjust the KM survival curves with the estimated Cox PH coefficients.
  
-To provide a more formal description of IPWs, consider a sample of $N$ individuals and for the $i^{th}$ person denote $x_i$ as a **discrete** treatment option (the example below is binary, but it can be multinomial), $t_i$ and $\delta_i$ as the observed time and a censoring indicator, $\bzi$ as a $p$-vector of baseline features (possibly confounders), and $w_i$ as the inverse of the probability of receiving person $i$'s treatment $x_i$ conditional on the observed covariate vector $\bzi$. The inverse probability weight $w_i$ can be thought of as the inverse of the conditional marginal density of $X\|Z$: $[f_{X\|Z}(x_i\|\bzi)]^{-1}$. While $w_i$ is of course unknown, it can be estimated parametrically, $\hat{w}_i$, via methods such as logistic regression.
+To provide a more formal description of IPWs, consider a sample of \\(N\\) individuals and for the \\(i^{th}\\) person denote \\(x_i\\) as a **discrete** treatment option (the example below is binary, but it can be multinomial), \\(t_i\\) and \\(\delta_i\\) as the observed time and a censoring indicator, \\(\bzi\\) as a \\(p\\)-vector of baseline features (possibly confounders), and \\(w_i\\) as the inverse of the probability of receiving person \\(i\\)'s treatment \\(x_i\\) conditional on the observed covariate vector \\(\bzi\\). The inverse probability weight \\(w_i\\) can be thought of as the inverse of the conditional marginal density of \\(X\|Z\\): \\([f_{X\|Z}(x_i\|\bzi)]^{-1}\\). While \\(w_i\\) is of course unknown, it can be estimated parametrically, \\(\hat{w}_i\\), via methods such as logistic regression.
  
-The form that the [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression) model takes when there is a binary outcome is shown in equation $\eqref{eq:logit}$. In this generalized linear model, the canonical link is the logit (i.e. log-odds) function, which means a one-unit change in a covariate leads to a $\mu_j$ unit change in the log-odds of the encoded outcome. As the logit transform is a monotonic transformation of the probability of the event, the conditional probability can always be backed out using the expit transformation[[^5]], which allows for the calculation of $\hat{w}_i$. As $x_i = \{0,1\}$[[^6]], one less the fitted probability returns the probability for the alternative event.
+The form that the [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression) model takes when there is a binary outcome is shown in equation \\(\eqref{eq:logit}\\). In this generalized linear model, the canonical link is the logit (i.e. log-odds) function, which means a one-unit change in a covariate leads to a \\(\mu_j\\) unit change in the log-odds of the encoded outcome. As the logit transform is a monotonic transformation of the probability of the event, the conditional probability can always be backed out using the expit transformation[[^5]], which allows for the calculation of \\(\hat{w}_i\\). As \\(x_i = \{0,1\}\\)[[^6]], one less the fitted probability returns the probability for the alternative event.
  
 $$
 \begin{align}
@@ -48,7 +48,7 @@ $$
 \end{align}
 $$
  
-Using the fitted coefficients from the logistic regression model, the estimate of the (inverse) of person $i$ receiving their treatment is shown below.
+Using the fitted coefficients from the logistic regression model, the estimate of the (inverse) of person \\(i\\) receiving their treatment is shown below.
  
 $$
 \begin{align*}
@@ -60,7 +60,7 @@ $$
 \end{align*}
 $$
  
-Recall that IPWs are designed to upweight observations that are "unlikely" within a given treatment group. Thus, if a patient has $x_i=1$ but the fitted values of the logistic regression are very small, this suggests that this individual is similar in baseline covariates to patients that received $x_i=0$. Therefore, differences in outcome for this individual are likely to be due to whether they received the treatment and not to some other confounding relationship. However, standard IPWs can suffer from high variance, and the use of stabilized weights is preferred in most settings. As is shown below, this is achieved by normalizing the IPWs by the unconditional probability of treatment. Stabilized weights also have an interesting interpretation when viewed through the lens of stratification. The number of observations in a given confounding strata multiplied by the stabilized weights gives back the "pseudo-population" which is the effective observation weight for that strata.
+Recall that IPWs are designed to upweight observations that are "unlikely" within a given treatment group. Thus, if a patient has \\(x_i=1\\) but the fitted values of the logistic regression are very small, this suggests that this individual is similar in baseline covariates to patients that received \\(x_i=0\\). Therefore, differences in outcome for this individual are likely to be due to whether they received the treatment and not to some other confounding relationship. However, standard IPWs can suffer from high variance, and the use of stabilized weights is preferred in most settings. As is shown below, this is achieved by normalizing the IPWs by the unconditional probability of treatment. Stabilized weights also have an interesting interpretation when viewed through the lens of stratification. The number of observations in a given confounding strata multiplied by the stabilized weights gives back the "pseudo-population" which is the effective observation weight for that strata.
  
 $$
 \begin{align*}
@@ -68,7 +68,7 @@ $$
 \end{align*}
 $$
  
-The second step is to estimate a Cox PH model with only a single covariate using IPWs. The standard Cox model is shown in equation $\eqref{eq:cox}$ below. The hazard rate[[^7]] at time $t$ is described by some baseline hazard function $h_0(t)$, which is not specified but satisfies the proportional hazards assumption, and a linear combination of features within the natural exponential operator.
+The second step is to estimate a Cox PH model with only a single covariate using IPWs. The standard Cox model is shown in equation \\(\eqref{eq:cox}\\) below. The hazard rate[[^7]] at time \\(t\\) is described by some baseline hazard function \\(h_0(t)\\), which is not specified but satisfies the proportional hazards assumption, and a linear combination of features within the natural exponential operator.
  
 $$
 \begin{align}
@@ -76,9 +76,9 @@ h(t;\boldsymbol z) &= h_0(t) \exp\{\boldsymbol\gamma^T \boldsymbol z \} \label{e
 \end{align}
 $$
  
-As is well known in survival analysis, the non-parametric estimate of the survival curve $\hat{S}(t_j)$ can be estimated through the Kaplan-Meier estimator (or others such as the [Nelson-Aalen estimator](https://en.wikipedia.org/wiki/Nelson%E2%80%93Aalen_estimator)). Assuming the proportional hazards assumption holds, the coefficients from the Cox regression can be combined with the non-parametric approaches yielding a modified survival curve: $\hat{S}(t_j) = [\hat{S}_0(t_j)]^{\exp\\{\hat{\boldsymbol\gamma}^T \boldsymbol z\\}}$. The problem with this approach is that it requires evaluating the $\boldsymbol\gamma^T \boldsymbol z_0$ term for all values of the $(p+1)$-vector $\boldsymbol z$ (assume that $x_i$ is one of the covariates in the vector). 
+As is well known in survival analysis, the non-parametric estimate of the survival curve \\(\hat{S}(t_j)\\) can be estimated through the Kaplan-Meier estimator (or others such as the [Nelson-Aalen estimator](https://en.wikipedia.org/wiki/Nelson%E2%80%93Aalen_estimator)). Assuming the proportional hazards assumption holds, the coefficients from the Cox regression can be combined with the non-parametric approaches yielding a modified survival curve: \\(\hat{S}(t_j) = [\hat{S}_0(t_j)]^{\exp\\{\hat{\boldsymbol\gamma}^T \boldsymbol z\\}}\\). The problem with this approach is that it requires evaluating the \\(\boldsymbol\gamma^T \boldsymbol z_0\\) term for all values of the \\((p+1)\\)-vector \\(\boldsymbol z\\) (assume that \\(x_i\\) is one of the covariates in the vector). 
  
-To solve this problem, the Cox PH regression can be weighted by the IPWs and then estimated with only the single parameter of interest. At a technical level, this is done through the weighting of the partial likelihood of the Cox model as shown below (note that $R_k(t_i)$ is an indicator function for whether individual $i$ is alive at time $t_k$).
+To solve this problem, the Cox PH regression can be weighted by the IPWs and then estimated with only the single parameter of interest. At a technical level, this is done through the weighting of the partial likelihood of the Cox model as shown below (note that \\(R_k(t_i)\\) is an indicator function for whether individual \\(i\\) is alive at time \\(t_k\\)).
  
 $$
 \begin{align*}
@@ -87,7 +87,7 @@ L^{IPW}(\gamma) &= \prod_{i=1}^N \Bigg[ \Bigg( \frac{\exp(\gamma x_i)}{\sum_{k=1
 \end{align*}
 $$
  
-Since the weighted-Cox model has only a single covariate $x_i$, the third and final step is to compare two KM survival curves: $\hat{S}(t_j;x_i=1) = [\hat{S}_0(t_j;\hat{sw}_i)]^{\exp\\{\hat{\gamma}\\}}$ and $\hat{S}(t_j;x_i=0) = \hat{S}_0(t_j;\hat{sw}_i)$.
+Since the weighted-Cox model has only a single covariate \\(x_i\\), the third and final step is to compare two KM survival curves: \\(\hat{S}(t_j;x_i=1) = [\hat{S}_0(t_j;\hat{sw}_i)]^{\exp\\{\hat{\gamma}\\}}\\) and \\(\hat{S}(t_j;x_i=0) = \hat{S}_0(t_j;\hat{sw}_i)\\).
  
  
 ## <span style="color:green"> Example: recurrence of Ewing's sarcoma </span>
@@ -126,7 +126,7 @@ Table 2 shows the estimates of three Cox regression models. In model (1) only th
 <tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td colspan="4" style="text-align:right"></td></tr></table>
  
  
-There are actually two approaches that can be used to adjust the KM survival curves: (1) the stratified approach and (2) the marginal approach, as shown in equations $\eqref{eq:stratified}$ and $\eqref{eq:marginal}$ below. The former adjusts the estimate of the baseline hazard rate (and hence survival rate[[^9]]) for the different treatment levels, whereas the latter shows the *theoretical* survival distribution for all patients had each person been assigned to the standard or novel treatment. Figures 3A and 3B show the visual results of these two approaches. The stratified approach has the advantage that it uses the same structure of the unadjusted KM curves (and could use the log-rank test in principle), whereas the marginal approach appeals to the potential outcomes framework of the [Rubin causal model](https://en.wikipedia.org/wiki/Rubin_causal_model).
+There are actually two approaches that can be used to adjust the KM survival curves: (1) the stratified approach and (2) the marginal approach, as shown in equations \\(\eqref{eq:stratified}\\) and \\(\eqref{eq:marginal}\\) below. The former adjusts the estimate of the baseline hazard rate (and hence survival rate[[^9]]) for the different treatment levels, whereas the latter shows the *theoretical* survival distribution for all patients had each person been assigned to the standard or novel treatment. Figures 3A and 3B show the visual results of these two approaches. The stratified approach has the advantage that it uses the same structure of the unadjusted KM curves (and could use the log-rank test in principle), whereas the marginal approach appeals to the potential outcomes framework of the [Rubin causal model](https://en.wikipedia.org/wiki/Rubin_causal_model).
  
 $$
 \begin{align}
@@ -170,13 +170,13 @@ $$
  
 [^4]: [In the real world](https://www.cdc.gov/tobacco/data_statistics/fact_sheets/adult_data/cig_smoking/), men are actually more likely to be smokers.
  
-[^5]: $\log(p/(1-p))=x \longleftrightarrow x=1/(1+e(-x))$
+[^5]: \\(\log(p/(1-p))=x \longleftrightarrow x=1/(1+e(-x))\\)
  
-[^6]: The zero/one encoding is the conventional notation, but it could $x_i=\\{a,b\\}$, as what matters is there are two categorical levels. 
+[^6]: The zero/one encoding is the conventional notation, but it could \\(x_i=\\{a,b\\}\\), as what matters is there are two categorical levels. 
  
-[^7]: Also known as the instantaneous failure rate, the hazard rate can be though of the probability of death at time $t$ given that one has already survived to $t$. 
+[^7]: Also known as the instantaneous failure rate, the hazard rate can be though of the probability of death at time \\(t\\) given that one has already survived to \\(t\\). 
  
 [^8]: IPWs will not for any given estimate produce the same result as a regression model. However, IPWs yield asymptotically unbiased estimators, like multivariate regression, under certain assumptions.
  
-[^9]: The survival function can be backed out from the cumulative hazard function: $S(t)=\exp \\{- H(t) \\}$, where $H(t) = \int_0^t h(u) du$.
+[^9]: The survival function can be backed out from the cumulative hazard function: \\(S(t)=\exp \\{- H(t) \\}\\), where \\(H(t) = \int_0^t h(u) du\\).
  

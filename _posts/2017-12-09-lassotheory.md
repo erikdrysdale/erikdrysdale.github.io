@@ -29,7 +29,7 @@ $$
  
 ## Background
  
-Twenty years ago Tibshirani developed a penalized regression model known as the [Lasso](https://www.jstor.org/stable/2346178). Instead of using the L0-norm as the penalty term (equivalent to best-subset selection), the Lasso makes use of an L1-norm. This subtle change in norms has several important properties including a model which allows for both regularization and model selection,[[^1]] and the use of state-of-the-art optimization algorithms such as [coordinate descent](http://www.aliquote.org/articles/slides/mva_clinres/biblio/fu98.pdf) that allows the Lasso to scale to large $p$ datasets.
+Twenty years ago Tibshirani developed a penalized regression model known as the [Lasso](https://www.jstor.org/stable/2346178). Instead of using the L0-norm as the penalty term (equivalent to best-subset selection), the Lasso makes use of an L1-norm. This subtle change in norms has several important properties including a model which allows for both regularization and model selection,[[^1]] and the use of state-of-the-art optimization algorithms such as [coordinate descent](http://www.aliquote.org/articles/slides/mva_clinres/biblio/fu98.pdf) that allows the Lasso to scale to large \\(p\\) datasets.
  
 $$
 \begin{align}
@@ -37,17 +37,17 @@ $$
 \end{align}
 $$
  
-The coefficient vector of the Lasso is found by minimizing some convex loss function plus the L1-norm of the coefficients weighted by $\lambda$, as equation \eqref{eq:lasso1} shows. This simple formulation can and has been extended, and there is now a [large family](https://en.wikipedia.org/wiki/Lasso_(statistics)#Generalizations_of_lasso) of Lasso-based estimators including the elastic net, group Lasso, fused Lasso estimators, $\sqrtl$, and many others. 
+The coefficient vector of the Lasso is found by minimizing some convex loss function plus the L1-norm of the coefficients weighted by \\(\lambda\\), as equation \eqref{eq:lasso1} shows. This simple formulation can and has been extended, and there is now a [large family](https://en.wikipedia.org/wiki/Lasso_(statistics)#Generalizations_of_lasso) of Lasso-based estimators including the elastic net, group Lasso, fused Lasso estimators, \\(\sqrtl\\), and many others. 
  
-The choice of $\lambda$ is crucial in determining the performance of the Lasso estimator. Too small a value leads a coefficient vector too-similar to least-squares leading to unacceptably high variance; and too large a value leads to a model with substantial bias. When the statistical learning task is simply to maximize generalization error, cross-validation can be employed. Alternatively, information-theoretic approaches [AIC/BIC/Stein's] can also be used, although these approaches are not exactly tailored for the Lasso.[[^2]]
+The choice of \\(\lambda\\) is crucial in determining the performance of the Lasso estimator. Too small a value leads a coefficient vector too-similar to least-squares leading to unacceptably high variance; and too large a value leads to a model with substantial bias. When the statistical learning task is simply to maximize generalization error, cross-validation can be employed. Alternatively, information-theoretic approaches [AIC/BIC/Stein's] can also be used, although these approaches are not exactly tailored for the Lasso.[[^2]]
  
-Are there any alternative approaches to selecting $\lambda$ besides the two previously mentioned routes? The answer is yes, and it is largely thanks to the theoretical work of high-dimensional statistics which has flourished over the last decade. The recently published [Statistical Learning with Sparsity ](https://web.stanford.edu/~hastie/StatLearnSparsity/) (SLWS) represents a landmark text in the field. This post will consider how some simple theoretical properties of the Lasso allow for a disciplined choice of the regularization parameter that avoid traditional tuning approaches. There are three subsequent sections: (1) a discussion of how prediction bounds in the Lasso can be established by a specific choice of regularization parameter, (2) how the $\sqrtl$ leverages these properties to provide an estimator that is invariant to Gaussian noise levels, and (3) an applied example on high-dimensional microarray data for 21 cancer types. 
+Are there any alternative approaches to selecting \\(\lambda\\) besides the two previously mentioned routes? The answer is yes, and it is largely thanks to the theoretical work of high-dimensional statistics which has flourished over the last decade. The recently published [Statistical Learning with Sparsity ](https://web.stanford.edu/~hastie/StatLearnSparsity/) (SLWS) represents a landmark text in the field. This post will consider how some simple theoretical properties of the Lasso allow for a disciplined choice of the regularization parameter that avoid traditional tuning approaches. There are three subsequent sections: (1) a discussion of how prediction bounds in the Lasso can be established by a specific choice of regularization parameter, (2) how the \\(\sqrtl\\) leverages these properties to provide an estimator that is invariant to Gaussian noise levels, and (3) an applied example on high-dimensional microarray data for 21 cancer types. 
  
 In addition to SLWS, this post was heavily informed by [Belloni's lectures](https://www.youtube.com/watch?v=t3AzBh3VEjA&t=1068s).
  
 ## (1) Some statistical properties of the Lasso
  
-Throughout this post a simple homoskedastic regression data generating process (DGP) will be assumed with a response vector $\text{len}(\by)=N$ and a $p$-dimensional feature matrix $\text{dim}(X)=p$. 
+Throughout this post a simple homoskedastic regression data generating process (DGP) will be assumed with a response vector \\(\text{len}(\by)=N\\) and a \\(p\\)-dimensional feature matrix \\(\text{dim}(X)=p\\). 
  
 $$
 \begin{align*}
@@ -57,7 +57,7 @@ $$
  
 ### Least-squares case
  
-Before considering the Lasso, the more simply least squares model is useful for some building intuition. When $N>p$, the least-squares solution to fitting the data to this problem has the following closed-form solution: $\hat{\bbeta} = \arg \min_{\beta} \\|\by - \bX\bbeta \\|_2^2 = (\bX^T\bX)^{-1}\bX^T\by$. In order to establish prediction bounds for this estimator, one begins by writing down the optimality conditions.
+Before considering the Lasso, the more simply least squares model is useful for some building intuition. When \\(N>p\\), the least-squares solution to fitting the data to this problem has the following closed-form solution: \\(\hat{\bbeta} = \arg \min_{\beta} \\|\by - \bX\bbeta \\|_2^2 = (\bX^T\bX)^{-1}\bX^T\by\\). In order to establish prediction bounds for this estimator, one begins by writing down the optimality conditions.
  
 $$
 \begin{align}
@@ -67,18 +67,18 @@ $$
 \end{align}
 $$
  
-The first line just states that since $\bbetah$ is the optimal solution, no other coefficient vector, including the true coefficient vector $\bbetaz$ can achieve a lower mean-squared error (for a given realization of the DGP). The left-hand side of equation \eqref{eq:pred_ols1} is the mean-squared prediction norm error (MSPNE) which is the term of interest: it measures how close an estimated model is to the true linear predictor.[[^3]] Furthermore, one can see that on the right-hand side of equation \eqref{eq:pred_ols1} the MSPNE is bounded by a bias and a variance term in the L2-norms. Specifically, the noisier the relationship between the columns of $\bX$ and the error term is, and the larger the euclidean distance of $\bbetah$ to $\bbetaz$, the higher the prediction norm error will be. Of course the least squares model cannot actually trade-off between these two terms. 
+The first line just states that since \\(\bbetah\\) is the optimal solution, no other coefficient vector, including the true coefficient vector \\(\bbetaz\\) can achieve a lower mean-squared error (for a given realization of the DGP). The left-hand side of equation \eqref{eq:pred_ols1} is the mean-squared prediction norm error (MSPNE) which is the term of interest: it measures how close an estimated model is to the true linear predictor.[[^3]] Furthermore, one can see that on the right-hand side of equation \eqref{eq:pred_ols1} the MSPNE is bounded by a bias and a variance term in the L2-norms. Specifically, the noisier the relationship between the columns of \\(\bX\\) and the error term is, and the larger the euclidean distance of \\(\bbetah\\) to \\(\bbetaz\\), the higher the prediction norm error will be. Of course the least squares model cannot actually trade-off between these two terms. 
  
 To further explore the prediction bounds, we need to perform the following inequality decomposition:
  
 $$
 \begin{align*}
-\frac{1}{\sqrt{N}}\|\bX^T\be\|_2 &\leq \sigma \sqrt{\frac{p \cdot \Lambda_{\max}(\gram)}{\alpha \cdot N}} \hspace{3mm} \text{with prob $1-\alpha$} \\
+\frac{1}{\sqrt{N}}\|\bX^T\be\|_2 &\leq \sigma \sqrt{\frac{p \cdot \Lambda_{\max}(\gram)}{\alpha \cdot N}} \hspace{3mm} \text{with prob \\(1-\alpha\\)} \\
 \|\hat{\bbeta}-\bbetaz\|_2 &\leq \frac{\|\bX(\bbetah-\bbetaz)\|_2^2 }{\sqrt{\Lambda_{\min}(\gram)}}
 \end{align*}
 $$
  
-Where $\Lambda(\cdot)$ refers to the eigenvalue of the matrix. The first property is derived from showing that $E(\\| \bX^T \be \\|_2^2)=\sigma^2 \text{tr}(\bX^T\bX) \leq \sigma^2 \cdot p \cdot \Lambda\_{\max}(\bX^T\bX)$ and then applying a Chebyshev-bound, and the second is more complicated but a justification can be found [Sara van de Geer's](http://stat.ethz.ch/~geer/Sara-Anna-van-de-Geer.pdf) works.
+Where \\(\Lambda(\cdot)\\) refers to the eigenvalue of the matrix. The first property is derived from showing that \\(E(\\| \bX^T \be \\|_2^2)=\sigma^2 \text{tr}(\bX^T\bX) \leq \sigma^2 \cdot p \cdot \Lambda\_{\max}(\bX^T\bX)\\) and then applying a Chebyshev-bound, and the second is more complicated but a justification can be found [Sara van de Geer's](http://stat.ethz.ch/~geer/Sara-Anna-van-de-Geer.pdf) works.
  
 $$
 \begin{align}
@@ -86,14 +86,14 @@ $$
 \end{align}
 $$
  
-The resulting root-$N$ prediction norm error bound shown in equation \eqref{eq:pred_ols2} is highly intuitive since it says that the scale of the error that converges to zero at a rate of $\sqrt{N}$ is proportional to: (i) the standard-deviation of error $\sigma$, (ii) design matrix conditions ($\Lambda_{\max}/\Lambda_{\min}$), and (iii) ratio of features to observations ($p/N$). The ratio of the largest to the smallest eigenvalue indicates whether the features are orthogonal to each other or contain repetitive information (think PCA). Naturally, the more features there are to observations, the fewer the effective degrees of freedom there will be and the fit will worsen.
+The resulting root-\\(N\\) prediction norm error bound shown in equation \eqref{eq:pred_ols2} is highly intuitive since it says that the scale of the error that converges to zero at a rate of \\(\sqrt{N}\\) is proportional to: (i) the standard-deviation of error \\(\sigma\\), (ii) design matrix conditions (\\(\Lambda_{\max}/\Lambda_{\min}\\)), and (iii) ratio of features to observations (\\(p/N\\)). The ratio of the largest to the smallest eigenvalue indicates whether the features are orthogonal to each other or contain repetitive information (think PCA). Naturally, the more features there are to observations, the fewer the effective degrees of freedom there will be and the fit will worsen.
  
  
 ### Lasso case
  
-There are several ways to think about why the least-squares prediction bound breaks down in the high-dimensional case ($p \gg N$). Most obviously, the gram-matrix becomes non-full rank $\Lambda_{\min}(\gram)=0$. Alternatively we can identify part of the problem with the L2 norms such that the variance term $\be^T\bX$ cannot be sufficiently bounded. This is where the use of infinity norms can be leveraged under the Lasso case.[[^4]]
+There are several ways to think about why the least-squares prediction bound breaks down in the high-dimensional case (\\(p \gg N\\)). Most obviously, the gram-matrix becomes non-full rank \\(\Lambda_{\min}(\gram)=0\\). Alternatively we can identify part of the problem with the L2 norms such that the variance term \\(\be^T\bX\\) cannot be sufficiently bounded. This is where the use of infinity norms can be leveraged under the Lasso case.[[^4]]
  
-Going forward, we're going to assume that the model is both high-dimensional and sparse: $\\|\beta_0 \\|_0=s \ll N$, $\text{dim}(\beta_0)=p \gg N$, and denote the true model index $T=\text{supp}(\beta_0) \subseteq \{1,\dots,p \}$. In other words, even though our design matrix has $p$ features (which exceed the observation count), we assume that only $s$ of them are actually causally relevant. As before, we start with optimality conditions:
+Going forward, we're going to assume that the model is both high-dimensional and sparse: \\(\\|\beta_0 \\|_0=s \ll N\\), \\(\text{dim}(\beta_0)=p \gg N\\), and denote the true model index \\(T=\text{supp}(\beta_0) \subseteq \{1,\dots,p \}\\). In other words, even though our design matrix has \\(p\\) features (which exceed the observation count), we assume that only \\(s\\) of them are actually causally relevant. As before, we start with optimality conditions:
  
 $$
 \begin{align*}
@@ -102,7 +102,7 @@ $$
 \end{align*}
 $$
  
-Before we broke down the error term with Cauchy-Schwartz ($\|\langle u,v \rangle\|\leq \\|u\\|_2\\|v\\|_2$) but now we will use Holder's inequality ($\\|u\cdot v\\|_1\leq \\|u\\|_p\\|v\\|_q$ where $1/p+1/q=1$) to achieve the desired infinity-norm.
+Before we broke down the error term with Cauchy-Schwartz (\\(\|\langle u,v \rangle\|\leq \\|u\\|_2\\|v\\|_2\\)) but now we will use Holder's inequality (\\(\\|u\cdot v\\|_1\leq \\|u\\|_p\\|v\\|_q\\) where \\(1/p+1/q=1\\)) to achieve the desired infinity-norm.
  
 $$
 \begin{align*}
@@ -110,7 +110,7 @@ $$
 \end{align*}
 $$
  
-It turns out that one can think of $\\| \bX^T \be \\|\_{\infty}$ as the variance term, and if $\lambda$ is chosen to moderate this term at the expense of $\\| \hat{\beta}-\beta_0 \\|_1$ (bias) a prediction bound can be achieved. Therefore define the event: $E = \Big\\{\lambda  \geq c \frac{\\| \bX^T \be \\|\_{\infty}}{N}\Big\\}, \hspace{2mm} c>1$, set $\lambda$ s.t. $P(E)\to 1$ as $N \to \infty$ Assuming that event $E$ holds:
+It turns out that one can think of \\(\\| \bX^T \be \\|\_{\infty}\\) as the variance term, and if \\(\lambda\\) is chosen to moderate this term at the expense of \\(\\| \hat{\beta}-\beta_0 \\|_1\\) (bias) a prediction bound can be achieved. Therefore define the event: \\(E = \Big\\{\lambda  \geq c \frac{\\| \bX^T \be \\|\_{\infty}}{N}\Big\\}, \hspace{2mm} c>1\\), set \\(\lambda\\) s.t. \\(P(E)\to 1\\) as \\(N \to \infty\\) Assuming that event \\(E\\) holds:
  
 $$
 \begin{align*}
@@ -154,7 +154,7 @@ $$
 $$
  
  
-This leads to the question of how to get $\lambda  \geq c \frac{\\|\bX^Te\\|_\infty}{N}$. For a discussion of the restricted eigenvalue condition, see Chapter 11 of SLWS. Assuming that $\bX$ has been normalized, **and the variance of the error is known**, we can pick $\lambda$ so that event $E$ holds with probability at least $1-\alpha$:
+This leads to the question of how to get \\(\lambda  \geq c \frac{\\|\bX^Te\\|_\infty}{N}\\). For a discussion of the restricted eigenvalue condition, see Chapter 11 of SLWS. Assuming that \\(\bX\\) has been normalized, **and the variance of the error is known**, we can pick \\(\lambda\\) so that event \\(E\\) holds with probability at least \\(1-\alpha\\):
  
 $$
 \begin{align}
@@ -164,7 +164,7 @@ P\Bigg( \max_{j=1,\dots,p} \frac{|\bX^T_je |}{N} > \frac{\lambda}{c}  \Bigg) &\l
 \end{align}
 $$
  
-Substituting $\lambda^*$ back into the prediction norm gives:
+Substituting \\(\lambda^*\\) back into the prediction norm gives:
  
 $$
 \begin{align}
@@ -173,12 +173,12 @@ $$
 \end{align}
 $$
  
-This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of $\lambda$ in equation \eqref{eq:lam1} required knowledge of $\sigma$! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
+This is an extremely elegant result. Notice the similarities between equations \eqref{eq:pred_ols2} and \eqref{eq:pred_lasso1}, and that the Lasso now has a very similar prediction bound to the least squares case. In other words, one doesn't pay too much in terms of prediction error by the use of an L1 penalty norm.  However, the choice of \\(\lambda\\) in equation \eqref{eq:lam1} required knowledge of \\(\sigma\\)! While the variance of the error term can of course be *estimated*, there are few guarantees for its accurate reconstruction in a high-dimensional setting. However, as the next section shows, a modification of the Lasso problem can avoid this problem. 
  
  
 ## (2) Statistical properties of the SQRT-Lasso
  
-Recalling the steps of how $\lambda^*$ was chosen, its easy to see that for a different loss function, the general choice of $\lambda$ for the selection event is: $\lambda > c \\|-\nabla \ell(\bbetaz;\bX)\\|_\infty$. In other words, we need $\lambda$ to exceed the largest absolute value of the gradient under the true model. This represents the magnitude of the noise we want to moderate with the regularization term. The $\sqrtl$ is a simple modification to the Lasso optimization problem: use the square-root of the loss function rather than the mean-squared error (MSE) [[Belloni et al 2011](https://arxiv.org/abs/1009.5689)]. This seemingly-trivial modification leads to a gradient whose infinity-norm is pivotal to the underlying variance structure.
+Recalling the steps of how \\(\lambda^*\\) was chosen, its easy to see that for a different loss function, the general choice of \\(\lambda\\) for the selection event is: \\(\lambda > c \\|-\nabla \ell(\bbetaz;\bX)\\|_\infty\\). In other words, we need \\(\lambda\\) to exceed the largest absolute value of the gradient under the true model. This represents the magnitude of the noise we want to moderate with the regularization term. The \\(\sqrtl\\) is a simple modification to the Lasso optimization problem: use the square-root of the loss function rather than the mean-squared error (MSE) [[Belloni et al 2011](https://arxiv.org/abs/1009.5689)]. This seemingly-trivial modification leads to a gradient whose infinity-norm is pivotal to the underlying variance structure.
  
 $$
 \begin{align*}
@@ -191,7 +191,7 @@ $$
 $$
  
  
-In other words, the distribution of the gradient of the $\sqrtl$ under the true coefficient vector is stochastically identical regardless of the magnitude of $\sigma^2$! More amazingly, any given component of the this gradient has a student-t distribution!
+In other words, the distribution of the gradient of the \\(\sqrtl\\) under the true coefficient vector is stochastically identical regardless of the magnitude of \\(\sigma^2\\)! More amazingly, any given component of the this gradient has a student-t distribution!
  
  
 $$
@@ -203,7 +203,7 @@ P\Bigg( \max_{j=1,\dots,p} \frac{|\bX^T_j u |}{\|u\|_2} > \frac{\lambda}{c}  \Bi
 \end{align}
 $$
  
-Where $\Phi_t^{-1}$ is the quantile of the student-t with $N$ degrees of freedom. This makes choosing $\lambda$ so that event $E$ holds with probability at least $1-\alpha$ very easy, since the choice is just a function $\alpha$ and $p$ as equation \eqref{eq:lam2} shows. Because the loss-function of the $\sqrtl$ is a monotonic transformation of a convex loss function, it is also convex. More impressively, the coordinate descent update for $\sqrtl$ also has a closed-form solution. It's interesting to compare the two coordinate updates between the algorithms.
+Where \\(\Phi_t^{-1}\\) is the quantile of the student-t with \\(N\\) degrees of freedom. This makes choosing \\(\lambda\\) so that event \\(E\\) holds with probability at least \\(1-\alpha\\) very easy, since the choice is just a function \\(\alpha\\) and \\(p\\) as equation \eqref{eq:lam2} shows. Because the loss-function of the \\(\sqrtl\\) is a monotonic transformation of a convex loss function, it is also convex. More impressively, the coordinate descent update for \\(\sqrtl\\) also has a closed-form solution. It's interesting to compare the two coordinate updates between the algorithms.
  
  
  
@@ -211,7 +211,7 @@ Where $\Phi_t^{-1}$ is the quantile of the student-t with $N$ degrees of freedom
  
 $$
 \begin{align*}
-&\text{At step $(t)$ for coordinate $j$} \\
+&\text{At step \\((t)\\) for coordinate \\(j\\)} \\
 r_j^{(t)} &= y - \bX\beta^{(t)} \\
 \rho_j^{(t)} &= (1/N) \bX_j^T r^{(t)} \\
 &\textbf{Lasso} \\
@@ -228,12 +228,12 @@ r_j^{(t)} &= y - \bX\beta^{(t)} \\
 \end{align*}
 $$
  
-While the update term for the $\sqrtl$ is more complicated, the key point is that it keeps track of the the sum of squared residuals, and therefore a measure of the variance of the error. Let's run some simulations to see how well the models do in the high-dimensional and sparse case. We'll assume the following set-up: $\sigma^2=2$, $N=100$, $p=1000$, $s=5$, where $\bbetaz=\{\underbrace{1,\dots,1}\_{\times 5},\underbrace{0,\dots,0}\_{\times 995}\}$. Four baseline models will be considered: (i) $\lambda$'s chosen to minimizes the loss function (`CV-min`) on the hold-out folds as well as (ii) the most conservative $\lambda$ whose out-of-fold loss is within one standard deviation of the minimum (`CV-1se`), (iii) a $\lambda$ chosen from equation \eqref{eq:lam1} where we somehow "know" the true variance (`Lasso-theory`), and (iv) the $\sqrtl$ with $\lambda$ from equation \eqref{eq:lam2} (`Lasso-SQRT`). Furthermore, both the Lasso-theory and Lasso-SQRT will also include a least-squares and CV-tuned Ridge regression model whereby the index of non-zero coefficients is used to re-estimate the model. 
+While the update term for the \\(\sqrtl\\) is more complicated, the key point is that it keeps track of the the sum of squared residuals, and therefore a measure of the variance of the error. Let's run some simulations to see how well the models do in the high-dimensional and sparse case. We'll assume the following set-up: \\(\sigma^2=2\\), \\(N=100\\), \\(p=1000\\), \\(s=5\\), where \\(\bbetaz=\{\underbrace{1,\dots,1}\_{\times 5},\underbrace{0,\dots,0}\_{\times 995}\}\\). Four baseline models will be considered: (i) \\(\lambda\\)'s chosen to minimizes the loss function (`CV-min`) on the hold-out folds as well as (ii) the most conservative \\(\lambda\\) whose out-of-fold loss is within one standard deviation of the minimum (`CV-1se`), (iii) a \\(\lambda\\) chosen from equation \eqref{eq:lam1} where we somehow "know" the true variance (`Lasso-theory`), and (iv) the \\(\sqrtl\\) with \\(\lambda\\) from equation \eqref{eq:lam2} (`Lasso-SQRT`). Furthermore, both the Lasso-theory and Lasso-SQRT will also include a least-squares and CV-tuned Ridge regression model whereby the index of non-zero coefficients is used to re-estimate the model. 
  
 Three metrics will be considered: 
  
 1. The receiver operator characteristic (ROC): i.e. the number of true positives (TPs) and false positives (FPs) selected by each model [sensitivity/specificity]
-2. The accuracy of reconstructing $\bbetaz$: $\\|\bbetah\_T - \bbetaz \\|_1$, and well as it's error:  $\\|\bbetah\_{T^C}\\|_1$
+2. The accuracy of reconstructing \\(\bbetaz\\): \\(\\|\bbetah\_T - \bbetaz \\|_1\\), and well as it's error:  \\(\\|\bbetah\_{T^C}\\|_1\\)
 3. The generalization error, measured in MSE to see how well each manages the bias/variance trade-off
  
 <br>
@@ -241,11 +241,11 @@ Three metrics will be considered:
 <p align="center"><img src="/figures/gg_sqrt_comb.png" width="75%"> </p>
 <br>
  
-Figure 1A shows that each estimator is able to select most of the true features, most of the time, although the $\sqrtl$ has the worst sensitivity with a median of 4.4 out of 5. However, the $\sqrtl$ almost never selects false positives making it a less noisy estimator. In contrast, the CV-min selects 30 noise features! This reveals why the $\sqrtl$ or the Lasso-theory approaches are well suited to post-estimation with either least-squares or ridge regression because they select a small number of features that will tend to be right ones.
+Figure 1A shows that each estimator is able to select most of the true features, most of the time, although the \\(\sqrtl\\) has the worst sensitivity with a median of 4.4 out of 5. However, the \\(\sqrtl\\) almost never selects false positives making it a less noisy estimator. In contrast, the CV-min selects 30 noise features! This reveals why the \\(\sqrtl\\) or the Lasso-theory approaches are well suited to post-estimation with either least-squares or ridge regression because they select a small number of features that will tend to be right ones.
  
-Figure 1B shows that the OLS/Ridge post-estimators do very well in reconstructing $\bbetaz$, although the $\sqrtl$'s post-estimators are better in terms of avoiding assigning the coefficient budget towards the noise variables. Lastly, in Figure 1C we see that the $\sqrtl$ and its post-estimators achieve the smallest MSE revealing the advantage of this theoretically motivated choice over the common paradigm of cross-validation.
+Figure 1B shows that the OLS/Ridge post-estimators do very well in reconstructing \\(\bbetaz\\), although the \\(\sqrtl\\)'s post-estimators are better in terms of avoiding assigning the coefficient budget towards the noise variables. Lastly, in Figure 1C we see that the \\(\sqrtl\\) and its post-estimators achieve the smallest MSE revealing the advantage of this theoretically motivated choice over the common paradigm of cross-validation.
  
-A discerning reader might point out that this approach nevertheless still assumes that the error is Gaussian. This does not turn out to be a significant problem because even if $\|\bX_j^T \be\| / \\|\be \\|_2$ is non-Gaussian, it is characterized by [self-normalized process](https://projecteuclid.org/euclid.ps/1385665279),[[^6]] and will have a distribution which will be well-approximated by the student-t anyways, especially in the tails of the distribution. The skeptical may find a simulation to be more convincing.
+A discerning reader might point out that this approach nevertheless still assumes that the error is Gaussian. This does not turn out to be a significant problem because even if \\(\|\bX_j^T \be\| / \\|\be \\|_2\\) is non-Gaussian, it is characterized by [self-normalized process](https://projecteuclid.org/euclid.ps/1385665279),[[^6]] and will have a distribution which will be well-approximated by the student-t anyways, especially in the tails of the distribution. The skeptical may find a simulation to be more convincing.
  
 
 {% highlight r %}
@@ -273,11 +273,11 @@ sn.df <- gather(sn.df)
 <p align="center"><img src="/figures/gg_sns.png" width="45%"> </p>
 <br>
  
-One significant problem with the choice of $\lambda$ in equation \eqref{eq:lam2} for the $\sqrtl$ is that it is a *conservative* estimate because it assumes the upper bound situation where the columns of the design matrix are orthogonal to each other. In reality, there will almost surely be some correlation between the features and a lower $\lambda$ will be needed to prevent too much bias. While the distribution of the error term is unknown, we've already shown that the event target can be approximated by a self-normalizing sum from the standard normal case. This allows for a choice of $\lambda$ to closely match the actual quantile of $\\|\bX^T \be \\|_\infty / \\|\be \\|_2$. 
+One significant problem with the choice of \\(\lambda\\) in equation \eqref{eq:lam2} for the \\(\sqrtl\\) is that it is a *conservative* estimate because it assumes the upper bound situation where the columns of the design matrix are orthogonal to each other. In reality, there will almost surely be some correlation between the features and a lower \\(\lambda\\) will be needed to prevent too much bias. While the distribution of the error term is unknown, we've already shown that the event target can be approximated by a self-normalizing sum from the standard normal case. This allows for a choice of \\(\lambda\\) to closely match the actual quantile of \\(\\|\bX^T \be \\|_\infty / \\|\be \\|_2\\). 
  
 $$
 \begin{align}
-&\text{Run $K$ simulations} \nonumber \\
+&\text{Run \\(K\\) simulations} \nonumber \\
 \mathcal{M}^{(k)} &= |\bX^T \bu^{(k)} | / \|\bu^{(k)} \|_2, \hspace{3mm} \bu^{(k)} \sim N(0,I)  \nonumber \\
 &\text{Calculate empirical CDF}  \nonumber \\
 \Gamma_\mathcal{M}(1-\alpha | \bX) &= (1-\alpha)-\text{CDF of } \Gamma_\mathcal{M}|\bX \nonumber \\
@@ -286,12 +286,12 @@ $$
 \end{align}
 $$
  
-In the next section when genomic data is employed, the data-driven choice of $\lambda^*$ from equation \eqref{eq:lam3} will be used.
+In the next section when genomic data is employed, the data-driven choice of \\(\lambda^*\\) from equation \eqref{eq:lam3} will be used.
  
  
 ## (3) Application to microarray data
  
-To test out how well $\sqrtl$ compares to the benchmark CV-tuned Lasso estimator on *real* data, we will use randomly selected gene expression measurements from the `datamicroarray` package. This package has 22 microarray datasets with 13 cancer types including breast cancer, leukemia, and and prostate cancer. The number of observations ranges from 31 to 248, whereas the feature size ranges from 456 to 54613. The average ratio of $p/N$ is 140, making these datasets very high-dimensional and good testing grounds for the $\sqrtl$. The table below provides more information.
+To test out how well \\(\sqrtl\\) compares to the benchmark CV-tuned Lasso estimator on *real* data, we will use randomly selected gene expression measurements from the `datamicroarray` package. This package has 22 microarray datasets with 13 cancer types including breast cancer, leukemia, and and prostate cancer. The number of observations ranges from 31 to 248, whereas the feature size ranges from 456 to 54613. The average ratio of \\(p/N\\) is 140, making these datasets very high-dimensional and good testing grounds for the \\(\sqrtl\\). The table below provides more information.
  
 
 {% highlight text %}
@@ -320,14 +320,14 @@ To test out how well $\sqrtl$ compares to the benchmark CV-tuned Lasso estimator
 ## 22        Yeoh 2002 248 12625             Leukemia
 {% endhighlight %}
  
-The gene expression measurements were normalized across each dataset. Testing was done using a 75/25 training/test split, with 5-fold CV used where appropriate. The choice of $\lambda$ for the $\sqrtl$ was set to three sensitivity levels: $\alpha=\{0.05,0.01,0.001\}$. Post-estimation using least-squares or CV-tuned ridge regression was also considered for the $\sqrtl$. As Figure 3A shows below, regardless of the sensitivity level, the median MSE across the 22 datasets is smallest for the CV-min tuned $\lambda$. The most competitive form of the $\sqrtl$ was the CV-tuned ridge regression for $\lambda$ at $\alpha=0.05$. This result is interesting since it suggests that selecting around 5% of the features (several hundred gene measurements) is preferred. This result provides evidence against a highly *sparse* DGP for gene expression measurements, and almost certainly disproves the assumption that $s < N$ for these microarray datasets. In other words, predicting genetic variation is best done with many weak signals rather than a few strong ones. Figure 3B shows the range of the number of genes by the $\sqrtl$ across the different datasets at different sensitivity levels.
+The gene expression measurements were normalized across each dataset. Testing was done using a 75/25 training/test split, with 5-fold CV used where appropriate. The choice of \\(\lambda\\) for the \\(\sqrtl\\) was set to three sensitivity levels: \\(\alpha=\{0.05,0.01,0.001\}\\). Post-estimation using least-squares or CV-tuned ridge regression was also considered for the \\(\sqrtl\\). As Figure 3A shows below, regardless of the sensitivity level, the median MSE across the 22 datasets is smallest for the CV-min tuned \\(\lambda\\). The most competitive form of the \\(\sqrtl\\) was the CV-tuned ridge regression for \\(\lambda\\) at \\(\alpha=0.05\\). This result is interesting since it suggests that selecting around 5% of the features (several hundred gene measurements) is preferred. This result provides evidence against a highly *sparse* DGP for gene expression measurements, and almost certainly disproves the assumption that \\(s < N\\) for these microarray datasets. In other words, predicting genetic variation is best done with many weak signals rather than a few strong ones. Figure 3B shows the range of the number of genes by the \\(\sqrtl\\) across the different datasets at different sensitivity levels.
  
 <br>
 <h5><p align="center">Figure 3: Microarray results </p></h5>
 <p align="center"><img src="/figures/gg_marray.png" width="100%"> </p>
 <br>
  
-The prediction results on real-world datasets are revealing. They show that while the $\sqrtl$, and theoretical approaches more generally, have elegant properties and can perform well for in simulation scenarios where the model is highly sparse ($s < N$), on real datasets the cross-validated Lasso appears to perform better. In some sense this is not surprising since CV specifically adapts itself to the bias-variance tradeoff found in any dataset.
+The prediction results on real-world datasets are revealing. They show that while the \\(\sqrtl\\), and theoretical approaches more generally, have elegant properties and can perform well for in simulation scenarios where the model is highly sparse (\\(s < N\\)), on real datasets the cross-validated Lasso appears to perform better. In some sense this is not surprising since CV specifically adapts itself to the bias-variance tradeoff found in any dataset.
  
  
 * * *
@@ -338,7 +338,7 @@ The prediction results on real-world datasets are revealing. They show that whil
  
 [^2]: Excluding the fact the a Lasso-specific degrees of freedom measure needs to be estimated. 
  
-[^3]: It should be noted that is to the *predictable* part of $\by$, meaning one will never be able to predict the irreducible error of $\by$ which is the error term $\be$.
+[^3]: It should be noted that is to the *predictable* part of \\(\by\\), meaning one will never be able to predict the irreducible error of \\(\by\\) which is the error term \\(\be\\).
  
 [^4]: Note the infinity norm is just the largest absolute value.
  

@@ -17,7 +17,7 @@ $$
  
 ## Introduction
  
-When comparing the performance of an individual or competing group of survival models, the most common choice of scoring metric is the concordance index (C-index). In the time-to-event setting, with $N$ observations, the quality of a risk score can be determined by comparing how well the actual ordering of events occurs relative to the ranks of a model's predicted risk score. There can be up to $N(N-1)/2$ possible pairwise comparisons of rank-orderings for right-censored time-to-event data. For example if patient 1 died first, then *ideally* his risk score should be higher than patients 2, 3, ... and $N$, and if patient 2 died second his risk score should be higher than patients 3, 4, ..., $N$, and so on. Equation \eqref{eq:c_exact} formalizes this metric over a double sum.
+When comparing the performance of an individual or competing group of survival models, the most common choice of scoring metric is the concordance index (C-index). In the time-to-event setting, with \\(N\\) observations, the quality of a risk score can be determined by comparing how well the actual ordering of events occurs relative to the ranks of a model's predicted risk score. There can be up to \\(N(N-1)/2\\) possible pairwise comparisons of rank-orderings for right-censored time-to-event data. For example if patient 1 died first, then *ideally* his risk score should be higher than patients 2, 3, ... and \\(N\\), and if patient 2 died second his risk score should be higher than patients 3, 4, ..., \\(N\\), and so on. Equation \eqref{eq:c_exact} formalizes this metric over a double sum.
  
 $$
 \begin{align}
@@ -28,7 +28,7 @@ C(\etab) &= \frac{1}{D} \sum_{i: \delta_i=1} \sum_{\hspace{2mm}j:\hspace{1mm} T_
 $$
  
  
-Where $\delta_i=1$ indicates that the patient has experienced the event, $Y_j(t_i)$ is whether patient $j$ has a recorded time greater than patient $i$, $\eta_i$ is the risk score of patient $i$, $I[\cdot]$ is the indicator function, and $D$ is the cardinality of the set of all possible pairwise comparisons. Notice that the outer loop is zero if $\delta_i=1$; this ensures that if $T_i$ is right-censored (i.e. a patient lived for *at least* $T_i$ units of time) they do not contribute to the final score.
+Where \\(\delta_i=1\\) indicates that the patient has experienced the event, \\(Y_j(t_i)\\) is whether patient \\(j\\) has a recorded time greater than patient \\(i\\), \\(\eta_i\\) is the risk score of patient \\(i\\), \\(I[\cdot]\\) is the indicator function, and \\(D\\) is the cardinality of the set of all possible pairwise comparisons. Notice that the outer loop is zero if \\(\delta_i=1\\); this ensures that if \\(T_i\\) is right-censored (i.e. a patient lived for *at least* \\(T_i\\) units of time) they do not contribute to the final score.
  
 Models that are commonly used in survival analysis (the Cox-PH, Random Survival Forest, CoxBoost, Accelerating Failure Time, etc) do not directly minimize a linear (or non-linear) set of features with respect to the C-index. In the case of the partial likelihood (associated with any of the "Cox" models) a sort-of-convex relaxation is used (it also includes a double sum) but more resembles a Softmax function. The goal of this post will be to show how to construct a convex loss function that directly lower-bounds the actual concordance index with the use of the log-sigmoid function. Other smooth functions could also be conceivably used. Readers are encouraged to see [this excellent paper](https://papers.nips.cc/paper/3375-on-ranking-in-survival-analysis-bounds-on-the-concordance-index.pdf) for a further discussion of the log-sigmoid lower bound. 
  
@@ -109,12 +109,12 @@ $$
 \end{align}
 $$
  
-By doing some quick math it is easy to see that $I(x>0) \leq [1+ \log(\sigma(x))/\log(2)]$ and hence $C(\etab) \geq \tilde{C}(\etab)$.
+By doing some quick math it is easy to see that \\(I(x>0) \leq [1+ \log(\sigma(x))/\log(2)]\\) and hence \\(C(\etab) \geq \tilde{C}(\etab)\\).
  
 ![plot of chunk lb_indicator](/figures/lb_indicator-1.png)
  
  
-However the derivative of \eqref{eq:c_approx}, unlike \eqref{eq:c_exact} can be taken with respect to the $i^{th}$ risk score.
+However the derivative of \eqref{eq:c_approx}, unlike \eqref{eq:c_exact} can be taken with respect to the \\(i^{th}\\) risk score.
  
 $$
 \begin{align*}
@@ -122,7 +122,7 @@ $$
 \end{align*}
 $$
  
-I drop any constants from \eqref{eq:c_approx}, as these can be ignored during optimization. When $\eta_i = \xbi^T\betab$, the gradient becomes (via the chain-rule):
+I drop any constants from \eqref{eq:c_approx}, as these can be ignored during optimization. When \\(\eta_i = \xbi^T\betab\\), the gradient becomes (via the chain-rule):
  
 $$
 \begin{align}
@@ -132,7 +132,7 @@ $$
 \end{align}
 $$
  
-It is worth pausing to think about the terms inside the partial derivative in equation \eqref{eq:c_deriv}. The component in (a) encourages the risk score to be higher in patient $i$ relative to all other patients who died after them i.e. the set $k: Y_k(t_i)=1$, assuming that patient $i$ is not censored. Countering this tendency is the term (b) which accounts for the fact that raising the $i^{th}$ risk score decreases the distance between patient $i$ and all the other people who died before her. It is also interesting to compare this "residual" [(a) - (b)] to the martingale residual seen in the Cox model as a comparison.
+It is worth pausing to think about the terms inside the partial derivative in equation \eqref{eq:c_deriv}. The component in (a) encourages the risk score to be higher in patient \\(i\\) relative to all other patients who died after them i.e. the set \\(k: Y_k(t_i)=1\\), assuming that patient \\(i\\) is not censored. Countering this tendency is the term (b) which accounts for the fact that raising the \\(i^{th}\\) risk score decreases the distance between patient \\(i\\) and all the other people who died before her. It is also interesting to compare this "residual" [(a) - (b)] to the martingale residual seen in the Cox model as a comparison.
  
 $$
 \begin{align*}
@@ -145,7 +145,7 @@ $$
  
 While the convex relaxation of the C-index and the Cox model both have double sums and both encourage a higher risk score for patients who experienced the event before other patients, the former is purely a linear combination of terms. The next code blocks calculate the convex loss function and its derivative.
  
-$\tilde{C}(\etab)$ from \eqref{eq:c_approx}:
+\\(\tilde{C}(\etab)\\) from \eqref{eq:c_approx}:
 
 {% highlight r %}
 sigmoid <- function(x) { 1/(1+exp(-x)) }
@@ -167,7 +167,7 @@ l_eta <- function(So, eta) {
 }
 {% endhighlight %}
  
-$\partial \tilde{C}(\betab) / \partial \betab$ from \eqref{eq:c_deriv}:
+\\(\partial \tilde{C}(\betab) / \partial \betab\\) from \eqref{eq:c_deriv}:
 
 {% highlight r %}
 sigmoid2 <- function(x) { 1/(1+exp(x)) }

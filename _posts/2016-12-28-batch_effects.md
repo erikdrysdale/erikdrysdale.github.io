@@ -109,7 +109,7 @@ In Figure 3 we can see that Caucasian people were sequenced in earlier years, wh
  
 ### Spurios findings?
  
-To identify genes which are differentially expressed we can use a gene-wise t-test for mean equality. Note that because we are testing 8746 hypotheses (the number of measured genes) we need to apply some sort of multiple comparison adjustment. In the Spielman paper, they use the [Sidak correction](https://en.wikipedia.org/wiki/%C5%A0id%C3%A1k_correction) which has the following critical value: $\alpha_{S}=1-(1-\alpha)^{\frac{1}{m}}$, or in $-\log_{10}(\alpha_S)$=5.2 at the 5% level. We will combine the Chinese/Japanese individuals into an Asian label as was done in the paper. We also use a slightly larger sample size in this analysis as:
+To identify genes which are differentially expressed we can use a gene-wise t-test for mean equality. Note that because we are testing 8746 hypotheses (the number of measured genes) we need to apply some sort of multiple comparison adjustment. In the Spielman paper, they use the [Sidak correction](https://en.wikipedia.org/wiki/%C5%A0id%C3%A1k_correction) which has the following critical value: \\(\alpha_{S}=1-(1-\alpha)^{\frac{1}{m}}\\), or in \\(-\log_{10}(\alpha_S)\\)=5.2 at the 5% level. We will combine the Chinese/Japanese individuals into an Asian label as was done in the paper. We also use a slightly larger sample size in this analysis as:
  
 > Several CHB and JPT samples from the HapMap collection were excluded because cell lines were not available at the time of the study.
  
@@ -117,7 +117,7 @@ While I wasn't able to determine which individuals were excluded, in the [Supple
  
 ![plot of chunk gw_scat](/figures/gw_scat-1.png)
  
-We then run gene-wise t-tests (for efficient implementation use `genefilter::rowttests`) comparing the mean expression between Caucasians and Asians, where we define statistical significance at the Sidak cutoff and biological significance at a gene expression difference of 0.5 in $log_2$ (hence $\approx 41\%$).  Figure 5A, a [Volcano plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics)), visualizes the results of the gene-wise t-tests. We see that 1225 genes are differentially expressed (out of the 8746-6=8740 possible genes using the complete data set). In interpreting their result, the authors state that:
+We then run gene-wise t-tests (for efficient implementation use `genefilter::rowttests`) comparing the mean expression between Caucasians and Asians, where we define statistical significance at the Sidak cutoff and biological significance at a gene expression difference of 0.5 in \\(log_2\\) (hence \\(\approx 41\%\\)).  Figure 5A, a [Volcano plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics)), visualizes the results of the gene-wise t-tests. We see that 1225 genes are differentially expressed (out of the 8746-6=8740 possible genes using the complete data set). In interpreting their result, the authors state that:
  
 > We found that the difference in expression for a set of phenotypes is accounted for by a simple aspect of population genetics. There are marked between-population differences in allele frequencies of the same SNPs that are associated with within-population regulation of expression... In other words, the population differences in these expression phenotypes are largely attributable to frequency differences at the DNA sequence level... In our analysis, we tested a large set of quantitative phenotypes. By our very stringent criteria, we identified specific genetic polymorphisms strongly associated with the differences between human populations in at least a dozen of these phenotypes.
  
@@ -146,18 +146,18 @@ Calculating the principal components is extremely easy and can be done efficient
  
 To produce a visualization tool to check for clustering patterns in our data, we can use the classical [Multidimensional (MDS) Scaling](https://en.wikipedia.org/wiki/Multidimensional_scaling) technique, which is an algorithm which (approximately) maintains the distance between observations in higher dimensional space on a 2-dimensional surface. Implementing the classical MDS procedure can be done quickly using the following matrix algebra:
  
-$\newcommand{\bD}{\boldsymbol D^{(2)}}$
-$\newcommand{\bB}{\boldsymbol B}$
-$\newcommand{\bJ}{\boldsymbol J}$
-$\newcommand{\bI}{\boldsymbol I}$
-$\newcommand{\bo}{\boldsymbol 1}$
-$\newcommand{\bE}{\boldsymbol E_2}$
-$\newcommand{\bL}{\boldsymbol\Lambda_2^{1/2}}$
+\\(\newcommand{\bD}{\boldsymbol D^{(2)}}\\)
+\\(\newcommand{\bB}{\boldsymbol B}\\)
+\\(\newcommand{\bJ}{\boldsymbol J}\\)
+\\(\newcommand{\bI}{\boldsymbol I}\\)
+\\(\newcommand{\bo}{\boldsymbol 1}\\)
+\\(\newcommand{\bE}{\boldsymbol E_2}\\)
+\\(\newcommand{\bL}{\boldsymbol\Lambda_2^{1/2}}\\)
  
-1. Calculate the (squared) Euclidean distance between each point: $\bD$
-2. Apply the following centering: $\bB=-\frac{1}{2}\bJ\bD\bJ$, where $\bJ=\boldsymbol \bI-\frac{1}{n}\bo\bo'$
-3. Get the two largest eigenvalues in a diagonal matrix $\bL = diag(\lambda_1,\lambda_2)$ and eigenvectors $\bE = [e_1,e_2]$
-4. Calculate the MDS matrix $X=\boldsymbol \bE \bL$
+1. Calculate the (squared) Euclidean distance between each point: \\(\bD\\)
+2. Apply the following centering: \\(\bB=-\frac{1}{2}\bJ\bD\bJ\\), where \\(\bJ=\boldsymbol \bI-\frac{1}{n}\bo\bo'\\)
+3. Get the two largest eigenvalues in a diagonal matrix \\(\bL = diag(\lambda_1,\lambda_2)\\) and eigenvectors \\(\bE = [e_1,e_2]\\)
+4. Calculate the MDS matrix \\(X=\boldsymbol \bE \bL\\)
  
 The classical MDS approach can be implemented with the following R code.
  
@@ -178,7 +178,7 @@ E.m <- E$vectors[,1:2]
 X <- E.m %*% sqrt(Lambda.m)
 {% endhighlight %}
  
-After plotting the results of $X$ in Figure 7B we can see that the Caucasian/Asian groups form independent clusters, suggesting genetic dissimilarity between the two groups. However, we also see that the sequence years also form their own clusters independent of ethnicity highlighting the problem of batch effects!
+After plotting the results of \\(X\\) in Figure 7B we can see that the Caucasian/Asian groups form independent clusters, suggesting genetic dissimilarity between the two groups. However, we also see that the sequence years also form their own clusters independent of ethnicity highlighting the problem of batch effects!
  
 ![plot of chunk mds](/figures/mds-1.png)
  
@@ -186,7 +186,7 @@ After plotting the results of $X$ in Figure 7B we can see that the Caucasian/Asi
  
 ComBat uses a parametric [Empirical Bayesian framework](https://en.wikipedia.org/wiki/Empirical_Bayes_method) to adjust for **known** batch effects (see the original paper [here](http://biostatistics.oxfordjournals.org/content/8/1/118.abstract)). In this data set we have identified the batch date as a source of non-biological variation. ComBat is robust to small batch-sample observations, which is important as our batches range from 2-23 samples (with a batch defined as a given year-month). As opposed to simpler linear models, ComBat is able to pool information across genes. Implementing ComBat in `R` is easy with the `sva::ComBat` function:
  
-<!-- We assume that a given gene expression level for batch $b$, person $i$, and gene $g$ has the following distribution $G_{b,i,g}\sim N(\gamma_{b,g},\sigma^2_{b,g})$, where the mean and variance parameters of the normal distribution are also random variables with a normal and an inverse-gamma prior distribution, respectively: $\gamma_{b,g}\sim N(Y_b,\tau^2_b)$ and $\sigma^2_{b,g}\sim IG(\lambda_b,\theta_b)$. As ComBat estimates the parameters of the prior distribution using the data, it takes an [empirical Bayesian approach](https://en.wikipedia.org/wiki/Empirical_Bayes_method). The adjusted data are retrieved as: $G_{b,i,g}^p=\frac{\hat{\delta}_g}{\hat{\sigma}_g^p}(G_{b,i,g}-\hat{\gamma}_{b,g}^p)+\hat{\alpha}_g+X\hat{\beta_g}$ where $\hat{\delta}_g$ and $\hat{\alpha}_g$ are the mean and standard error calculated during normalization, $^p$ denotes the posterior estimate, and $X$ are known batch features.  -->
+<!-- We assume that a given gene expression level for batch \\(b\\), person \\(i\\), and gene \\(g\\) has the following distribution \\(G_{b,i,g}\sim N(\gamma_{b,g},\sigma^2_{b,g})\\), where the mean and variance parameters of the normal distribution are also random variables with a normal and an inverse-gamma prior distribution, respectively: \\(\gamma_{b,g}\sim N(Y_b,\tau^2_b)\\) and \\(\sigma^2_{b,g}\sim IG(\lambda_b,\theta_b)\\). As ComBat estimates the parameters of the prior distribution using the data, it takes an [empirical Bayesian approach](https://en.wikipedia.org/wiki/Empirical_Bayes_method). The adjusted data are retrieved as: \\(G_{b,i,g}^p=\frac{\hat{\delta}_g}{\hat{\sigma}_g^p}(G_{b,i,g}-\hat{\gamma}_{b,g}^p)+\hat{\alpha}_g+X\hat{\beta_g}\\) where \\(\hat{\delta}_g\\) and \\(\hat{\alpha}_g\\) are the mean and standard error calculated during normalization, \\(^p\\) denotes the posterior estimate, and \\(X\\) are known batch features.  -->
  
 
 {% highlight r %}
@@ -211,6 +211,6 @@ I hope this summary of batch effects has been useful! Links to the R and Python 
  
 [^1]: I have provided my best interpretation of the underlying biology, but as my background is in economics/statistics, a trained in biology would likely employ a more accurate syntax.
 [^2]: When the colored hybridization sites (as shown in Figure 1) are numerically represented, they form a column of expression values in the DNA microarray data sets (as shown in the columns of Figure 2A).
-[^3]: The t-test has a $-\log_{10}$ p-value above the Sidak cutoff and the two groups have a difference in absolute mean difference greater than 0.5.
+[^3]: The t-test has a \\(-\log_{10}\\) p-value above the Sidak cutoff and the two groups have a difference in absolute mean difference greater than 0.5.
 [^4]: Which we know represents a source of true biological variation.
  

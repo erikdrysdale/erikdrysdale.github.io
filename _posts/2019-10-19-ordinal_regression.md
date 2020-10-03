@@ -14,7 +14,7 @@ $$
 \newcommand{\btheta}{\boldsymbol{\theta}}
 $$
 
-Ordinal regression models are used when an outcome has $K$ ordered possibilities: $y \in [1,\dots,K]$, e.g. $y \in [\text{low},\text{mid},\text{high}]$. While ordinal outcomes are discrete, their cumulative and probability mass functions can be written for each level:
+Ordinal regression models are used when an outcome has \\(K\\) ordered possibilities: \\(y \in [1,\dots,K]\\), e.g. \\(y \in [\text{low},\text{mid},\text{high}]\\). While ordinal outcomes are discrete, their cumulative and probability mass functions can be written for each level:
 
 $$
 \begin{align*}
@@ -23,7 +23,7 @@ P(y = k ; \bx,\bbeta,\btheta) &= F(\theta_k - \bx^T \bbeta) - F(\theta_{k-1} - \
 \end{align*}
 $$
 
-Different choices of $F$ are possible for different cumulative mass function including the standard normal CDF, but throughout this post we will use the sigmoid function: $F(z) = \sigma(z) = 1/(1+\exp(-z))$. Note that $\sigma'(z) = \sigma(z)(1-\sigma(z))$. For ordinal regression models using a "threshold" approach, there are $K+1$ intercepts of $[\theta_0,\theta_1,\dots,\theta_K]$, where $\theta_{k-1} < \theta_{k}$, $\forall k$. The bottom and top thresholds are fixed so that the CMF is bounded between $(0,1)$: $(\theta_0,\theta_K) = (-\infty,\infty)$. When estimating the $K-1$ intercepts in $\btheta$ the inequality constraints must be preserved. Notice that each "level" of $y$ shares the same slope coefficients: $\bbeta$, and only differs in the intercepts. This is contrast to multinomial logistic regression where each of the $K-1$ classes needs its own intercept and slope. In ordinal models, this need is obviated due to the naturally increasing label and the assumption that the log-odds (when $F$ is the sigmoid anyways) changes in equal measure across all ordinal categories. For example if $\beta_1=2$, then a one-unit change in $x_1$ increases the log-odds that $y > 2, \dots, y>K-1$ by two. The log-likelihood and its gradient for $n$ samples can be written as:
+Different choices of \\(F\\) are possible for different cumulative mass function including the standard normal CDF, but throughout this post we will use the sigmoid function: \\(F(z) = \sigma(z) = 1/(1+\exp(-z))\\). Note that \\(\sigma'(z) = \sigma(z)(1-\sigma(z))\\). For ordinal regression models using a "threshold" approach, there are \\(K+1\\) intercepts of \\([\theta_0,\theta_1,\dots,\theta_K]\\), where \\(\theta_{k-1} < \theta_{k}\\), \\(\forall k\\). The bottom and top thresholds are fixed so that the CMF is bounded between \\((0,1)\\): \\((\theta_0,\theta_K) = (-\infty,\infty)\\). When estimating the \\(K-1\\) intercepts in \\(\btheta\\) the inequality constraints must be preserved. Notice that each "level" of \\(y\\) shares the same slope coefficients: \\(\bbeta\\), and only differs in the intercepts. This is contrast to multinomial logistic regression where each of the \\(K-1\\) classes needs its own intercept and slope. In ordinal models, this need is obviated due to the naturally increasing label and the assumption that the log-odds (when \\(F\\) is the sigmoid anyways) changes in equal measure across all ordinal categories. For example if \\(\beta_1=2\\), then a one-unit change in \\(x_1\\) increases the log-odds that \\(y > 2, \dots, y>K-1\\) by two. The log-likelihood and its gradient for \\(n\\) samples can be written as:
 
 $$
 \begin{align*}
@@ -35,7 +35,7 @@ d_{ik} &= \sigma(\theta_k-\eta_i) - \sigma(\theta_{k-1}-\eta_i) \\
 \end{align*}
 $$
 
-In order to avoid having to do constrained optimization, it will be easier to re-parametrize $\btheta=f(\balpha)$ as: $\theta_k = \alpha_1 + \sum_{j=2}^k e^{\alpha_j}$, where $\alpha_1=\theta_1$. The gradient for the intercepts is the same as before along with the chain rule:
+In order to avoid having to do constrained optimization, it will be easier to re-parametrize \\(\btheta=f(\balpha)\\) as: \\(\theta_k = \alpha_1 + \sum_{j=2}^k e^{\alpha_j}\\), where \\(\alpha_1=\theta_1\\). The gradient for the intercepts is the same as before along with the chain rule:
 
 $$
 \begin{align*}
@@ -44,7 +44,7 @@ $$
 $$
 
 
-As the likelihood and gradients show, it is useful to save the indices of which rows correspond to which ordinal levels for faster computation. After the model has been fit, a new sample $\tilde \bx$, can be evaluated by calculating:
+As the likelihood and gradients show, it is useful to save the indices of which rows correspond to which ordinal levels for faster computation. After the model has been fit, a new sample \\(\tilde \bx\\), can be evaluated by calculating:
 
 $$
 \begin{align*}
@@ -58,7 +58,7 @@ P(y=k|\bbeta;\btheta;\tilde\bx)  &= \begin{cases}
 \end{align*}
 $$
 
-The code block below creates the necessary functions to calculate the loss, gradient, and probabilities for an ordinal model. The `ordinal_reg` wrapper will allow us to fit an ordinal regression model for $p$-dimensional data and $K$ level classes. There are two technical notes for how to code was structured. First, the functions make use of a transformation between $\theta$ and $\alpha$, as it is easier to understand the loss and gradient functions using the original parametrization. Second, when the features are normalized there is no way to map back the coefficients to an equivalent optimization problem in the un-normalized space due to the non-linearities in $F_k(\cdot)-F_{k-1}(\cdot)$. This means that any standardization procedures must be applied to $\bx$ when doing inference.
+The code block below creates the necessary functions to calculate the loss, gradient, and probabilities for an ordinal model. The `ordinal_reg` wrapper will allow us to fit an ordinal regression model for \\(p\\)-dimensional data and \\(K\\) level classes. There are two technical notes for how to code was structured. First, the functions make use of a transformation between \\(\theta\\) and \\(\alpha\\), as it is easier to understand the loss and gradient functions using the original parametrization. Second, when the features are normalized there is no way to map back the coefficients to an equivalent optimization problem in the un-normalized space due to the non-linearities in \\(F_k(\cdot)-F_{k-1}(\cdot)\\). This means that any standardization procedures must be applied to \\(\bx\\) when doing inference.
 
 ```python
 import numpy as np
@@ -178,7 +178,7 @@ class ordinal_reg():
 
 ## Univariate example
 
-The easiest way to visualize how an ordinal regression model works is to examine a single-feature model using $\bx$. This way the marginal probabilities can be visualized over the support of the single feature. In the code block below, a feature is drawn from a mixture of three standard normal distributions, each with a slightly different mean but all have some partial overlap: $\mu=[-2,0,2]$. The `ordinal_reg` function will estimate $\theta_1, \theta_2$, and $\beta$, and hopefully approximate the true underlying Gaussian mixture distribution. 
+The easiest way to visualize how an ordinal regression model works is to examine a single-feature model using \\(\bx\\). This way the marginal probabilities can be visualized over the support of the single feature. In the code block below, a feature is drawn from a mixture of three standard normal distributions, each with a slightly different mean but all have some partial overlap: \\(\mu=[-2,0,2]\\). The `ordinal_reg` function will estimate \\(\theta_1, \theta_2\\), and \\(\beta\\), and hopefully approximate the true underlying Gaussian mixture distribution. 
 
 
 ```python
@@ -212,7 +212,7 @@ print(df_1d_acc)
     lvls3       0   3  22
     
 
-A confusion matrix shows that the predicted level $\tilde y$ aligns closely with the true label. Furthermore, there is a never a two-level error meaning $\tilde y=1$ when $y=3$ and vice-versa. 
+A confusion matrix shows that the predicted level \\(\tilde y\\) aligns closely with the true label. Furthermore, there is a never a two-level error meaning \\(\tilde y=1\\) when \\(y=3\\) and vice-versa. 
 
 
 ```python
@@ -241,11 +241,11 @@ g_1d.set_xlabels('x')
 
 ![png](/figures/ordinal_regression_5_1.png)
 
-Figure 1 shows the distribution of $x$, the density of the different classes represented by a colored histogram, and the underlying marginal probabilities learned from $\hat\theta_1, \hat\theta_2$, and $\hat\beta$. The predicted marginal probabilities align nicely with the true underlying densities showing that appropriate slope and intercept thresholds have been learned.
+Figure 1 shows the distribution of \\(x\\), the density of the different classes represented by a colored histogram, and the underlying marginal probabilities learned from \\(\hat\theta_1, \hat\theta_2\\), and \\(\hat\beta\\). The predicted marginal probabilities align nicely with the true underlying densities showing that appropriate slope and intercept thresholds have been learned.
 
 ## 2-D example
 
-To further build intuition, an ordinal Gaussian mixture model where $p=2$ and $K=4$ can be generated with four increasing centroids. The code block below will generate the data, fit the model using `ordinal_reg` and then plot the two-dimensional decision boundaries. 
+To further build intuition, an ordinal Gaussian mixture model where \\(p=2\\) and \\(K=4\\) can be generated with four increasing centroids. The code block below will generate the data, fit the model using `ordinal_reg` and then plot the two-dimensional decision boundaries. 
 
 
 ```python
@@ -295,7 +295,7 @@ As Figure 2 shows, the ordinal regression model has once again calculated reason
 
 ## Applied example for housing quantiles
 
-While it is difficult to visualize the decision boundaries for datasets with $p>2$, an examination of the coefficients and performance of a model can indicate whether it is working well. To compare how ordinal regression fares to more common methods, housing prices from the [Boston housing](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html) dataset will be converted in different quantiles (bottom 10-20%, top 90+%, etc). The ordinal approach will be compared to a simple linear regression model where each quantile is treated as an integer ($y=[1,2,\dots,10]$) and a multinomial logistic regression where each class is treated as independently. To assess performance, the [mean-absolute error](https://en.wikipedia.org/wiki/Mean_absolute_error) (MAE) between the predicted and actual class will be used. For ordinal regression tasks, a metric like raw accuracy is less appealing as predicting 1 or 10 when $y=2$ receives the same score, when clearly predicting a quantile closer to the ground-truth level is more "accurate" even if it is not perfect. In the simulations below, a training/test split of 80/20% is used and run 125 times. Note that the house price label has added noise to it to ensure that quantiles can be calculated more smoothly.
+While it is difficult to visualize the decision boundaries for datasets with \\(p>2\\), an examination of the coefficients and performance of a model can indicate whether it is working well. To compare how ordinal regression fares to more common methods, housing prices from the [Boston housing](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html) dataset will be converted in different quantiles (bottom 10-20%, top 90+%, etc). The ordinal approach will be compared to a simple linear regression model where each quantile is treated as an integer (\\(y=[1,2,\dots,10]\\)) and a multinomial logistic regression where each class is treated as independently. To assess performance, the [mean-absolute error](https://en.wikipedia.org/wiki/Mean_absolute_error) (MAE) between the predicted and actual class will be used. For ordinal regression tasks, a metric like raw accuracy is less appealing as predicting 1 or 10 when \\(y=2\\) receives the same score, when clearly predicting a quantile closer to the ground-truth level is more "accurate" even if it is not perfect. In the simulations below, a training/test split of 80/20% is used and run 125 times. Note that the house price label has added noise to it to ensure that quantiles can be calculated more smoothly.
 
 
 ```python
@@ -382,4 +382,4 @@ g.set_xlabels('MAE(Ordinal)-MAE(Model)')
 ![png](/figures/ordinal_regression_11_1.png)
 
 
-Figure 4 shows that the ordinal regression model outperforms both the multinomial and linear regression model in for every simulation iteration in terms of MAE. This post has shown how to write an optimizer to solve an ordinal regression model using a threshold approach which has $K-1$ intercepts (or thresholds) that ensure a positively increasing CDF to estimate the underlying ordinal labels. For outcomes where there is a natural and increasing order (like quantiles or ratings) an ordinal approach is well suited. Most importantly, the ordinal loss function encourages predicted labels to be *closer* to the actual label thereby reducing the likelihood of making large prediction errors (e.g. predicting 'medium' instead of 'high' when the actual label is 'low').
+Figure 4 shows that the ordinal regression model outperforms both the multinomial and linear regression model in for every simulation iteration in terms of MAE. This post has shown how to write an optimizer to solve an ordinal regression model using a threshold approach which has \\(K-1\\) intercepts (or thresholds) that ensure a positively increasing CDF to estimate the underlying ordinal labels. For outcomes where there is a natural and increasing order (like quantiles or ratings) an ordinal approach is well suited. Most importantly, the ordinal loss function encourages predicted labels to be *closer* to the actual label thereby reducing the likelihood of making large prediction errors (e.g. predicting 'medium' instead of 'high' when the actual label is 'low').

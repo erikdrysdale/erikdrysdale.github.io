@@ -15,11 +15,11 @@ Imagine that an algorithm has been developed for a clinical task. Its performanc
 
 ## (1) Why is picking a threshold difficult?
 
-Assume that the goal of the clinical trial is to establish that an algorithm has at least $k$% sensitivity.[[^1]] To establish the notation that will be used in the rest of this post, assume there is a pre-trained model with parameters $\theta$ that maps an input to a continuous score \\(f_\theta(x): \mathbb{R}^p \to \mathbb{R}\\).[[^2]] The classifier is a version of the model that maps the output score to a binary outcome $\psi_t(f)=I(f_\theta(x)>t)$, where $I(\cdot)$ is the indicator function. Clearly the functional $\psi$ derives its statistical properties from the choice of $t$. The goal is to pick $t$ so that the $k$% sensitivity target is established.
+Assume that the goal of the clinical trial is to establish that an algorithm has at least \\(k\\)% sensitivity.[[^1]] To establish the notation that will be used in the rest of this post, assume there is a pre-trained model with parameters \\(\theta\\) that maps an input to a continuous score \\(f_\theta(x): \mathbb{R}^p \to \mathbb{R}\\).[[^2]] The classifier is a version of the model that maps the output score to a binary outcome \\(\psi_t(f)=I(f_\theta(x)>t)\\), where \\(I(\cdot)\\) is the indicator function. Clearly the functional \\(\psi\\) derives its statistical properties from the choice of \\(t\\). The goal is to pick \\(t\\) so that the \\(k\\)% sensitivity target is established.
 
-An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold $\hat{t}_k$ that matches the empirical quantile of $(1-k)$%. This threshold will ensure that the sensitivity on the test set is exactly $k$%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because $\hat t_k$ is a random variable, it will have a large chance of being above the true value. 
+An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold \\(\hat{t}_k\\) that matches the empirical quantile of \\((1-k)\\)%. This threshold will ensure that the sensitivity on the test set is exactly \\(k\\)%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because \\(\hat t_k\\) is a random variable, it will have a large chance of being above the true value. 
 
-To make the math simpler, assume that the distribution of the positive label scores from the model is $f_\theta(x\|y=1) \sim N(\mu_1, \sigma_1^{2})$. A classifier with a threshold $t_k^{\*}(\mu_1,\sigma_1) = \mu_1 + \sigma_1\cdot\Phi^{-1}(1-k)$ will have a sensivity of exactly $k\%$. But in the real world, we only observe some draw of $\hat{p}^1 = f_\theta(\hat{x}\|\hat{y}=1)$, where $\hat{x}$ and $\hat{y}$ are a vector of IID draws from the data generating process. The simulation below shows the distribution of $\hat t_{0.95}$ to $t_{0.95}^{\*}$ for 50 positive cases in the test set ($n=50$).
+To make the math simpler, assume that the distribution of the positive label scores from the model is \\(f_\theta(x\|y=1) \sim N(\mu_1, \sigma_1^{2})\\). A classifier with a threshold \\(t_k^{\*}(\mu_1,\sigma_1) = \mu_1 + \sigma_1\cdot\Phi^{-1}(1-k)\\) will have a sensivity of exactly \\(k\%\\). But in the real world, we only observe some draw of \\(\hat{p}^1 = f_\theta(\hat{x}\|\hat{y}=1)\\), where \\(\hat{x}\\) and \\(\hat{y}\\) are a vector of IID draws from the data generating process. The simulation below shows the distribution of \\(\hat t_{0.95}\\) to \\(t_{0.95}^{\*}\\) for 50 positive cases in the test set (\\(n=50\\)).
 
 
 ```python
@@ -57,13 +57,13 @@ gg_thresh_sim
 
 <p align="center"><img src="/figures/power_calc_phn_2_0.png" width="65%"></p>
 
-Most of the time $\hat{t}_{0.95}$ would lead to long-run sensitivity of below 95%! Even if the 5th percentile were symmetric then at best $P(\hat{t} > t^*) = 0.5$
+Most of the time \\(\hat{t}_{0.95}\\) would lead to long-run sensitivity of below 95%! Even if the 5th percentile were symmetric then at best \\(P(\hat{t} > t^*) = 0.5\\)
 
-## (2) Getting $k$% sensitivity $j$% of the time
+## (2) Getting \\(k\\)% sensitivity \\(j\\)% of the time
 
-Since the intuitive approach will yield a threshold that will fail to give an asymptotic threshold target at least half of the time, a more robust method would be to select $\hat{t}$ so that it will achieve an asymptotic  sensitivity of **at least** $k\%$ for $j\%$ of the time (this is equivalent to a one-sided confidence interval). Of course picking a $t$ that is very small (e.g. $\hat{t}=\min[\hat{p}_1]-10$) will guarantee a sensitivity of at least $k\%$ close to 100% of the time, but this will yield unnessary false positives (as sensitivity increases, the false positive rate must necessarily as well). An ideal threshold estimator will have a $\hat t \leq t^*$ exactly $j\%$ of the time (no more and no less).[[^3]] This property is known as the [coverage](https://en.wikipedia.org/wiki/Coverage_probability).
+Since the intuitive approach will yield a threshold that will fail to give an asymptotic threshold target at least half of the time, a more robust method would be to select \\(\hat{t}\\) so that it will achieve an asymptotic  sensitivity of **at least** \\(k\%\\) for \\(j\%\\) of the time (this is equivalent to a one-sided confidence interval). Of course picking a \\(t\\) that is very small (e.g. \\(\hat{t}=\min[\hat{p}_1]-10\\)) will guarantee a sensitivity of at least \\(k\%\\) close to 100% of the time, but this will yield unnessary false positives (as sensitivity increases, the false positive rate must necessarily as well). An ideal threshold estimator will have a \\(\hat t \leq t^*\\) exactly \\(j\%\\) of the time (no more and no less).[[^3]] This property is known as the [coverage](https://en.wikipedia.org/wiki/Coverage_probability).
 
-In order to find this one-sided confidence interval, the distribution of $\hat t_k$ has to be known. Unfortunately there is no parametric distribution for such a statistic. Instead non-parametric methods must be used. The first (and my preferred) approach is to use the bias-corrected and accelerated (BCa) bootstrap. Even before taking the bootstrap, the distribution of $\hat t_{0.95}$ is skewed as Figure 1 shows above. Simpler bootstrapping approaches will fail both because there is a bias in the bootstrapped sample (the mean of the bootstrapped quantiles is larger than the empirical quantile) and because there is a right-skew in the data. The simulations below will show that the BCa gets close to the target coverage of $j=80$%.
+In order to find this one-sided confidence interval, the distribution of \\(\hat t_k\\) has to be known. Unfortunately there is no parametric distribution for such a statistic. Instead non-parametric methods must be used. The first (and my preferred) approach is to use the bias-corrected and accelerated (BCa) bootstrap. Even before taking the bootstrap, the distribution of \\(\hat t_{0.95}\\) is skewed as Figure 1 shows above. Simpler bootstrapping approaches will fail both because there is a bias in the bootstrapped sample (the mean of the bootstrapped quantiles is larger than the empirical quantile) and because there is a right-skew in the data. The simulations below will show that the BCa gets close to the target coverage of \\(j=80\\)%.
 
 
 ```python
@@ -164,7 +164,7 @@ gg_bs
 
 <p align="center"><img src="/figures/power_calc_phn_6_0.png" width="60%"></p>
 
-An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier $R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]$. This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the $r^{th}$ rank-order statistic from the distribution of positive labels: $\hat{\psi}_r=I(f_\theta(x)>\hat{p}^1_{(r)})$, where $\hat{p}^1_{(r)}$ is the r-th order statistic: $p^1_{(1)} \leq p^1_{(2)} \leq ... \leq p^1_{(n)}$. The umbrella algorithm appeals to a slight modification the CDF of rank-order statistics:
+An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier \\(R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]\\). This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the \\(r^{th}\\) rank-order statistic from the distribution of positive labels: \\(\hat{\psi}_r=I(f_\theta(x)>\hat{p}^1_{(r)})\\), where \\(\hat{p}^1_{(r)}\\) is the r-th order statistic: \\(p^1_{(1)} \leq p^1_{(2)} \leq ... \leq p^1_{(n)}\\). The umbrella algorithm appeals to a slight modification the CDF of rank-order statistics:
 
 $$
 \begin{align*}
@@ -172,7 +172,7 @@ P( R(\hat{\psi}_r) > 1-k ) &\leq 1 - \sum_{l=r}^n \begin{pmatrix} n \\ r \end{pm
 \end{align*}
 $$
 
-To find the rank $r$ that leads to a type-II less than $(1-j)$% of the time the goal is to find $r^* = \max_r [v(r) \leq 1-j]$. The function below shows the relationship between the sample size and the require rank needed to obtain this bound.
+To find the rank \\(r\\) that leads to a type-II less than \\((1-j)\\)% of the time the goal is to find \\(r^* = \max_r [v(r) \leq 1-j]\\). The function below shows the relationship between the sample size and the require rank needed to obtain this bound.
 
 
 ```python
@@ -204,7 +204,7 @@ gg_r
 <p align="center"><img src="/figures/power_calc_phn_8_0.png" width="60%"></p>
 
 
-Notice that for 50 positive samples a rank-order of one (i.e. the minimum) is necessary to ensure that the sensitivity is at least 95%, 80% of the time. This ends up being a much tighter bound than what is actually needed. Even though the CDF is *exact*, because it is from a discrete distribution, for small sample sizes finding a value equal to exactly $(1-j)$% is impossible (i.e. there is no rank 1.5, only 1 or 2). The table below shows that for our considered sample size and sensitivity, $j$ needs to be either 92% or 72% for the NP-Umbrella to be efficient. 
+Notice that for 50 positive samples a rank-order of one (i.e. the minimum) is necessary to ensure that the sensitivity is at least 95%, 80% of the time. This ends up being a much tighter bound than what is actually needed. Even though the CDF is *exact*, because it is from a discrete distribution, for small sample sizes finding a value equal to exactly \\((1-j)\\)% is impossible (i.e. there is no rank 1.5, only 1 or 2). The table below shows that for our considered sample size and sensitivity, \\(j\\) needs to be either 92% or 72% for the NP-Umbrella to be efficient. 
 
 ```python
 np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
@@ -263,7 +263,7 @@ np.round(umbrella_thresh(n=n_test_pos, k=k, j=j, ret_df=True).head().iloc[1:],2)
 </div>
 
 
-Figure 4 below shows, as the above table would suggest, that the NP-Umbrella gets an actual of $j$=92% using a rank-order of one as a threshold, leading to a distribution of thresholds that is too conservative. Note that even if the mean of the NP-Umbrella thresholds was shifted to the right so that $j$=80%, the variance of the thresholds would still be larger. If the code-block below is changed so that $j$=92%, the variance of the NP-Umbrella can still be shown to be larger using [Levene's test](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html).
+Figure 4 below shows, as the above table would suggest, that the NP-Umbrella gets an actual of \\(j\\)=92% using a rank-order of one as a threshold, leading to a distribution of thresholds that is too conservative. Note that even if the mean of the NP-Umbrella thresholds was shifted to the right so that \\(j\\)=80%, the variance of the thresholds would still be larger. If the code-block below is changed so that \\(j\\)=92%, the variance of the NP-Umbrella can still be shown to be larger using [Levene's test](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html).
 
 
 ```python
@@ -306,33 +306,33 @@ gg_comp
 
 <p align="center"><img src="/figures/power_calc_phn_12_0.png" width="85%"></p>
 
-In summary picking a threshold is difficult because $\psi_t(\hat p_1)$ is what is observed from some random sample $\hat x$ whereas the distribution of $\psi_t(p_1)$ for all $x$ is needed to establish an asymptotically valid threshold. This fundamental uncertainty leads to a choice of $\hat t$ that is conservative so that the threshold statistic can obtain a targeted asymptotic sensitivity $j$% of the time. The BCa bootstrap does a good job at this and has a more exact confidence bound than the NP-Umbrella for smaller-sized samples as well as being more efficient.
+In summary picking a threshold is difficult because \\(\psi_t(\hat p_1)\\) is what is observed from some random sample \\(\hat x\\) whereas the distribution of \\(\psi_t(p_1)\\) for all \\(x\\) is needed to establish an asymptotically valid threshold. This fundamental uncertainty leads to a choice of \\(\hat t\\) that is conservative so that the threshold statistic can obtain a targeted asymptotic sensitivity \\(j\\)% of the time. The BCa bootstrap does a good job at this and has a more exact confidence bound than the NP-Umbrella for smaller-sized samples as well as being more efficient.
 
-## (3) Finding the sample size to reject $k_0 \leq k$
+## (3) Finding the sample size to reject \\(k_0 \leq k\\)
 
-The final stage of designing an evaluation trial for a machine learning algorithm is similar to a standard clinical trial: sample-size justifications based on a power analysis. Sections (1) and (2) showed how to pick a threshold $\hat t$ that will obtain a sensitivity bound with high probability. Now assume that the model possesses an asymptotic sensitivity of $k$%. To establish statistical significance a null hypothesis of the form $H_0: k_0 \leq l$  in favour of $H_A: k_0 > l$. Unfortunately $l$ cannot be set to $k$, because the null would not be rejected as the number of samples increased because the null would be true! Could the failure to reject the null be considered evidence in favour of the hypothesis? Unfortunately not not rejecting can be caused by either a lack of samples or a true null.
+The final stage of designing an evaluation trial for a machine learning algorithm is similar to a standard clinical trial: sample-size justifications based on a power analysis. Sections (1) and (2) showed how to pick a threshold \\(\hat t\\) that will obtain a sensitivity bound with high probability. Now assume that the model possesses an asymptotic sensitivity of \\(k\\)%. To establish statistical significance a null hypothesis of the form \\(H_0: k_0 \leq l\\)  in favour of \\(H_A: k_0 > l\\). Unfortunately \\(l\\) cannot be set to \\(k\\), because the null would not be rejected as the number of samples increased because the null would be true! Could the failure to reject the null be considered evidence in favour of the hypothesis? Unfortunately not not rejecting can be caused by either a lack of samples or a true null.
 
-By setting $l=k-b < k$ then a sufficient number of samples will lead to a rejection of the null.[[^4]] As the $b$% buffer grows the null hypothesis becomes easier to reject, but the uncertainty around how close the model is to its desired performance level will increase. Ideally $b \to 0$, but this would require $n \to \infty$. There is no free lunch! 
+By setting \\(l=k-b < k\\) then a sufficient number of samples will lead to a rejection of the null.[[^4]] As the \\(b\\)% buffer grows the null hypothesis becomes easier to reject, but the uncertainty around how close the model is to its desired performance level will increase. Ideally \\(b \to 0\\), but this would require \\(n \to \infty\\). There is no free lunch! 
 
-Because sensitivity is a binomial proportion, its distributional form can be [approximated](https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval). If $\hat s$ is the observed sensitivity of the trial, then the statistic $s_0$ has a normal distribution under the null:
+Because sensitivity is a binomial proportion, its distributional form can be [approximated](https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval). If \\(\hat s\\) is the observed sensitivity of the trial, then the statistic \\(s_0\\) has a normal distribution under the null:
 
 $$
 s_0 = \frac{\hat{s} - l}{\sqrt{\frac{l(1-l)}{n}}} = \frac{\hat{s} - l}{\sigma_l} \sim N(0,1)
 $$
 
-If the trial will reject a null hypothesis at the $(1-\alpha)$% level, then it is easy to determine the critical value at which $s_0$ will be rejected.
+If the trial will reject a null hypothesis at the \\((1-\alpha)\\)% level, then it is easy to determine the critical value at which \\(s_0\\) will be rejected.
 
 $$
 s^*_0(\alpha) = l + \sigma_l \cdot \Phi^{-1}(1-\alpha) 
 $$
 
-Since $l$ was chosen to be less than $k$, the observed statistic will actually come from its distribution under the alternative hypothesis.
+Since \\(l\\) was chosen to be less than \\(k\\), the observed statistic will actually come from its distribution under the alternative hypothesis.
 
 $$
 s_A = \frac{\hat{s} - k}{\sigma_k} \sim N(0,1)
 $$
 
-To carry out a power analysis it is sufficient to see how many observations are necessary for $s_A$ to reject the null $(1-\beta)$% of the time (i.e. when $\hat s$ is greater than the critical value $s_0^*(\alpha)$).
+To carry out a power analysis it is sufficient to see how many observations are necessary for \\(s_A\\) to reject the null \\((1-\beta)\\)% of the time (i.e. when \\(\hat s\\) is greater than the critical value \\(s_0^*(\alpha)\\)).
 
 $$
 \begin{align*}
@@ -342,7 +342,7 @@ s_A &> \sqrt{n} \cdot\frac{(l-k)}{\sqrt{k(1-k)}} + \sqrt{\frac{l(1-l)}{k(1-k)}} 
 \end{align*}
 $$
 
-If $s_A^* = \Phi^{-1}(\beta)$, then $s_A > s_A^*$ $(1-\beta)$% of the time. Plugging this into the above formula yields:
+If \\(s_A^* = \Phi^{-1}(\beta)\\), then \\(s_A > s_A^*\\) \\((1-\beta)\\)% of the time. Plugging this into the above formula yields:
 
 $$
 \begin{align*}
@@ -351,7 +351,7 @@ n^* &= \Bigg[ \frac{\sqrt{k(k-k)}\Phi^{-1}_\beta - \sqrt{l(1-l)}\Phi^{-1}_{1-\al
 \end{align*}
 $$
 
-The plots below will show how different levels of $k$, $b$, and $\beta$ lead to different requirements for $n^*$.
+The plots below will show how different levels of \\(k\\), \\(b\\), and \\(\beta\\) lead to different requirements for \\(n^*\\).
 
 
 ```python
@@ -384,9 +384,9 @@ gg_n
 
 <p align="center"><img src="/figures/power_calc_phn_15_0.png" width="70%"></p>
 
-Figure 5 shows three stylized facts. First, increasing $k$ makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 75%. Second, and obviously, lowering $\beta$ increases the number of samples needed. The third and most important factor is $b$. Increasing $b$ from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
+Figure 5 shows three stylized facts. First, increasing \\(k\\) makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 75%. Second, and obviously, lowering \\(\beta\\) increases the number of samples needed. The third and most important factor is \\(b\\). Increasing \\(b\\) from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
 
-The implications of this are that high sensitivity targets are difficult to prove because if $k-l$=95%, then $k$=100! Just as central banks can hit the [zero lower bound](https://en.wikipedia.org/wiki/Zero_lower_bound) when setting interest rate policies, there are some thresholds that cannot be establish if the nominal level is too high. Note that the sample-size formula $n^*$ is based on a normal approximation of a binomial proportion. The simulation below shows that this approximation is yields an estimate predicted power that is within 2% of the actual power target.
+The implications of this are that high sensitivity targets are difficult to prove because if \\(k-l\\)=95%, then \\(k\\)=100! Just as central banks can hit the [zero lower bound](https://en.wikipedia.org/wiki/Zero_lower_bound) when setting interest rate policies, there are some thresholds that cannot be establish if the nominal level is too high. Note that the sample-size formula \\(n^*\\) is based on a normal approximation of a binomial proportion. The simulation below shows that this approximation is yields an estimate predicted power that is within 2% of the actual power target.
 
 
 ```python
@@ -475,8 +475,8 @@ This post has explained what the main statistical challenges are for validating 
 
 [^1]: Metrics other than sensitivity can be used of course: precision, specificity, etc. The math in the rest of the this post is based on this type-II error rate assumption, but can be adjusted for the appropriate metric.
 
-[^2]: By pre-trained I mean that $\theta$ has been learned on data outside of the test set.
+[^2]: By pre-trained I mean that \\(\theta\\) has been learned on data outside of the test set.
 
-[^3]: Remember that when $\hat t_k < t_k^{\*}$, the asymptotic sensitivity will be greater than $k$% and when $\hat t_k > t_k^{\*}$ the asymptotic sensitivity will be less than $k$%.
+[^3]: Remember that when \\(\hat t_k < t_k^{\*}\\), the asymptotic sensitivity will be greater than \\(k\\)% and when \\(\hat t_k > t_k^{\*}\\) the asymptotic sensitivity will be less than \\(k\\)%.
 
 [^4]: At this point it must be assumed that the threshold is less than equal to the true asymptotic threshold.

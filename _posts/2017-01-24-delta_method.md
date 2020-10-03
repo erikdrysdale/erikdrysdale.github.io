@@ -33,7 +33,7 @@ Plotting the KM curves for different categories of data can reveal associations 
  
 ### Using the exponential distribution
  
-As a warm-up, we'll begin with the exponential distribution. While it is a somewhat unrealistic time-to-event distribution as it assumes a constant hazard rate (the conditional risk of transitioning from life to death stays the same over time), it is exceedingly tractable and good for demonstration purposes. The likelihood for any censored distribution is the joint distribution of the uncensored $f(t\|\theta)$ and censored $P(T>t\|\theta)=1-P(T<t\|\theta)=1-F(t\|\theta)$ observations. Some additional notation: $\lambda$ is the parameter indexing the exponential distribution, $U(\lambda)$ is the score vector (it's only a scalar in this case as the exponential distribution has only one parameter), $I(\lambda)$ is the information matrix, and $\delta_i$ is an indicator for whether or not the observation was censored.
+As a warm-up, we'll begin with the exponential distribution. While it is a somewhat unrealistic time-to-event distribution as it assumes a constant hazard rate (the conditional risk of transitioning from life to death stays the same over time), it is exceedingly tractable and good for demonstration purposes. The likelihood for any censored distribution is the joint distribution of the uncensored \\(f(t\|\theta)\\) and censored \\(P(T>t\|\theta)=1-P(T<t\|\theta)=1-F(t\|\theta)\\) observations. Some additional notation: \\(\lambda\\) is the parameter indexing the exponential distribution, \\(U(\lambda)\\) is the score vector (it's only a scalar in this case as the exponential distribution has only one parameter), \\(I(\lambda)\\) is the information matrix, and \\(\delta_i\\) is an indicator for whether or not the observation was censored.
  
 $$
 \begin{aligned}
@@ -49,11 +49,11 @@ $$
  
 
  
-Finding where the score (i.e. gradient) is equal to zero produces our MLE: $\hat{\lambda}=\sum_i \delta_i/\sum_i t_i$. It is well known that the asymptotic variance of the MLE is the corresponding point in the inverse information matrix: $Var(\hat{\lambda})=I^{-1}(\hat{\lambda})$ and so $SE(\hat{\lambda})=\sqrt{\sum_i \delta_i}/\sum_i t_i$, which is a fairly tidy expression! We can see that our estimate of $\lambda$ is therefore: 9.1e-04 with a SE of 1.1e-04 (very small numbers). Let's plot what this exponential distribution looks like compared to the aggregate KM curve. As we can see below the parametric survival curve with the MLE estimate of $\lambda$ does a fairly decent job approximating the non-parametric KM curve.
+Finding where the score (i.e. gradient) is equal to zero produces our MLE: \\(\hat{\lambda}=\sum_i \delta_i/\sum_i t_i\\). It is well known that the asymptotic variance of the MLE is the corresponding point in the inverse information matrix: \\(Var(\hat{\lambda})=I^{-1}(\hat{\lambda})\\) and so \\(SE(\hat{\lambda})=\sqrt{\sum_i \delta_i}/\sum_i t_i\\), which is a fairly tidy expression! We can see that our estimate of \\(\lambda\\) is therefore: 9.1e-04 with a SE of 1.1e-04 (very small numbers). Let's plot what this exponential distribution looks like compared to the aggregate KM curve. As we can see below the parametric survival curve with the MLE estimate of \\(\lambda\\) does a fairly decent job approximating the non-parametric KM curve.
  
 ![plot of chunk km_exp](/figures/km_exp-1.png)
  
-However, to make the scale of $\lambda$ more tractable, we could do a log transformation: $\alpha=-\log(\lambda)$, which implies that $\lambda=\exp(-\alpha)$. Next, to perform inference on $\alpha$ using the information from the likelihood for $\lambda$, we appeal to both:
+However, to make the scale of \\(\lambda\\) more tractable, we could do a log transformation: \\(\alpha=-\log(\lambda)\\), which implies that \\(\lambda=\exp(-\alpha)\\). Next, to perform inference on \\(\alpha\\) using the information from the likelihood for \\(\lambda\\), we appeal to both:
  
 1. The invariance property of the maximum likelihood estimator:
 $$\hat{\alpha}_{\text{MLE}} = g(\hat{\lambda}_{\text{MLE}}) $$
@@ -65,7 +65,7 @@ SE(g(\lambda)) &= | g'(\lambda)] | SE(\lambda) \\
 \end{aligned}
 $$
  
-The invariance property says that if there exists a function $g(\lambda)$ which is one-to-one, then the MLE of this function of $\lambda$ is simply the function evaluated at the MLE of $\lambda$. The delta method provides a way to relate the variance of a function of a random variable (or estimator) to that variable/estimator when it is asymptotically normal. In our case $g'(\lambda)=-1/\lambda$ and hence:
+The invariance property says that if there exists a function \\(g(\lambda)\\) which is one-to-one, then the MLE of this function of \\(\lambda\\) is simply the function evaluated at the MLE of \\(\lambda\\). The delta method provides a way to relate the variance of a function of a random variable (or estimator) to that variable/estimator when it is asymptotically normal. In our case \\(g'(\lambda)=-1/\lambda\\) and hence:
  
 $$
 \begin{aligned}
@@ -92,7 +92,7 @@ data.frame(alpha=-log(mle.lam),se=(1/mle.lam)*se.lam)
 ## 1 6.044474 0.07784989
 {% endhighlight %}
  
-Finally, we can see the relation of the delta method to the `survival` package. When we use the `survreg` function we see that the exponential distribution is parameterized as the $\alpha$ we discussed above.
+Finally, we can see the relation of the delta method to the `survival` package. When we use the `survreg` function we see that the exponential distribution is parameterized as the \\(\alpha\\) we discussed above.
  
 
 {% highlight r %}
@@ -111,7 +111,7 @@ summary(survreg(lc.Surv~1,dist='exp'))$table
  
 ### A bivariate distribution: the Weibull
  
-As a more advanced example, consider the following parameterization of the Weibull distribution with $\theta=(p,\lambda)$ for the following density and survival functions:
+As a more advanced example, consider the following parameterization of the Weibull distribution with \\(\theta=(p,\lambda)\\) for the following density and survival functions:
  
 $$
 \begin{aligned}
@@ -130,7 +130,7 @@ l(p,\lambda) &= \sum_{i=1}^n \delta_i \log f(t_i | \theta) + (1-\delta_i) \log S
 \end{aligned}
 $$
  
-Which we see reduces to the log-likelihood of the exponential distribution when $p=1$, and hence the exponential is embedded in the Weibull. Finding the Score vector:
+Which we see reduces to the log-likelihood of the exponential distribution when \\(p=1\\), and hence the exponential is embedded in the Weibull. Finding the Score vector:
  
 $$
 \begin{aligned}
@@ -146,7 +146,7 @@ I(p,\lambda) &= - \Big(\frac{d^2 l(\theta)}{d\theta d\theta^T} \Big) = \begin{pm
 \end{aligned}
 $$
  
-We'll ask `R` to find the pair of $(\hat{p},\hat{\lambda})$ that minimizes the (negative) of our log-likelihood using the `optim` function.
+We'll ask `R` to find the pair of \\((\hat{p},\hat{\lambda})\\) that minimizes the (negative) of our log-likelihood using the `optim` function.
  
 
 {% highlight r %}
@@ -203,7 +203,7 @@ Below we can see that these estimates minimize the log-likelihood.
  
 ![plot of chunk plam_brute](/figures/plam_brute-1.png)
  
-Next we'll estimate the same Weibull model but using the `survreg` function. The `survival` package parameterizes the Weibull distribution so that the survival function takes the following form: $S(t)=\exp\{ -(e^{-\alpha} t)^{1/\beta} \}$. Hence we can see that the relation to our parameterization is $p=1/\beta$ and $\lambda=\exp\{-\alpha/\beta \}$. Let's estimate the model and make sure the results map back to each other.
+Next we'll estimate the same Weibull model but using the `survreg` function. The `survival` package parameterizes the Weibull distribution so that the survival function takes the following form: \\(S(t)=\exp\{ -(e^{-\alpha} t)^{1/\beta} \}\\). Hence we can see that the relation to our parameterization is \\(p=1/\beta\\) and \\(\lambda=\exp\{-\alpha/\beta \}\\). Let's estimate the model and make sure the results map back to each other.
  
 
 {% highlight r %}
@@ -229,7 +229,7 @@ data.frame(mle=c(p.mle,lam.mle),survreg_transform=c(p.w,lam.w)) %>%
 ## lambda 0.00035           0.00035
 {% endhighlight %}
  
-Great so the results are comparable. However suppose we want to convert the standard errors the `survreg` object returns to $p$ and $\lambda$? First notice that the `survreg` object returns the estimate of the variance-covariance matrix for $[\alpha,\log\beta]$.
+Great so the results are comparable. However suppose we want to convert the standard errors the `survreg` object returns to \\(p\\) and \\(\lambda\\)? First notice that the `survreg` object returns the estimate of the variance-covariance matrix for \\([\alpha,\log\beta]\\).
  
 
 {% highlight r %}
@@ -245,11 +245,11 @@ var.alogb
 ## Log(scale)  -8.903365e-05  3.897543e-03
 {% endhighlight %}
  
-We can use the multivariate delta method to transform this back to $Var(\alpha,\beta)$.
+We can use the multivariate delta method to transform this back to \\(Var(\alpha,\beta)\\).
  
 $$Var(g(\alpha,\beta)) = J(\alpha,\beta) Var(\alpha,\beta) J(\alpha,\beta)^T $$
  
-In the first case case $g(\alpha,\beta)=[g_1(\alpha,\beta),g_2(\alpha,\beta)]=[\alpha,\log\beta]$, and $J(\alpha,\beta)$ is the [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant), which will be:
+In the first case case \\(g(\alpha,\beta)=[g_1(\alpha,\beta),g_2(\alpha,\beta)]=[\alpha,\log\beta]\\), and \\(J(\alpha,\beta)\\) is the [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant), which will be:
  
 $$
 \begin{aligned}
@@ -266,7 +266,7 @@ J.alogb <- matrix(c(1,0,0,1/b.w),ncol=2)
 var.ab <- solve(J.alogb) %*% var.alogb %*% solve(J.alogb)
 {% endhighlight %}
  
-Next we use the same multivariate delta method except now for $h(\alpha,\beta)=[1/\beta,\exp\{-\alpha/\beta\}]=[p,\lambda]$, and hence the Jacobian will be:
+Next we use the same multivariate delta method except now for \\(h(\alpha,\beta)=[1/\beta,\exp\{-\alpha/\beta\}]=[p,\lambda]\\), and hence the Jacobian will be:
  
 $$
 \begin{aligned}
@@ -306,5 +306,5 @@ Great! We have successfully shown how the delta method can be used to derive the
  
 * * * 
  
-[^1]: For example, comparing a coefficient of $\beta_1=5$ and $\beta_2=3$ is mentally easier than $\alpha_1=8.123e-07$ and $\alpha_2=9.564e-08$.
+[^1]: For example, comparing a coefficient of \\(\beta_1=5\\) and \\(\beta_2=3\\) is mentally easier than \\(\alpha_1=8.123e-07\\) and \\(\alpha_2=9.564e-08\\).
  

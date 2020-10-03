@@ -30,9 +30,9 @@ $$
  
 ## Introduction
  
-In statistical learning theory the goal of a prediction model is to learn regularities of a data generating process from a sample and then obtain the best possible generalization error, which can be thought of the error that will occur "in the wild" when the trained model is asked to make predictions on data it has never seen. Being more formal, define a **domain** $\D=\{\X,P(X)\}$ as a feature space $\bX\in\X$ with a marginal probability over the feature space $P(\bX)$ and a **task** as a response space $\by \in \Y$ with a conditional probability distribution $P(\by\|\bX)$. We are either trying to learn $P(\by\|\bX)$ (for classification) or $E(\by\|\bX)$ (for regression) with the training data. We call the function we learn from the sample data the prediction estimator $\hat{f}$.
+In statistical learning theory the goal of a prediction model is to learn regularities of a data generating process from a sample and then obtain the best possible generalization error, which can be thought of the error that will occur "in the wild" when the trained model is asked to make predictions on data it has never seen. Being more formal, define a **domain** \\(\D=\{\X,P(X)\}\\) as a feature space \\(\bX\in\X\\) with a marginal probability over the feature space \\(P(\bX)\\) and a **task** as a response space \\(\by \in \Y\\) with a conditional probability distribution \\(P(\by\|\bX)\\). We are either trying to learn \\(P(\by\|\bX)\\) (for classification) or \\(E(\by\|\bX)\\) (for regression) with the training data. We call the function we learn from the sample data the prediction estimator \\(\hat{f}\\).
  
-Since we can imagine various estimators/algorithms that could fit the data, $f_1,\dots,f_M$, we want to know the expected generalization error of each when they are given training data from a source domain $(\by_S,\bX_S)\in\X_S\times \Y_S$ and asked to make predictions on a target domain $(\by_T,\bX_T) \in \X_T \times \Y_T$  for some loss function $L$:
+Since we can imagine various estimators/algorithms that could fit the data, \\(f_1,\dots,f_M\\), we want to know the expected generalization error of each when they are given training data from a source domain \\((\by_S,\bX_S)\in\X_S\times \Y_S\\) and asked to make predictions on a target domain \\((\by_T,\bX_T) \in \X_T \times \Y_T\\)  for some loss function \\(L\\):
  
  
 $$
@@ -41,7 +41,7 @@ $$
 \end{align}
 $$
  
-There are several things to note about equation \eqref{eq:err1}. First, we are conditioning $\hat{f_S}(x)=\hat{f}(x\|\by_S,\bX_S)$ on the source features and responses since these data determine the functional mapping properties of $\hat{f}$. Second, our expectation is over everything that is random: $\bX_S,\by_S,\bX_T,\by_S$.[[^1]] Third, we are allowing for the possibility that $S\neq T$, which differs from the standard "single domain" assumption that $S=T$ in the classical setups. Generally,  [**transfer learning**](https://en.wikipedia.org/wiki/Transfer_learning) (TL) is the field of machine learning that is interested in $S\neq T$. Pan and Yang's (2010) [Survey on Transfer Learning](http://ieeexplore.ieee.org/document/5288526/) provides a very useful overview. Specifically *transductive transfer learning* or *covariate shift* is the scenario where $P_S(\bX)\neq P_T(\bX)$ but $E_S(y\|X=x)=E_T(y\|X=x)$ or $P_S(y\|X=x)=P_T(y\|X=x)$, meaning the fundamental classification/regression relationship between $y \sim x$ is the same.
+There are several things to note about equation \eqref{eq:err1}. First, we are conditioning \\(\hat{f_S}(x)=\hat{f}(x\|\by_S,\bX_S)\\) on the source features and responses since these data determine the functional mapping properties of \\(\hat{f}\\). Second, our expectation is over everything that is random: \\(\bX_S,\by_S,\bX_T,\by_S\\).[[^1]] Third, we are allowing for the possibility that \\(S\neq T\\), which differs from the standard "single domain" assumption that \\(S=T\\) in the classical setups. Generally,  [**transfer learning**](https://en.wikipedia.org/wiki/Transfer_learning) (TL) is the field of machine learning that is interested in \\(S\neq T\\). Pan and Yang's (2010) [Survey on Transfer Learning](http://ieeexplore.ieee.org/document/5288526/) provides a very useful overview. Specifically *transductive transfer learning* or *covariate shift* is the scenario where \\(P_S(\bX)\neq P_T(\bX)\\) but \\(E_S(y\|X=x)=E_T(y\|X=x)\\) or \\(P_S(y\|X=x)=P_T(y\|X=x)\\), meaning the fundamental classification/regression relationship between \\(y \sim x\\) is the same.
  
 In the next section, we will see what happens to the usual OLS prediction error bounds when domain/source equivalence is relaxed.
  
@@ -60,12 +60,12 @@ y_{kT} &= \beta x_{kT} + e_k, \hspace{3mm} k=1,\dots,N_T  \\
 \end{align*}
 $$
  
-The only twist is that the distribution of $\bx_S$ and $\bx_T$ differ. Note that $\bx_S$ is mean zero, where the target has mean general zero: this is done to simplify the math later, and it reasonable since we can always de-mean any training data that is given.[[^2]][[^3]] We could conceptualize this data as having some observations from the third quadrant (the source), but wanting to make predictions about data in the first quadrant (the target).
+The only twist is that the distribution of \\(\bx_S\\) and \\(\bx_T\\) differ. Note that \\(\bx_S\\) is mean zero, where the target has mean general zero: this is done to simplify the math later, and it reasonable since we can always de-mean any training data that is given.[[^2]][[^3]] We could conceptualize this data as having some observations from the third quadrant (the source), but wanting to make predictions about data in the first quadrant (the target).
  
  
 ### The inference case?
  
-From a statistical decision theory perspective, it should be noted that if $N_S=N_T$ and $\sigma^2_S=\sigma^2_T$ then the statistical efficiency of the least squares $\hat\beta$ is identical between the source and target domains. In other words, even if the covariates are shifted, the variance of the estimator of the linear relationship ($\beta$) is identical. This is intuitive and is easy to show.
+From a statistical decision theory perspective, it should be noted that if \\(N_S=N_T\\) and \\(\sigma^2_S=\sigma^2_T\\) then the statistical efficiency of the least squares \\(\hat\beta\\) is identical between the source and target domains. In other words, even if the covariates are shifted, the variance of the estimator of the linear relationship (\\(\beta\\)) is identical. This is intuitive and is easy to show.
  
 $$
 \begin{align*}
@@ -79,7 +79,7 @@ E[\hat\beta|\bx_S] &= \beta \hspace{3mm} \longleftrightarrow \hspace{3mm} E[\hat
 \end{align*}
 $$
  
-Where the mean of a [inverse-chi-squared](https://en.wikipedia.org/wiki/Inverse-chi-squared_distribution) distribution with $N_S$ degrees of freedom is simply $1/(N_S-2)$. Because the variance, and hence the mean-squared error (MSE) of the unbiased coefficient estimate is only a function of the number of samples, and the variance of the error, and the variance of $\bx$, when both source and target variances and sample sizes are identical, the statistical efficiency, as measured by MSE, is the same for $\hat\beta$.
+Where the mean of a [inverse-chi-squared](https://en.wikipedia.org/wiki/Inverse-chi-squared_distribution) distribution with \\(N_S\\) degrees of freedom is simply \\(1/(N_S-2)\\). Because the variance, and hence the mean-squared error (MSE) of the unbiased coefficient estimate is only a function of the number of samples, and the variance of the error, and the variance of \\(\bx\\), when both source and target variances and sample sizes are identical, the statistical efficiency, as measured by MSE, is the same for \\(\hat\beta\\).
  
 
 {% highlight r %}
@@ -117,7 +117,7 @@ sprintf('Variance of S: %0.3f, variance of T: %0.3f, theoretical: %0.3f',var.cal
  
 ### Back to regression
  
-Now let's consider the MSE of the predictor $L(y,\hat{f_S}(x))=(y-\hat\beta x)^2$ when it makes a prediction of on some $x \sim N(\mu_x,\sigma^2_x)$ where $E[y\|x]=\beta x$. 
+Now let's consider the MSE of the predictor \\(L(y,\hat{f_S}(x))=(y-\hat\beta x)^2\\) when it makes a prediction of on some \\(x \sim N(\mu_x,\sigma^2_x)\\) where \\(E[y\|x]=\beta x\\). 
  
 $$
 \begin{align*}
@@ -128,7 +128,7 @@ E[\MSE(\hat{f_S})|\bx_s,x] &= E[L(y,\hat{f_S}(x))|\bx_s,x] \\
 \end{align*}
 $$
  
-The conditional expectation of the MSE is equal to the irreducible error ($\sigma^2$) scaled by a by factor proportional to $x^2$ over approximately $\approx N_S \sigma_{S}^2$. This result makes sense since the error is a function of how far away $y$ is from zero and the number of training observations. Because we're assuming the distribution of the domains are Gaussian, $x^2/ \sigma_{x}^2 \sim \chi_{NC}^2(1,\mu_x^2)$ has a [non-central chi-squared distribution](https://en.wikipedia.org/wiki/Noncentral_chi-squared_distribution)  with one degree of freedom and a non-centrality parameter $\lambda=(\mu_x/\sigma_x)^2$, whereas $\\|\bx_S\\|_2^2/\sigma^2_S$ has a chi-squared with $N_S$ degrees of freedom. Interestingly, the ratio of these two distributions (divided by their respective degrees of freedom) is a [noncentral F-distribution](https://en.wikipedia.org/wiki/Noncentral_F-distribution) with 1 and $N_S$ degrees of freedom and a non-centrality parameter equal to $(\mu_x/\sigma_x)^2$.
+The conditional expectation of the MSE is equal to the irreducible error (\\(\sigma^2\\)) scaled by a by factor proportional to \\(x^2\\) over approximately \\(\approx N_S \sigma_{S}^2\\). This result makes sense since the error is a function of how far away \\(y\\) is from zero and the number of training observations. Because we're assuming the distribution of the domains are Gaussian, \\(x^2/ \sigma_{x}^2 \sim \chi_{NC}^2(1,\mu_x^2)\\) has a [non-central chi-squared distribution](https://en.wikipedia.org/wiki/Noncentral_chi-squared_distribution)  with one degree of freedom and a non-centrality parameter \\(\lambda=(\mu_x/\sigma_x)^2\\), whereas \\(\\|\bx_S\\|_2^2/\sigma^2_S\\) has a chi-squared with \\(N_S\\) degrees of freedom. Interestingly, the ratio of these two distributions (divided by their respective degrees of freedom) is a [noncentral F-distribution](https://en.wikipedia.org/wiki/Noncentral_F-distribution) with 1 and \\(N_S\\) degrees of freedom and a non-centrality parameter equal to \\((\mu_x/\sigma_x)^2\\).
  
 $$
 \begin{align*}
@@ -137,7 +137,7 @@ $$
 $$
  
  
-The expected value of a random variable with a non-central F distribution makes the unconditional expectation easy to calculate: $N_S(1+(\mu_x/\sigma_x)^2)/(N_S-2)$.
+The expected value of a random variable with a non-central F distribution makes the unconditional expectation easy to calculate: \\(N_S(1+(\mu_x/\sigma_x)^2)/(N_S-2)\\).
  
  
 $$
@@ -187,13 +187,13 @@ sprintf('Variance of MSE: %0.2f, theoretical: %0.2f',mse.calc,mse.theory)
 ## [1] "Variance of MSE: 16.98, theoretical: 16.98"
 {% endhighlight %}
  
-Why is there this discrepancy between the inference and regression case? Because prediction requires extrapolation, the farther $x_T$ is from $x_S$, the larger the squared error becomes for small errors in the estimate of $\hat\beta$. Consider landing a rocket on the moon and on a planet in the Andromeda galaxy. The slightest error in the trajectory of a rocket to a galaxy 2.5 million light years away means that the rocket will almost surely miss its mark, *and by a huge margin*, whereas the same margin of error for a moon-landing mission could be effectively irrelevant. 
+Why is there this discrepancy between the inference and regression case? Because prediction requires extrapolation, the farther \\(x_T\\) is from \\(x_S\\), the larger the squared error becomes for small errors in the estimate of \\(\hat\beta\\). Consider landing a rocket on the moon and on a planet in the Andromeda galaxy. The slightest error in the trajectory of a rocket to a galaxy 2.5 million light years away means that the rocket will almost surely miss its mark, *and by a huge margin*, whereas the same margin of error for a moon-landing mission could be effectively irrelevant. 
  
  
  
 ## References
  
-[^1]: The fitting procedure of $f$ could also be random (if it used stochastic gradient descent for example), but we will assume a deterministic algorithm.
+[^1]: The fitting procedure of \\(f\\) could also be random (if it used stochastic gradient descent for example), but we will assume a deterministic algorithm.
  
 [^2]: Recall that in any ML setup, any filters applied to the training data must be kept and applied identically to the test data. For example, if PC decomposition if performed, the eigenvector weights must be remembered from the training stage and applied to the test data. In this case, all that is done is that the source mean is remembered.
  

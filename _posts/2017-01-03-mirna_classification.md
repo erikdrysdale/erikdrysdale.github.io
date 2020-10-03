@@ -51,9 +51,9 @@ In this dataset, human samples outnumber mice almost 3:1, and therefore bootstra
 
 ## Discriminant function analysis
 
-An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data $X$ is structured as a multivariate Gaussian distribution conditional for $k$ different categories: $f_k(X)\sim \frac{1}{(2n)^\pi \|\Sigma\|^{1/2}} \exp \Big\(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_k (X-\mu_k) \Big\)$.
+An extremely simple class of models used in classification are linear and quadratic discriminant analysis, denoted LDA and QDA. In these models, the likelihood of the data \\(X\\) is structured as a multivariate Gaussian distribution conditional for \\(k\\) different categories: \\(f_k(X)\sim \frac{1}{(2n)^\pi \|\Sigma\|^{1/2}} \exp \Big\(-\frac{1}{2} (X-\mu_k)^T\Sigma^{-1}_k (X-\mu_k) \Big\)\\).
 
-In QDA, the covariance matrices are allowed to differ ($\Sigma_k$) between categories. In our context, we are saying that the probability of observing a given vector of features (of length 252 as noted above) can be evaluated under two distributions, whose moments are estimated from the data. A classification rule can be developed where the category whose distribution suggests a higher likelihood is chosen.
+In QDA, the covariance matrices are allowed to differ (\\(\Sigma_k\\)) between categories. In our context, we are saying that the probability of observing a given vector of features (of length 252 as noted above) can be evaluated under two distributions, whose moments are estimated from the data. A classification rule can be developed where the category whose distribution suggests a higher likelihood is chosen.
 
 The `sklearn` module in Python is used throughout this post - the details of which can be found [here](http://scikit-learn.org/stable/). A naive LDA is used as a motivating example:
 
@@ -159,7 +159,7 @@ As [Figure 4D](#fig4) shows, almost all of the human examples are classified cor
 
 ## A better model yet?
 
-Another popular classifier is a Support Vector Machine (SVM), which transforms the data in such a way that a hyperplane can separate the two categories. An initial test of a SVM with a linear kernel yielded poor results, so the non-linear radial basis function (RBF) kernel was used (also known as the Gaussian kernel). The RBF is parameterized by a single variable $\gamma$, in addition to selecting the penalty value $C$ for the error term. A brute-force grid search approach was taken on a 5-fold CV split of the training data. However the in-sample accuracy was never able to exceed 90%, as Figure 5 shows, and the test sample accuracy lagged the LDA/QDA models.
+Another popular classifier is a Support Vector Machine (SVM), which transforms the data in such a way that a hyperplane can separate the two categories. An initial test of a SVM with a linear kernel yielded poor results, so the non-linear radial basis function (RBF) kernel was used (also known as the Gaussian kernel). The RBF is parameterized by a single variable \\(\gamma\\), in addition to selecting the penalty value \\(C\\) for the error term. A brute-force grid search approach was taken on a 5-fold CV split of the training data. However the in-sample accuracy was never able to exceed 90%, as Figure 5 shows, and the test sample accuracy lagged the LDA/QDA models.
 
 <p align="center" id="fig4"><font size="5"> Figure 5: SVM - CV error by parameter search </font></p>
 <p align="center"> <img src="/figures/brute.png" width="80%"></p>
