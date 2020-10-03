@@ -20,6 +20,9 @@ for ii, fn in enumerate(fn_posts):
     connection = open(os.path.join(dir_posts, fn), 'r')
     lines = pd.Series(connection.readlines())
     connection.close()
+    eq = lines[lines.str.contains('eqref')]
+    if len(eq) > 0:
+        print(eq)
     # Remove double $ dollars temporarily
     lines = lines.str.replace('\\${2}', '@@')
     # Replace dollar signs
