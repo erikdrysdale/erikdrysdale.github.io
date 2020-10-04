@@ -136,11 +136,17 @@ gg_ppv_ex = (ggplot(df_ex.query('thresh>0.5 & thresh<1.5 & ppv>0.25 & ppv<0.5 & 
 print(gg_ppv_ex)
 ```
 
-<p align="center">
-    <img src="/figures/bca_python_1_0.png" width="50%">
-    <img src="/figures/bca_python_1_2.png" width="50%">
-</p>
-
+ <table style="width:100%">
+    <tr>
+    <td>
+        <img src="/figures/bca_python_1_0.png" width="100%">
+    </td>
+    <td>
+        <img src="/figures/bca_python_1_2.png" width="100%">
+    </td>
+  </tr>
+</table>
+ 
 Though the asymptotic PPV curve is smooth (see Figure 1), the empirical PPV has is non-smooth (as Figure 2 shows). Our statistic of interest will be the value of the threshold that is needed to meet a targeted PPV. For the PPV curve, this amounts to the following:
 
 $$
