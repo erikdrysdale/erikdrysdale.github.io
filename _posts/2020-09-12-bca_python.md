@@ -27,7 +27,7 @@ X_1^*, \dots, X_n^* &\sim \hat{F}  \\
 \end{align*}
 $$
 
-The PPV is the ratio of the true positive rate (TPR) to the predicted positive rate (which includes the false positive rate (FPR)), weighted by the prevalence of the binary outcome: \\(\mu_y = E[y==1]\\). In this post we will assume that the scores of the classifier come from a normal distribution: \\(x|y=i \sim N(\mu_i,\sigma_i^2)\\), for \\(i=[1,2]\\). The distribution for the ground-truth PPV will be smooth and monotonically increasing over \\(t\\) since \\(\mu_y\\) is fixed, as defined by \eqref{eq:PPV_true}. However, its empirical estimate will necessarily by discontinuous, and not even necessarily monotonic! This is because the count of the number of TPs and FPs is used rather than the theoretical CDF and prevalence. Note that \\(\Phi\\) refers to the standard normal CDF.
+The PPV is the ratio of the true positive rate (TPR) to the predicted positive rate (which includes the false positive rate (FPR)), weighted by the prevalence of the binary outcome: \\(\mu_y = E[y==1]\\). In this post we will assume that the scores of the classifier come from a normal distribution: \\(x\|y=i \sim N(\mu_i,\sigma_i^2)\\), for \\(i=[1,2]\\). The distribution for the ground-truth PPV will be smooth and monotonically increasing over \\(t\\) since \\(\mu_y\\) is fixed, as defined by \eqref{eq:PPV_true}. However, its empirical estimate will necessarily by discontinuous, and not even necessarily monotonic! This is because the count of the number of TPs and FPs is used rather than the theoretical CDF and prevalence. Note that \\(\Phi\\) refers to the standard normal CDF.
 
 $$
 \begin{align*}
@@ -136,8 +136,10 @@ gg_ppv_ex = (ggplot(df_ex.query('thresh>0.5 & thresh<1.5 & ppv>0.25 & ppv<0.5 & 
 print(gg_ppv_ex)
 ```
 
-<p align="center"><img src="/figures/bca_python_1_0.png" width="75%"></p>
-<p align="center"><img src="/figures/bca_python_1_2.png" width="75%"></p>
+<p align="center">
+    <img src="/figures/bca_python_1_0.png" width="50%">
+    <img src="/figures/bca_python_1_2.png" width="50%">
+</p>
 
 Though the asymptotic PPV curve is smooth (see Figure 1), the empirical PPV has is non-smooth (as Figure 2 shows). Our statistic of interest will be the value of the threshold that is needed to meet a targeted PPV. For the PPV curve, this amounts to the following:
 
@@ -302,9 +304,9 @@ print(gg_bs)
 ```
 
 <br>
-<p align="center"><img src="/figures/bca_python_5_0.png" width="90%"></p>
+<p align="left"><img src="/figures/bca_python_5_0.png" width="90%"></p>
 <br>
-<p align="center"><img src="/figures/bca_python_5_2.png" width="100%"></p>
+<p align="left"><img src="/figures/bca_python_5_2.png" width="100%"></p>
 <br>   
 
 Figure 3 shows the range of thresholds that would be chosen by the `thresh_PPV` function for PPV different targets, along with the different realizations of the empirical PPV curves. The second figure takes the last draw of the data in the simulation and shows the variation in the threshold statistics generated in that bootstrapping instance. Unsurprisingly the latter has more variation, since the empirical PPV for this data is noisier. Figure 4 compares the distribution of a bootstrap instance with those of the point estimates from the simulation. Note these distributions are not statistically comparable, since the DGP is the true variation and the bootstrap distribution only comes from one example. The inference procedures needed to obtain statistically meaningful insights from the bootstrap distribution are be described below.

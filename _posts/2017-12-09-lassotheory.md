@@ -39,7 +39,7 @@ $$
  
 The coefficient vector of the Lasso is found by minimizing some convex loss function plus the L1-norm of the coefficients weighted by \\(\lambda\\), as equation \eqref{eq:lasso1} shows. This simple formulation can and has been extended, and there is now a [large family](https://en.wikipedia.org/wiki/Lasso_(statistics)#Generalizations_of_lasso) of Lasso-based estimators including the elastic net, group Lasso, fused Lasso estimators, \\(\sqrtl\\), and many others. 
  
-The choice of \\(\lambda\\) is crucial in determining the performance of the Lasso estimator. Too small a value leads a coefficient vector too-similar to least-squares leading to unacceptably high variance; and too large a value leads to a model with substantial bias. When the statistical learning task is simply to maximize generalization error, cross-validation can be employed. Alternatively, information-theoretic approaches [AIC/BIC/Stein's] can also be used, although these approaches are not exactly tailored for the Lasso.[[^2]]
+The choice of \\(\lambda\\) is crucial in determining the performance of the Lasso estimator. Too small a value leads a coefficient vector too-similar to least-squares leading to unacceptably high variance; and too large a value leads to a model with substantial bias. When the statistical learning task is simply to maximize generalization error, cross-validation can be employed. Alternatively, information-theoretic approaches (AIC/BIC/Stein's) can also be used, although these approaches are not exactly tailored for the Lasso.[[^2]]
  
 Are there any alternative approaches to selecting \\(\lambda\\) besides the two previously mentioned routes? The answer is yes, and it is largely thanks to the theoretical work of high-dimensional statistics which has flourished over the last decade. The recently published [Statistical Learning with Sparsity ](https://web.stanford.edu/~hastie/StatLearnSparsity/) (SLWS) represents a landmark text in the field. This post will consider how some simple theoretical properties of the Lasso allow for a disciplined choice of the regularization parameter that avoid traditional tuning approaches. There are three subsequent sections: (1) a discussion of how prediction bounds in the Lasso can be established by a specific choice of regularization parameter, (2) how the \\(\sqrtl\\) leverages these properties to provide an estimator that is invariant to Gaussian noise levels, and (3) an applied example on high-dimensional microarray data for 21 cancer types. 
  
@@ -232,7 +232,7 @@ While the update term for the \\(\sqrtl\\) is more complicated, the key point is
  
 Three metrics will be considered: 
  
-1. The receiver operator characteristic (ROC): i.e. the number of true positives (TPs) and false positives (FPs) selected by each model [sensitivity/specificity]
+1. The receiver operator characteristic (ROC): i.e. the number of true positives (TPs) and false positives (FPs) selected by each model sensitivity/specificity
 2. The accuracy of reconstructing \\(\bbetaz\\): \\(\\|\bbetah\_T - \bbetaz \\|_1\\), and well as it's error:  \\(\\|\bbetah\_{T^C}\\|_1\\)
 3. The generalization error, measured in MSE to see how well each manages the bias/variance trade-off
  
