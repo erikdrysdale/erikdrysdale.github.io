@@ -374,7 +374,7 @@ $$
 \end{align*}
 $$
 
-There are two terms which need to be estimated when using the BCa: 1) the acceleration parameter \\(\hat a\\), and 2) the bias-correction factor \\(\hat z_0\\). The other terms are deterministic: (\\\Phi\\) and \\(z_{\alpha}=\Phi^{-1}(\alpha)\\)). Notice if the acceleration and bias correction factors are zero, then \\(l=\alpha_1=\alpha\\) and \\(u=\alpha_2=1-\alpha\\), which is equivalent to the quantile bootstrap.[[^3]] 
+There are two terms which need to be estimated when using the BCa: 1) the acceleration parameter \\(\hat a\\), and 2) the bias-correction factor \\(\hat z_0\\). The other terms are deterministic: \(\\\Phi\\) and \\(z_{\alpha}=\Phi^{-1}(\alpha)\\). Notice if the acceleration and bias correction factors are zero, then \\(l=\alpha_1=\alpha\\) and \\(u=\alpha_2=1-\alpha\\), which is equivalent to the quantile bootstrap.[[^3]] 
 
 $$
 \begin{align*}
