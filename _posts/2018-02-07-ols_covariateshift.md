@@ -37,7 +37,7 @@ Since we can imagine various estimators/algorithms that could fit the data, \\(f
  
 $$
 \begin{align}
-\Err &= E[L(\by_T,\hat{f_S}(\bX_T))] \label{eq:err1}
+\Err &= E[L(\by_T,\hat{f_S}(\bX_T))] \tag{1}\label{eq:err1}
 \end{align}
 $$
  
@@ -143,7 +143,7 @@ The expected value of a random variable with a non-central F distribution makes 
 $$
 \begin{align}
 E[\MSE(\hat{f_S})] &= E_{\bx_s,x}[E[\MSE(\hat{f_S})|\bx_s,x]] \nonumber \\
-&= \sigma^2\Bigg( 1 + \frac{\sigma^2_x}{\sigma^2_S}\cdot \frac{1+(\mu_x/\sigma_x)^2}{N_S-2}\Bigg) \label{eq:err2}
+&= \sigma^2\Bigg( 1 + \frac{\sigma^2_x}{\sigma^2_S}\cdot \frac{1+(\mu_x/\sigma_x)^2}{N_S-2}\Bigg) \tag{2}\label{eq:err2}
 \end{align}
 $$
  

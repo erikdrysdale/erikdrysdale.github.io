@@ -38,7 +38,7 @@ Suppose there is some continuous phenotype \\(y_i\\) for individual \\(i\\) and 
  
 $$
 \begin{align}
-y_i &= \sum_{k=1}^m x_{ik} \beta_k + u_i \hspace{3mm} i=1,\dots,N  \label{eq:gen1} \\
+y_i &= \sum_{k=1}^m x_{ik} \beta_k + u_i \hspace{3mm} i=1,\dots,N  \tag{1}\label{eq:gen1} \\
 \text{var}(u_i) &< \infty, \hspace{3mm} cov(u_i,u_j)=0 \hspace{1mm} \forall i\neq j \nonumber
 \end{align}
 $$
@@ -51,7 +51,7 @@ Instead researchers test for the association between the trait and a genetic loc
  
 $$
 \begin{align}
-y_i &= x_{ik} \beta_k + e_i \hspace{3mm} i=1,\dots,N, \hspace{1mm} k=1,\dots,p  \label{eq:gen2} \\
+y_i &= x_{ik} \beta_k + e_i \hspace{3mm} i=1,\dots,N, \hspace{1mm} k=1,\dots,p  \tag{2}\label{eq:gen2} \\
 e_i &= \sum_{j\neq k}^m x_{ij} \beta_k x_{ij} + u_i \nonumber
 \end{align}
 $$
@@ -62,7 +62,7 @@ $$
 \begin{align}
 E(\bhatk) &= E\big( (\bxk' \bxk)^{-1} \bxk' \by \big) \nonumber \\
 &= E \Bigg(\beta_k + \sum_{j\neq k}^m \frac{\bxk'\bxk \beta_k}{\|\bxk \|_2^2} + \frac{\bxk'\bu}{\|\bxk \|_2^2} \Bigg) \nonumber \\
-&= \beta_k  + \sum_{j\neq k}^m \gamma_{kj}\beta_k \label{eq:gen3}
+&= \beta_k  + \sum_{j\neq k}^m \gamma_{kj}\beta_k \tag{3}\label{eq:gen3}
 \end{align}
 $$
  

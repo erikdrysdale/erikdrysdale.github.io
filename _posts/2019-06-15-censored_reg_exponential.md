@@ -287,7 +287,7 @@ Where \\(\bbeta_1\\) denotes that the norms are not calculated over the intercep
 
 $$
 \begin{align}
-\bbeta^{(t+1)} &= \arg\min_{\bbeta} \hspace{2mm} \frac{1}{2n} \|\tilde\by^{(t)} - \tilde\bX \bbeta)^T \|_2^2 + P_{\alpha;\lambda}(\bbeta)  % \label{eq:irls}
+\bbeta^{(t+1)} &= \arg\min_{\bbeta} \hspace{2mm} \frac{1}{2n} \|\tilde\by^{(t)} - \tilde\bX \bbeta)^T \|_2^2 + P_{\alpha;\lambda}(\bbeta)  % \tag{1}\label{eq:irls}
 \end{align}
 $$
 

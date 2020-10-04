@@ -39,7 +39,7 @@ $$
 \begin{align}
 &\text{Stratified log-partial likelihood} \nonumber \\
 \ell(\bbeta) &= \sum_{k=1}^K \ell_k(\bbeta) \nonumber \\
-\ell(\bbeta) &= \sum_{k=1}^K \Bigg\{ \sum_{i=1}^{N_k} \delta_{i,k} \Bigg[ \bx_{i,k}^T \bbeta - \log \Bigg(\sum_{j=1}^{N_k} y_{j,k}(t_{i,k}) \exp(\bx_{j,k}^T \bbeta) \Bigg) \Bigg] \Bigg\} \label{eq:stratacox}
+\ell(\bbeta) &= \sum_{k=1}^K \Bigg\{ \sum_{i=1}^{N_k} \delta_{i,k} \Bigg[ \bx_{i,k}^T \bbeta - \log \Bigg(\sum_{j=1}^{N_k} y_{j,k}(t_{i,k}) \exp(\bx_{j,k}^T \bbeta) \Bigg) \Bigg] \Bigg\} \tag{1}\label{eq:stratacox}
 \end{align}
 $$
  
@@ -119,7 +119,7 @@ To (re)establish the notation, suppose that we have \\(k=1,\dots,K\\) datasets e
 $$
 \begin{align}
 &\text{Transfer framework for stratified partial likelihood } \nonumber \\
-\ell (\bbeta) &= \frac{1}{N}\Bigg(\pi_T(\tau) \ell_1(\bbeta) +  \sum_{k=2}^K (1-\tau)\pi_k \ell_k(\bbeta)  \Bigg) \label{eq:trans_strat} \\
+\ell (\bbeta) &= \frac{1}{N}\Bigg(\pi_T(\tau) \ell_1(\bbeta) +  \sum_{k=2}^K (1-\tau)\pi_k \ell_k(\bbeta)  \Bigg) \tag{2}\label{eq:trans_strat} \\
 \pi_k &= \frac{N_k}{N}, \hspace{3mm} \sum_k N_k = N  \nonumber \\
 \pi_T(\tau) &= 1-(1-\tau)\pi_S, \hspace{3mm}  \pi_S = \sum_{k\neq T} \pi_k \nonumber
 \end{align}
@@ -132,7 +132,7 @@ For the inclusion of an elastic net penalty term we will need to add a term to a
 $$
 \begin{align}
 &\text{} \nonumber \\
-\mp\ell (\bbeta) &= -\frac{1}{N}\Bigg(\pi_T(\tau) \ell_1(\bbeta) +  \sum_{k=2}^K (1-\tau)\pi_k \ell_k(\bbeta)  \Bigg) + \frac{1}{2} (1-\alpha)\lambda \|\Gamma \bbeta \|_2^2 + \alpha \lambda \|\Gamma^2\bbeta \|_1 \label{eq:trans_enet}  \\
+\mp\ell (\bbeta) &= -\frac{1}{N}\Bigg(\pi_T(\tau) \ell_1(\bbeta) +  \sum_{k=2}^K (1-\tau)\pi_k \ell_k(\bbeta)  \Bigg) + \frac{1}{2} (1-\alpha)\lambda \|\Gamma \bbeta \|_2^2 + \alpha \lambda \|\Gamma^2\bbeta \|_1 \tag{3}\label{eq:trans_enet}  \\
 \Gamma^2 &= \text{diag}\Bigg(\sum_{d \in D_1} \pi_d, \dots, \sum_{d \in D_1} \pi_d  \Bigg), \hspace{3mm} D_j = \{k: \bX_{j,k} \neq  \boldsymbol{0} \} \nonumber
 \end{align}
 $$

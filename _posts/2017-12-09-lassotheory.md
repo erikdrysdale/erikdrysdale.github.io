@@ -33,7 +33,7 @@ Twenty years ago Tibshirani developed a penalized regression model known as the 
  
 $$
 \begin{align}
-\hat{\beta}^{\text{lasso}} &\in \arg \min_{\beta} \hspace{3mm} \underbrace{\ell(\beta;X)}_{\text{Convex loss-fun}} + \underbrace{\vphantom{\|a\|}\lambda}_{\text{penalty weight}} \cdot  \underbrace{\|\beta\|_1}_{\text{L1-norm}} \label{eq:lasso1}
+\hat{\beta}^{\text{lasso}} &\in \arg \min_{\beta} \hspace{3mm} \underbrace{\ell(\beta;X)}_{\text{Convex loss-fun}} + \underbrace{\vphantom{\|a\|}\lambda}_{\text{penalty weight}} \cdot  \underbrace{\|\beta\|_1}_{\text{L1-norm}} \tag{1}\label{eq:lasso1}
 \end{align}
 $$
  
@@ -63,7 +63,7 @@ $$
 \begin{align}
 \frac{1}{2N} \| \by - \bX\hat{\bbeta} \|_2^2 & \leq     \frac{1}{2N} \| \by - \bX\beta_0 \|_2^2 \nonumber \\
 \frac{1}{2N} \| \bX(\hat{\bbeta}-\bbeta_0) \|_2^2 &\leq \frac{1}{N} \be^T\bX (\hat{\bbeta}-\bbeta_0) \nonumber \\
-\frac{1}{2N} \| \bX(\hat{\bbeta}-\bbeta_0) \|_2^2 &\leq \frac{1}{N}\underbrace{\|\bX^T\be\|_2^2}_{\approx\text{variance}} \underbrace{\|\hat{\beta}-\beta_0\|_2^2}_{\approx\text{bias}} \hspace{3mm} \text{by Cauchy-Scwartz} \label{eq:pred_ols1}
+\frac{1}{2N} \| \bX(\hat{\bbeta}-\bbeta_0) \|_2^2 &\leq \frac{1}{N}\underbrace{\|\bX^T\be\|_2^2}_{\approx\text{variance}} \underbrace{\|\hat{\beta}-\beta_0\|_2^2}_{\approx\text{bias}} \hspace{3mm} \text{by Cauchy-Scwartz} \tag{2}\label{eq:pred_ols1}
 \end{align}
 $$
  
@@ -82,7 +82,7 @@ Where \\(\Lambda(\cdot)\\) refers to the eigenvalue of the matrix. The first pro
  
 $$
 \begin{align}
-\frac{\| X(\hat{\beta}-\beta_0) \|_2}{\sqrt{N}} &\leq 2\cdot \sigma  \sqrt{\frac{\Lambda_{\max}(X'X)}{\Lambda_{\min}(X'X)}} \sqrt{\frac{p}{N}} \frac{1}{\sqrt{\alpha}} \label{eq:pred_ols2}
+\frac{\| X(\hat{\beta}-\beta_0) \|_2}{\sqrt{N}} &\leq 2\cdot \sigma  \sqrt{\frac{\Lambda_{\max}(X'X)}{\Lambda_{\min}(X'X)}} \sqrt{\frac{p}{N}} \frac{1}{\sqrt{\alpha}} \tag{3}\label{eq:pred_ols2}
 \end{align}
 $$
  
@@ -160,7 +160,7 @@ $$
 \begin{align}
 P\Bigg( \max_{j=1,\dots,p} \frac{|\bX^T_je |}{N} > \frac{\lambda}{c}  \Bigg) &\leq p \max_{j=1,\dots,p} \cdot P\Bigg( \Bigg|\underbrace{\frac{1}{N} \sum_{i=1}^N x_{ij}e_i}_{N(0,\sigma^2/N)} \Bigg| > \frac{\lambda}{c}  \Bigg) \nonumber \\
 &\leq  2p \cdot \Bigg[1 - \Phi\Bigg(\frac{\lambda \sqrt{N}}{\sigma c} \Bigg) \Bigg] = \alpha \nonumber \\
-\lambda^{*} &= \frac{c\sigma}{\sqrt{N}} \Phi^{-1}\Bigg(1-\frac{\alpha}{2p}\Bigg) \label{eq:lam1}
+\lambda^{*} &= \frac{c\sigma}{\sqrt{N}} \Phi^{-1}\Bigg(1-\frac{\alpha}{2p}\Bigg) \tag{4}\label{eq:lam1}
 \end{align}
 $$
  
@@ -169,7 +169,7 @@ Substituting \\(\lambda^*\\) back into the prediction norm gives:
 $$
 \begin{align}
 \frac{\| \bX(\bbetah-\bbetaz)\|_2}{\sqrt{N}}
-&\leq 2 \cdot \sigma \cdot (c+1) \frac{1}{\kappa_{\bar{c}}} \sqrt{\frac{s}{N}} \Phi^{-1}\Bigg(1-\frac{\alpha}{2p}\Bigg) \label{eq:pred_lasso1}
+&\leq 2 \cdot \sigma \cdot (c+1) \frac{1}{\kappa_{\bar{c}}} \sqrt{\frac{s}{N}} \Phi^{-1}\Bigg(1-\frac{\alpha}{2p}\Bigg) \tag{5}\label{eq:pred_lasso1}
 \end{align}
 $$
  
@@ -199,7 +199,7 @@ $$
 \frac{\bX_j^Tu}{\sqrt{u^Tu}} &\sim \frac{N(0,1)}{\sqrt{\chi^2_N/N}} \sim t_N \nonumber \\
 &\text{Getting our bounds} \nonumber \\
 P\Bigg( \max_{j=1,\dots,p} \frac{|\bX^T_j u |}{\|u\|_2} > \frac{\lambda}{c}  \Bigg) &\leq 2p  \cdot \Bigg[1 - \Phi_t\Bigg(\frac{\lambda}{c} \Bigg) \Bigg] = \alpha \nonumber \\
-\lambda^{*} &= c \cdot  \Phi^{-1}_{t,N}\Bigg(1-\frac{\alpha}{2p}\Bigg) \label{eq:lam2}
+\lambda^{*} &= c \cdot  \Phi^{-1}_{t,N}\Bigg(1-\frac{\alpha}{2p}\Bigg) \tag{6}\label{eq:lam2}
 \end{align}
 $$
  
@@ -282,7 +282,7 @@ $$
 &\text{Calculate empirical CDF}  \nonumber \\
 \Gamma_\mathcal{M}(1-\alpha | \bX) &= (1-\alpha)-\text{CDF of } \Gamma_\mathcal{M}|\bX \nonumber \\
 &\text{Calculate empirical quantile} \nonumber \\
-\lambda^* &= c \cdot \Phi^{-1}_{\Gamma_\mathcal{M}}(1-\alpha | \bX) \label{eq:lam3}
+\lambda^* &= c \cdot \Phi^{-1}_{\Gamma_\mathcal{M}}(1-\alpha | \bX) \tag{7}\label{eq:lam3}
 \end{align}
 $$
  

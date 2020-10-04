@@ -48,9 +48,9 @@ Unfortunately the c-index is a non-convex loss function and hence its optimizati
 $$
 \begin{align}
 &\text{Partial Likelihood} \nonumber \\
-L(\bbeta) &= \prod_{i=1}^N \Bigg( \frac{e^{\bxi^T \bbeta}}{\sum_{j=1}^N y_j(t_i) e^{\bx_j^T \bbeta}} \Bigg)^{\delta_i} \label{eq:partial} \\
+L(\bbeta) &= \prod_{i=1}^N \Bigg( \frac{e^{\bxi^T \bbeta}}{\sum_{j=1}^N y_j(t_i) e^{\bx_j^T \bbeta}} \Bigg)^{\delta_i} \tag{1}\label{eq:partial} \\
 &\text{Partial Log-Likelihood} \nonumber \\
-\ell(\bbeta) &= \sum_{i=1}^N \delta_i \Bigg\{ \bxi^T \bbeta - \log \Bigg[\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta) \Bigg] \Bigg\} \label{eq:logpartial}
+\ell(\bbeta) &= \sum_{i=1}^N \delta_i \Bigg\{ \bxi^T \bbeta - \log \Bigg[\sum_{j=1}^N y_j(t_i) \exp(\bx_j^T \bbeta) \Bigg] \Bigg\} \tag{2}\label{eq:logpartial}
 \end{align}
 $$
  
@@ -76,7 +76,7 @@ $$
 \vdots & \cdots & \vdots \nonumber \\ 
 x_{1p} & \cdots & x_{Np} \end{bmatrix} = \bX^T \nonumber \\
 \frac{\partial \ell(\bbeta)}{\partial \bbeta} &= \frac{\partial \eta}{\partial \bbeta^T} \frac{\ell(\bbeta)}{\partial \eta} \nonumber \\
-&= \bX^T (\bdelta - \bP \bdelta) \label{eq:coxgrad}
+&= \bX^T (\bdelta - \bP \bdelta) \tag{3}\label{eq:coxgrad}
 \end{align}
 $$
  

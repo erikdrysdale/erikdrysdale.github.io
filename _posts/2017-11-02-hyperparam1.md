@@ -72,8 +72,8 @@ The bi-level optimization problem [can be formulated as follows](https://timviei
  
 $$
 \begin{align}
-\arg \min_{\lambda \in \mathcal{D}} \hspace{3mm} & \LT(\bbetah(\lambda,\bXR,\byR),\bXT,\byT) \label{eq:bi1} \\
-\text{s.t.} \hspace{3mm} &\bbetah \in \arg \min_{\bbeta \in \Real^p } \hspace{3mm} \LR(\bbeta,\bXR,\byR) + P(\lambda,\bbeta) \label{eq:bi2}
+\arg \min_{\lambda \in \mathcal{D}} \hspace{3mm} & \LT(\bbetah(\lambda,\bXR,\byR),\bXT,\byT) \tag{1}\label{eq:bi1} \\
+\text{s.t.} \hspace{3mm} &\bbetah \in \arg \min_{\bbeta \in \Real^p } \hspace{3mm} \LR(\bbeta,\bXR,\byR) + P(\lambda,\bbeta) \tag{2}\label{eq:bi2}
 \end{align}
 $$
  
@@ -81,7 +81,7 @@ Or alternatively:
  
 $$
 \begin{align}
-\hlam &= \arg \min_{\lambda \in \mathcal{D}} \hspace{3mm} \LT\Bigg( \Bigg\{  \arg \min_{\bbeta \in \Real^p } \hspace{3mm} \LR(\bbeta,\bXR,\byR) + P(\lambda,\bbeta)\Bigg\},\bXT,\byT\Bigg) \label{eq:minmin} \\
+\hlam &= \arg \min_{\lambda \in \mathcal{D}} \hspace{3mm} \LT\Bigg( \Bigg\{  \arg \min_{\bbeta \in \Real^p } \hspace{3mm} \LR(\bbeta,\bXR,\byR) + P(\lambda,\bbeta)\Bigg\},\bXT,\byT\Bigg) \tag{3}\label{eq:minmin} \\
 &= \arg \min_{\lambda \in \mathcal{D}} \hspace{3mm} \LT ( \bbetah(\lambda) ) \nonumber
 \end{align}
 $$
@@ -99,7 +99,7 @@ Because any value of \\(\lambda\\) is awarded a unique \\(\bbetah\\), to be able
  
 $$
 \begin{align}
-\frac{\partial \LT(\bbetah)}{\partial \bbetah} \frac{\partial \bbetah}{\partial \lambda} &= 0 \label{eq:deriv}
+\frac{\partial \LT(\bbetah)}{\partial \bbetah} \frac{\partial \bbetah}{\partial \lambda} &= 0 \tag{4}\label{eq:deriv}
 \end{align}
 $$
  
@@ -189,7 +189,7 @@ We can now plug in the analytical solution for equation \eqref{eq:deriv} for the
 $$
 \begin{align}
 \frac{\partial \LT(\bbetah(\lambda,\bXR,\byR),\bXT,\byT)}{\partial \lambda} &= - (\bXT' (\byT - \bXT \bbetahl))' \frac{\bbetahl}{\partial \lambda} \nonumber \\
-&= (\byT - \bXT \bbetahl)^T \bXT'  \bV \hone \text{diag} \Bigg\{ \frac{d_{ii}^2}{(\lambda + d_{ii}^2)^2} \Bigg\} \bV^T \bbetah^{\text{ols}} \label{eq:ridge_deriv} \\
+&= (\byT - \bXT \bbetahl)^T \bXT'  \bV \hone \text{diag} \Bigg\{ \frac{d_{ii}^2}{(\lambda + d_{ii}^2)^2} \Bigg\} \bV^T \bbetah^{\text{ols}} \tag{5}\label{eq:ridge_deriv} \\
 &= 0 \nonumber  \\
 \end{align}
 $$

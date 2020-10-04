@@ -79,7 +79,7 @@ $$
 \begin{align}
 l(\beta|\textbf{y}) &= \log L(\beta|\textbf{y}) \nonumber \\
 &= \sum_{i=1}^N \Big\{ y_i \log [p(x_i;\beta)] + (1-y_i) \log [1-p(x_i;\beta)] \Big\} \nonumber \\
-&= \sum_{i=1}^N \Big\{ y_i [\beta^T x_i] - \log [1+\exp\{\beta^Tx_i \}] \Big\} \label{eq:ll}
+&= \sum_{i=1}^N \Big\{ y_i [\beta^T x_i] - \log [1+\exp\{\beta^Tx_i \}] \Big\} \tag{1}\label{eq:ll}
 \end{align}
 $$
  
@@ -88,9 +88,9 @@ The classical approach for multivariate numerical estimation relies on the gradi
 $$
 \begin{align}
 [S(\beta)]_j &= \frac{\partial l(\beta|\textbf{y})}{\partial \beta_j} \nonumber \\
-&= \sum_{i=1}^N \Bigg[ \Bigg(y_i - \overbrace{\frac{\exp\{\beta^Tx_i \}}{1+\exp\{\beta^Tx_i \}}}^{p(x_i;\beta)}\Bigg)x_{ij} \Bigg] \label{eq:scorej} \\
+&= \sum_{i=1}^N \Bigg[ \Bigg(y_i - \overbrace{\frac{\exp\{\beta^Tx_i \}}{1+\exp\{\beta^Tx_i \}}}^{p(x_i;\beta)}\Bigg)x_{ij} \Bigg] \tag{2}\label{eq:scorej} \\
 [H(\beta)]_{jk} &= \frac{\partial^2l(\beta|\textbf{y})}{\partial \beta_j\partial \beta_k} \nonumber \\
-&= - \sum_{i=1}^N \overbrace{\frac{\exp\{\beta^Tx_i \}}{1+\exp\{\beta^Tx_i \}}}^{p(x_i;\beta)} \overbrace{\frac{1}{1+\exp\{\beta^Tx_i \}}}^{1-p(x_i;\beta)} x_{ij}x_{ik} \label{eq:hessjk}
+&= - \sum_{i=1}^N \overbrace{\frac{\exp\{\beta^Tx_i \}}{1+\exp\{\beta^Tx_i \}}}^{p(x_i;\beta)} \overbrace{\frac{1}{1+\exp\{\beta^Tx_i \}}}^{1-p(x_i;\beta)} x_{ij}x_{ik} \tag{3}\label{eq:hessjk}
 \end{align}
 $$
  
@@ -111,7 +111,7 @@ $$
 \begin{align}
 [S(\beta)]_j &= \sum_{i=1}^N \{ [y_i - p(x_i;\beta)]x_{ij} \} \nonumber \\
  &= \mathbf{X}_j^T[\mathbf{y}-\mathbf{p}] \nonumber \\
-S(\beta) &= \mathbf{X}^T[\mathbf{y}-\mathbf{p}] \label{eq:score}
+S(\beta) &= \mathbf{X}^T[\mathbf{y}-\mathbf{p}] \tag{4}\label{eq:score}
 \end{align}
 $$
  
@@ -124,7 +124,7 @@ $$
 \begin{pmatrix} p_1(1-p_1) & & \mathbf{0} \\ & \ddots & \\ \mathbf{0} &  & p_N(1-p_N) \end{pmatrix}
 \begin{bmatrix} x_{1k} \\ \vdots \\ x_{Nk} \end{bmatrix} \nonumber \\
 &= - \mathbf{X}_j^T \mathbf{W} \mathbf{X}_k \nonumber \\
-H(\beta) &= - \mathbf{X}^T \mathbf{W} \mathbf{X} \label{eq:hess}
+H(\beta) &= - \mathbf{X}^T \mathbf{W} \mathbf{X} \tag{5}\label{eq:hess}
 \end{align}
 $$
  
@@ -134,7 +134,7 @@ $$
 \begin{align}
 \nabla l(\beta) &\approx \nabla l(\beta_0) +  H(\beta_0) (\beta-\beta_0) = 0 \nonumber \\
 \beta &= \beta_0 - [H(\beta_0)]^{-1}\nabla l(\beta_0) \nonumber \\
-\beta^{\text{new}} &= \beta^{\text{old}} - [H(\beta^{\text{old}})]^{-1} S(\beta^{\text{old}}) \label{eq:nr}
+\beta^{\text{new}} &= \beta^{\text{old}} - [H(\beta^{\text{old}})]^{-1} S(\beta^{\text{old}}) \tag{6}\label{eq:nr}
 \end{align}
 $$
  
@@ -209,7 +209,7 @@ An alternative approach which yields identical results is to substitute  in \\(\
 $$
 \begin{align}
 \beta^{\text{new}} &= \beta^{\text{old}} + (\mathbf{X}^T\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^T(\mathbf{y}-\mathbf{p}) \nonumber \\
-&= (\mathbf{X}^T\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{W}\mathbf{z} \label{eq:irls} \\
+&= (\mathbf{X}^T\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{W}\mathbf{z} \tag{7}\label{eq:irls} \\
 \underset{\text{Adj. resp.}}{\mathbf{z}} &= \mathbf{X}\beta^{\text{old}} + \mathbf{W}^{-1}(\mathbf{y}-\mathbf{p}) \nonumber
 \end{align}
 $$

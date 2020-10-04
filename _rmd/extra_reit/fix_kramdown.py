@@ -15,19 +15,28 @@ if not os.path.exists(dir_output):
 fn_posts = pd.Series(os.listdir(dir_posts))
 fn_posts = fn_posts[fn_posts.str.contains('^[0-9]')].to_list()
 
+holder = []
 for ii, fn in enumerate(fn_posts):
     print('Post: %s (%i of %i)' % (fn, ii+1, len(fn_posts)))
     connection = open(os.path.join(dir_posts, fn), 'r')
     lines = pd.Series(connection.readlines())
     connection.close()
-    eq = lines[lines.str.contains('eqref')]
-    if len(eq) > 0:
-        print(eq)
+    eq_labels = lines[lines.str.contains('\\\\label\\{eq\\:')]
+    if len(eq_labels) > 0:
+        print('Has label/eqref')
+        tick = 0
+        for kk, eq in eq_labels.iteritems():
+            if eq.split('\\label')[0][-1] == ' ':
+                print('Needs tag')
+                tick += 1
+                rep = '\\tag{'+str(tick)+'}\\label'
+                lines[kk] = eq.replace('\\label', rep)
+            else:
+                print('Already has tag')
+
     # Remove double $ dollars temporarily
     lines = lines.str.replace('\\${2}', '@@')
-    # Replace dollar signs
-    # if len(lines[lines.str.contains('\\\\\\$')].to_list()) >0 :
-    #     break
+    # Replace currency dollar signs
     lines = lines.str.replace('\\\\\\$', '~~')
 
     should_skip = False

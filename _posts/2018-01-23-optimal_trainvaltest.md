@@ -92,10 +92,10 @@ Now consider this question: how many observations should I put aside in \\(N_T\\
 $$
 \begin{align}
 &\text{BPCI} \nonumber \\
-N_T &= \frac{4 z_{1-\alpha/2}^2 \hat{p}(1-\hat{p})}{\epsilon^2} \label{eq:bcpi}  \\
+N_T &= \frac{4 z_{1-\alpha/2}^2 \hat{p}(1-\hat{p})}{\epsilon^2} \tag{1}\label{eq:bcpi}  \\
 \nonumber \\
 &\text{Hoeffding's ineq.} \nonumber \\
-N_T &= \frac{\log(2/\alpha)}{2\epsilon^2} \label{eq:hoeffding}
+N_T &= \frac{\log(2/\alpha)}{2\epsilon^2} \tag{2}\label{eq:hoeffding}
 \end{align}
 $$
  

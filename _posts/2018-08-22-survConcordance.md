@@ -22,7 +22,7 @@ When comparing the performance of an individual or competing group of survival m
 $$
 \begin{align}
 C(\etab) &= \frac{1}{D} \sum_{i: \delta_i=1} \sum_{\hspace{2mm}j:\hspace{1mm} T_j > T_i} I[\eta_i > \eta_j] \nonumber \\
-&= \frac{1}{D} \sum_{i=1}^N \sum_{j=1}^N \delta_i \cdot Y_j(t_i) \cdot I[\eta_i > \eta_j] \label{eq:c_exact} \\
+&= \frac{1}{D} \sum_{i=1}^N \sum_{j=1}^N \delta_i \cdot Y_j(t_i) \cdot I[\eta_i > \eta_j] \tag{1}\label{eq:c_exact} \\
 &\hspace{2mm} Y_j(t_i) = I[ T_j > T_i ] \nonumber
 \end{align}
 $$
@@ -104,7 +104,7 @@ Because the C-index is sum of indicator functions, which are discrete, its optim
  
 $$
 \begin{align}
-\tilde{C}(\etab) &= \frac{1}{D} \sum_{i=1}^N \sum_{j=1}^N \delta_i \cdot  Y_j(t_i) \cdot [1 + \log(\sigma(\eta_i-\eta_j))/\log2] \label{eq:c_approx} \\
+\tilde{C}(\etab) &= \frac{1}{D} \sum_{i=1}^N \sum_{j=1}^N \delta_i \cdot  Y_j(t_i) \cdot [1 + \log(\sigma(\eta_i-\eta_j))/\log2] \tag{2}\label{eq:c_approx} \\
 \sigma(x) &= \frac{1}{1+\exp(-x)} \nonumber
 \end{align}
 $$
@@ -128,7 +128,7 @@ $$
 \begin{align}
 \frac{\partial \tilde{C}(\betab)}{\partial \betab} &= \Bigg(\frac{\partial \etab}{\partial \betab^T}\Bigg)^T \frac{\partial \tilde{C}(\etab)}{\partial \etab} \nonumber \\
 &= \Xb^T \frac{\partial \tilde{C}(\etab)}{\partial \etab} \nonumber  \\
-&= \sum_{i=1}^N \xbi \Bigg[ \underbrace{\delta_i \cdot \sum_{k: Y_k(t_i)=1} [1-\sigma(\eta_i - \eta_k)]}_{(a)} - \underbrace{\sum_{j: Y_i(t_j)=1} \delta_j \cdot [1-\sigma(\eta_j - \eta_i)]}_{(b)} \Bigg] \label{eq:c_deriv}
+&= \sum_{i=1}^N \xbi \Bigg[ \underbrace{\delta_i \cdot \sum_{k: Y_k(t_i)=1} [1-\sigma(\eta_i - \eta_k)]}_{(a)} - \underbrace{\sum_{j: Y_i(t_j)=1} \delta_j \cdot [1-\sigma(\eta_j - \eta_i)]}_{(b)} \Bigg] \tag{3}\label{eq:c_deriv}
 \end{align}
 $$
  

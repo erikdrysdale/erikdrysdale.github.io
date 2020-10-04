@@ -44,7 +44,7 @@ The form that the [logistic regression](https://en.wikipedia.org/wiki/Logistic_r
  
 $$
 \begin{align}
-\log \Bigg( \frac{Pr(X_i=x_i|\bZi=\bzi)}{1-P(X_i=x_i|\bZi=\bzi)}  \Bigg) &= \bmu^T\bzi \label{eq:logit} \\
+\log \Bigg( \frac{Pr(X_i=x_i|\bZi=\bzi)}{1-P(X_i=x_i|\bZi=\bzi)}  \Bigg) &= \bmu^T\bzi \tag{1}\label{eq:logit} \\
 \end{align}
 $$
  
@@ -72,7 +72,7 @@ The second step is to estimate a Cox PH model with only a single covariate using
  
 $$
 \begin{align}
-h(t;\boldsymbol z) &= h_0(t) \exp\{\boldsymbol\gamma^T \boldsymbol z \} \label{eq:cox}
+h(t;\boldsymbol z) &= h_0(t) \exp\{\boldsymbol\gamma^T \boldsymbol z \} \tag{2}\label{eq:cox}
 \end{align}
 $$
  
@@ -130,8 +130,8 @@ There are actually two approaches that can be used to adjust the KM survival cur
  
 $$
 \begin{align}
-  \hat{S}_{x}(t_j) &= \hat{S}_{0,x}(t_j) \hspace{2cm} \text{Stratified approach} \label{eq:stratified}  \\
-\hat{S}(t_j) &= [\hat{S}_0(t_j)]^{\exp\{\hat{\beta} x \}} \hspace{7mm} \text{Marginal approach} \label{eq:marginal}  \\
+  \hat{S}_{x}(t_j) &= \hat{S}_{0,x}(t_j) \hspace{2cm} \text{Stratified approach} \tag{3}\label{eq:stratified}  \\
+\hat{S}(t_j) &= [\hat{S}_0(t_j)]^{\exp\{\hat{\beta} x \}} \hspace{7mm} \text{Marginal approach} \tag{4}\label{eq:marginal}  \\
 &\text{For } x=\{0,1\} \nonumber
 \end{align}
 $$

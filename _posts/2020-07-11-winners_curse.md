@@ -123,7 +123,7 @@ Notice that the **smallest observable and statistically significant** mean diffe
 &\sim TN(d, \sigma^2 / n, \sigma \cdot c_\alpha / \sqrt{n}, \infty) \nonumber \\\\\\\\
 a &= \frac{l - \mu}{\sigma} = c_\alpha - \sqrt{n}\cdot d / \sigma = \Phi^{-1}(\beta) \nonumber \\\\\\\\
 E[\bar d^*] &= d + \frac{\phi(a)}{1 - \Phi(a)} \cdot (\sigma/\sqrt{n}) \nonumber \\\\\\\\
-&= d + \underbrace{\frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{\sqrt{n}(1 - \beta)}}_{\text{bias}} \label{eq:power}
+&= d + \underbrace{\frac{\sigma \cdot \phi(\Phi_\beta^{-1})}{\sqrt{n}(1 - \beta)}}_{\text{bias}} \tag{1}\label{eq:power}
 \end{align}
 
 The bias of the truncated Gaussian is shown to be related to a handful of statistical parameters including the power of the test! The bias can also be expressed as a ratio of the mean of the statistically significant effect size to the true one, what I will call the bias ratio,
@@ -328,7 +328,7 @@ If the true effect size were known, then it would be possible to explicitly calc
 
 $$
 \begin{align}
-d^* &= \arg\min_d \hspace{2mm} \Bigg[ \hat{\bar d}^* - \Bigg( d + \frac{\phi(c_\alpha-\sqrt{n}\cdot d/\sigma)}{1 - \Phi(c_\alpha-\sqrt{n}\cdot d/\sigma)} \cdot (\sigma/\sqrt{n}) \Bigg) \Bigg]^2 \label{eq:MLE}
+d^* &= \arg\min_d \hspace{2mm} \Bigg[ \hat{\bar d}^* - \Bigg( d + \frac{\phi(c_\alpha-\sqrt{n}\cdot d/\sigma)}{1 - \Phi(c_\alpha-\sqrt{n}\cdot d/\sigma)} \cdot (\sigma/\sqrt{n}) \Bigg) \Bigg]^2 \tag{2}\label{eq:MLE}
 \end{align}
 $$
 
@@ -432,7 +432,7 @@ A better approach I have devised is to weight the statistically significant obse
 $$
 \begin{align}
 b_0 &= \frac{\sigma}{\sqrt{n}} \frac{\phi(c_\alpha)}{\Phi(-c_\alpha)} = \text{bias}(\bar d^* | d=0) \nonumber \\
-d^* &= \bar d^* - 2\cdot[1 - F_{\bar d>c_\alpha\sigma/\sqrt{n}}(\bar d^*|d=0)] \cdot b_0 \label{eq:deflator}
+d^* &= \bar d^* - 2\cdot[1 - F_{\bar d>c_\alpha\sigma/\sqrt{n}}(\bar d^*|d=0)] \cdot b_0 \tag{3}\label{eq:deflator}
 \end{align}
 $$
 
