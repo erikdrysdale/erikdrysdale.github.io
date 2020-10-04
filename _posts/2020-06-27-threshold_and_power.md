@@ -164,7 +164,7 @@ gg_bs
 
 <p align="center"><img src="/figures/power_calc_phn_6_0.png" width="60%"></p>
 
-An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier \\(R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]\\). This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the \\(r^{th}\\) rank-order statistic from the distribution of positive labels: \\(\hat\psi_r\\) is the r-th order statistic: \\(p_{(1)}^1 \leq p_{(2)}^1 \leq ... \leq p_{(n)}^1\\). The umbrella algorithm appeals to a slight modification the CDF of rank-order statistics:
+An alternative to the BCa bootstrap is to use Neyman-Pearson umbrella (NP-Umbrella) algorithm detailed in [*Tong et al* (2018)](https://advances.sciencemag.org/content/4/2/eaao1659). Define the Type-II error risk of a classifier \\(R(\psi(f)) = E[\hat \psi(f(x)) \neq y \| y=1]\\). This is equivalent to 1 minus the sensitivity. Next assume that the classifier uses the \\(r^{th}\\) rank-order statistic from the distribution of positive labels: \\(\hat\{\psi\}_r\\) is the r-th order statistic: \\(p_{(1)}^1 \leq p_{(2)}^1 \leq ... \leq p_{(n)}^1\\). The umbrella algorithm appeals to a slight modification the CDF of rank-order statistics:
 
 $$
 \begin{align*}
