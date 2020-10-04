@@ -13,3 +13,5 @@ package.json
 *.idea
 *__pycache__*
 *.h5
+
+*.csv
