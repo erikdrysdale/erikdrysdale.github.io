@@ -4,7 +4,7 @@ REPLACE ALL $...$ WITH \\(...\\)
 
 import os
 import pandas as pd
-import re
+from datetime import datetime
 
 dir_base = os.getcwd()
 dir_posts = os.path.join(dir_base, '..', '..', '_posts')
@@ -13,9 +13,11 @@ if not os.path.exists(dir_output):
     os.mkdir(dir_output)
 
 fn_posts = pd.Series(os.listdir(dir_posts))
-fn_posts = fn_posts[fn_posts.str.contains('^[0-9]')].to_list()
+fn_posts = fn_posts[fn_posts.str.contains('^[0-9]')]
+date_posts = pd.to_datetime(fn_posts.str.split('\\-[A-Za-z]',1,True).iloc[:,0])
+yy_mm = pd.to_datetime('2020-09-01') #str(datetime.today().year)+'-'+str(datetime.today().month)+'-01'
+fn_posts = fn_posts[date_posts >= yy_mm].to_list()
 
-holder = []
 for ii, fn in enumerate(fn_posts):
     print('Post: %s (%i of %i)' % (fn, ii+1, len(fn_posts)))
     connection = open(os.path.join(dir_posts, fn), 'r')
@@ -33,7 +35,6 @@ for ii, fn in enumerate(fn_posts):
                 lines[kk] = eq.replace('\\label', rep)
             else:
                 print('Already has tag')
-
     # Remove double $ dollars temporarily
     lines = lines.str.replace('\\${2}', '@@')
     # Replace currency dollar signs
