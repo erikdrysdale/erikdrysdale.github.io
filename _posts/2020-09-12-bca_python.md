@@ -146,7 +146,7 @@ print(gg_ppv_ex)
     </td>
   </tr>
 </table>
- 
+
 Though the asymptotic PPV curve is smooth (see Figure 1), the empirical PPV has is non-smooth (as Figure 2 shows). Our statistic of interest will be the value of the threshold that is needed to meet a targeted PPV. For the PPV curve, this amounts to the following:
 
 $$
@@ -334,7 +334,7 @@ P(\theta_u \geq \theta) &= 1-\alpha,
 \end{align*}
 $$
 
-Depending on whether it is an upper or lower bound. One-sided CIs are used when the direction of statistic is known. Using the running example of the PPV, if the researcher wants to establish that the PPV as *at least* some amount, say 50%, then it would be desirable to find a upper-bound of the threshold, \\(t_u\\) such that: \\(P(t_u \geq t^{*}(p)) = 1-\alpha\\). If \\(t_u > t^{*}(p)\\) from \eqref{eq:tstar}, then \\(PPV_\Phi(t_u) > p\\) from \eqref{eq:PPV_true}. 
+Depending on whether it is an upper or lower bound. One-sided CIs are used when the direction of statistic is known. Using the running example of the PPV, if the researcher wants to establish that the PPV as *at least* some amount, say 50%, then it would be desirable to find a upper-bound of the threshold, \\(t_u\\) such that: \\(P(t_u \geq t^{\*}(p)) = 1-\alpha\\). If \\(t_u > t^{\*}(p)\\) from \eqref{eq:tstar}, then \\(PPV_\Phi(t_u) > p\\) from \eqref{eq:PPV_true}. 
 
 There are several reasons why the bootstrap distribution of statistics will not provide the right coverage. First, the ECDF is an approximation of the CDF which introduces sampling error. Second, the bootstrap statistic may be biased. When the average of the bootstrapped statistics will differ in expectation to the original statistic \\(E[\bar\theta^* - \hat\theta] \neq 0\\), the bootstrap is said to be biased. This phenomenon can arise for any statistic with [finite-sample bias](https://en.wikipedia.org/wiki/Bias_of_an_estimator). Since sampling with replacement is equivalent to generating a statistic with fewer observations, finite sampling bias will be seen indirectly through this mechanism.[[^2]] Third, the distribution of a (bootstrapped) statistic may be [skewed](https://en.wikipedia.org/wiki/Skewness), which will cause symmetric CIs to be erroneous. 
 
@@ -352,7 +352,7 @@ The variance of the statistic \\(\sigma\\) is simply estimated from the bootstra
 
 ### Approach #2: Quantile Bootstrap
 
-If we rank order the realizations of the bootstrap statistics: \\(\theta^*_{(1)} \leq \theta^*_{(2)} \leq \dots \leq \theta^*_{(n)}\\), then the quantile bootstrap simply returns the empirical quantiles for the \\(\alpha/2\\) and \\(1-\alpha/2\\) percentiles as the confidence intervals.
+If we rank order the realizations of the bootstrap statistics: \\(\theta_{(1)}^{\*} \leq \theta_{(2)}^{\*} \leq \dots \leq \theta_{(n)}^{\*}\\), then the quantile bootstrap simply returns the empirical quantiles for the \\(\alpha/2\\) and \\(1-\alpha/2\\) percentiles as the confidence intervals.
 
 $$
 \begin{align*}
@@ -374,7 +374,7 @@ $$
 \end{align*}
 $$
 
-There are two terms which need to be estimated when using the BCa: 1) the acceleration parameter \\(\hat{a}\\), and 2) the bias-correction factor \\(\hat{z}_0\\). The other terms are deterministic: (\\(\Phi\\) and \\(z_\alpha=\Phi^{-1}(\alpha)\\)). Notice if the acceleration and bias correction factors are zero, then \\(l=\alpha_1=\alpha\\) and \\(u=\alpha_2=1-\alpha\\), which is equivalent to the quantile bootstrap.[[^3]] 
+There are two terms which need to be estimated when using the BCa: 1) the acceleration parameter \\(\hat a\\), and 2) the bias-correction factor \\(\hat z_0\\). The other terms are deterministic: (\\\Phi\\) and \\(z_{\alpha}=\Phi^{-1}(\alpha)\\)). Notice if the acceleration and bias correction factors are zero, then \\(l=\alpha_1=\alpha\\) and \\(u=\alpha_2=1-\alpha\\), which is equivalent to the quantile bootstrap.[[^3]] 
 
 $$
 \begin{align*}

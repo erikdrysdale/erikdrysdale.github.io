@@ -103,7 +103,7 @@ for ii in range(nsim):
     
 df_sim = pd.DataFrame({'thresh':thresh_seq, 'theory':theory_seq, 'emp':np.nanmean(mat,0)}).melt('thresh',None,'tt')
 
-plotnine.options.figure_size = (4, 3.5)
+plotnine.options.figure_size = (4.5, 3.5)
 gg_theory = (ggplot(df_sim, aes(x='thresh', y='value', color='tt')) + theme_bw() + 
             geom_point() + labs(x='Threshold', y='PPV') + 
             ggtitle('Figure 1: Simulated vs Theoretical PPV') + 
@@ -118,11 +118,11 @@ yy, xx = tuple(df_ex.query('ppv<0.4').tail(1).values.flatten())
 yend, xend = tuple(df_ex.query('ppv>0.4').head(1).values.flatten())
 xstar = (0.4-yy)/((yend - yy)/(xend - xx))+xx
 
-plotnine.options.figure_size = (4,3.5)
+plotnine.options.figure_size = (4.5,3.5)
 gg_ppv_ex = (ggplot(df_ex.query('thresh>0.5 & thresh<1.5 & ppv>0.25 & ppv<0.5 & ppv!=0.4'),aes(x='thresh',y='ppv')) + 
              theme_bw() + geom_step() + 
             labs(x='Threshold', y='PPV') + 
-            ggtitle('Figure 2: Empirical PPV interpolation (40% PPV target)') + 
+            ggtitle('Figure 2: Empirical PPV interpolation') + 
             geom_segment(x=xx,xend=xend,y=yy,yend=yend,color='red') + 
             geom_hline(yintercept=0.4,color='blue',linetype='--') + 
             geom_vline(xintercept=xstar,color='darkgreen',linetype='--'))
