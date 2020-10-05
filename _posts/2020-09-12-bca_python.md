@@ -7,9 +7,9 @@ status: publish
 mathjax: true
 ---
 
-The [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)) is a powerful tool for carrying out inference on statistics whose distribution is unknown. The non-parametric version of the bootstrap obtains variation around the point estimate of a statistic by randomly resampling the data with replacement and recalculating the bootstrap-statistic based on these resamples. This simulated distribution can be used to obtain (close-to) valid frequentist inference measures like p-values and confidence intervals (CIs). This post will show how to implement the bias-corrected and accelerated ([BCa](https://www.tandfonline.com/doi/abs/10.1080/01621459.1987.10478410)) bootstrap to calculate either one and two-sided CIs. A good discussion of bootstrapped p-values can be found [here](http://qed.econ.queensu.ca/working_papers/papers/qed_wp_1127.pdf). Nathaniel Helwig's excellent class [notes](http://users.stat.umn.edu/~helwig/notes/bootci-Notes.pdf) are used or paraphrased throughout this post.
+The [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)) is a powerful tool for carrying out inference on statistics whose distribution is unknown. The non-parametric version of the bootstrap obtains variation around the point estimate of a statistic by randomly resampling the data with replacement and recalculating the bootstrap-statistic based on these resamples. This simulated distribution can be used to obtain (close-to) valid frequentist inference measures like p-values and confidence intervals (CIs). This post will show how to implement the bias-corrected and accelerated ([BCa](https://www.tandfonline.com/doi/abs/10.1080/01621459.1987.10478410)) bootstrap to calculate either one and two-sided CIs. For a good overview of bootstrapped p-values, which are not discussed in this post, see [here](http://qed.econ.queensu.ca/working_papers/papers/qed_wp_1127.pdf). Nathaniel Helwig's excellent class [notes](http://users.stat.umn.edu/~helwig/notes/bootci-Notes.pdf) are used or paraphrased throughout this post.
 
-If you are want to use an existing `python` package, [`arch`](https://arch.readthedocs.io/en/latest) is an excellent choice (I have made use of it in other [posts](http://www.erikdrysdale.com/threshold_and_power)). There are two advantages for implementing a custom procedure. First, `arch` is limited to a number of sampling strategies, and I recently found myself needing to implement a stratified bootstrap, which I could not do with the package. Second, the `conf_int` method only allows inference for a specific level (i.e. type-I error rate) for every sampling run. If you are carrying out statistical simulations this is a huge waste since computing the 90% or 95% CI can be done from the same bootstrap simulation. Lastly this blueprint can modified for other uses.
+If you are want to use an existing `python` package to carry out the bootstrap, [`arch`](https://arch.readthedocs.io/en/latest) is an excellent choice (I have made use of it in other [posts](http://www.erikdrysdale.com/threshold_and_power)). There are two advantages for implementing a custom procedure. First, `arch` is limited to a number of sampling strategies, and I recently found myself needing to implement a stratified bootstrap, which I could not do with the package. Second, the `conf_int` method only allows inference for a specific level (i.e. type-I error rate) for every sampling run. If you are carrying out statistical simulations this is a huge waste since computing the 90% or 95% CI can be done from the same bootstrap simulation. Lastly this blueprint can modified for other uses.
 
 The motivating example for this post will be to estimate the threshold for determining the positive predictive value ([PPV](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)) of a classifier. This statistic is a good target for the BCa bootstrap because its distribution is skewed, biased, and non-normal. Anyone developing machine learning tools for the real world will understand the importance of [this task](http://www.erikdrysdale.com/threshold_and_power/), since researchers want to ensure their algorithms obtain *at least* some level of performance in a generalized setting. For simplicity the scores of the algorithm will come from a normal distribution to allow for an easy comparison to the "ground truth".  
 
@@ -17,7 +17,7 @@ The motivating example for this post will be to estimate the threshold for deter
 
 To begin I'll establish the notation that will be used through the rest of the post. Define the statistic of interest as \\(\theta = s(X)\\), where \\(X_i \sim F\\) from IID draws. The statistic \\(s\\) can be anything like the mean, median, skew, PPV, etc. Of course, if we knew the cdf \\(F\\), one could simply sample from it and estimate \\(\theta\\) by appealing to the law of large numbers. However researchers almost never know the distribution the data comes from, and if they do, the exact parameters of the distribution are unknown. Instead we can use an empirical draw of the data: \\(\hat{X} = (X_1, \dots, X_n)\\) to approximate the actual CDF: \\(\hat{F}(\hat{X} \leq x) \approx F(X \leq x)\\). From the [Glivenko-Cantelli theorem](https://en.wikipedia.org/wiki/Glivenko%E2%80%93Cantelli_theorem) we know that as \\(n \to \infty\\), the empirical CDF (ECDF) approaches the true CDF.
 
-Using the ECDF from a given draw of data as an estimate of \\(F\\), means using the CDF of a discrete random variable. This non-parametric approximation naturally creates some estimation error, but for a reasonably sized \\(n\\) it will be small. When  bootstrapping is referred to "sampling with replacement", it is actually referring to sampling from the ECDF. Since this is a discrete distribution it means that some values can be sampled more than once. Draws for the ECDF, or bootstrapped samples, will be denoted as follows:
+Using the ECDF from a given draw of data as an estimate of \\(F\\), means using the CDF of a discrete random variable. This non-parametric approximation naturally creates some estimation error, but for a reasonably sized \\(n\\) it will be small. When  bootstrapping is referred to as "sampling with replacement", it is actually referring to sampling from the ECDF. Since this is a discrete distribution it means that some values can be sampled more than once. Draws from the ECDF, or bootstrapped samples, will be denoted as follows:
 
 $$
 \begin{align*}
@@ -27,14 +27,14 @@ X_1^*, \dots, X_n^* &\sim \hat{F}  \\
 \end{align*}
 $$
 
-The PPV is the ratio of the true positive rate (TPR) to the predicted positive rate (which includes the false positive rate (FPR)), weighted by the prevalence of the binary outcome: \\(\mu_y = E[y==1]\\). In this post we will assume that the scores of the classifier come from a normal distribution: \\(x\|y=i \sim N(\mu_i,\sigma_i^2)\\), for \\(i=[1,2]\\). The distribution for the ground-truth PPV will be smooth and monotonically increasing over \\(t\\) since \\(\mu_y\\) is fixed, as defined by \eqref{eq:PPV_true}. However, its empirical estimate will necessarily by discontinuous, and not even necessarily monotonic! This is because the count of the number of TPs and FPs is used rather than the theoretical CDF and prevalence. Note that \\(\Phi\\) refers to the standard normal CDF.
+The PPV is the ratio of the true positive rate (TPR) to the predicted positive rate (which includes the false positive rate (FPR)), weighted by the prevalence of the binary outcome: \\(\mu_y = E[y=1]\\). In this post we will assume that the scores of the classifier come from a normal distribution: \\(x\|y=i \sim N(\mu_i,\sigma_i^2)\\), for \\(i=[1,2]\\). The distribution for the ground-truth PPV will be smooth and monotonically increasing over \\(t\\) since \\(\mu_y\\) is fixed, as defined by \eqref{eq:PPV_true}. However, its empirical estimate will necessarily by discontinuous, and not even necessarily monotonic! This is because the count of the number of TPs and FPs is used rather than the theoretical CDF and prevalence. Note that \\(\Phi\\) refers to the standard normal CDF.
 
 $$
 \begin{align*}
 \text{PPV}_\Phi(t) &= \frac{\Phi_1(t)\cdot\mu_y}{\Phi_1\cdot\mu_y + \Phi_0\cdot(1-\mu_y)} \tag{1}\label{eq:PPV_true} \\
 \Phi_1(t) &= \Phi([\mu_1 - t]/\sigma_1), \hspace{3mm} \Phi_0(t) = \Phi([\mu_0 - t]/\sigma_0) \\
 \hat{\text{PPV}}(t) &= \frac{NTP(t)}{NTP(t) + NFP(t)} \\
-NTP(t) &= \sum_{i: y_i =1} y_i \geq t, \hspace{3mm} NFP(t) = \sum_{i: y_i =0} y_i \geq t
+NTP(t) &= \sum_{i: x_i =1} x_i \geq t, \hspace{3mm} NFP(t) = \sum_{i: x_i =0} x_i \geq t
 \end{align*}
 $$
 
@@ -157,9 +157,9 @@ $$
 
 Note that we want \eqref{eq:tstar} to find the infimum of thresholds since if there are two distinct thresholds that obtain the same PPV, the smaller one will have a higher senitivity. For the empirical curve, the threshold will need to be interpolated when the targeted value cannot be found. For example, if the targeted PPV is 0.5, but the closest values we can find are PPVs of 0.49 and 0.54, for threshold values of 1 and 2, respectively, then a linear interpolation will estimate a threshold of 1.2. In the case where the targeted PPV is larger than the largest empirical PPV, an interpolation will also be used. However it is not advised to pick PPVs that are generally beyond the range of the classifier because these estimates will be noisy.
 
-The `thresh_ppv` function below also has a built-it [Jackknife](https://en.wikipedia.org/wiki/Jackknife_resampling) estimate of the statistic, since these will be required later. The Jackknife calculates the statistic by leaving one sample value, so there are \\(n\\) estimates of it. Because the empirical PPV is discrete, deleting an observation whose value is below a given threshold will not affect the PPV and hence the choice of threshold. Deleting a positive label observation whose score is at or above the threshold will necessarily lower the PPV, and so we can interpolate the new slope/intercept position to obtain the original PPV. Similarly, deleting a negative observation will make whatever the the next smallest threshold is to the current one the optimal choice.[[^1]] It is exceedingly quick therefore to approximate the leave-one-observation out statistic for the PPV. 
+The `thresh_PPV` function below, which calculates \eqref{eq:tstar}, also has a built-it [Jackknife](https://en.wikipedia.org/wiki/Jackknife_resampling) estimate of the statistic, since these will be required later. The Jackknife calculates the statistic by leaving out one sample value, so there are \\(n\\) estimates of it. Because the empirical PPV is discrete, deleting an observation whose value is below a given threshold will not affect the PPV and hence the choice of threshold. Deleting a positive label observation whose score is at or above the threshold will necessarily lower the PPV, and so we can interpolate the new slope/intercept position to obtain the original PPV. Similarly, deleting a negative observation will make whatever the next smallest threshold is to the current one the optimal choice.[[^1]] It is exceedingly quick therefore to approximate the leave-one-observation out statistic for the PPV. 
 
-Note the `draw_samp` function, which draws data with replacement, can make use of the `strafify` argument. Normally one would want to make use of the variation in the label prevalence, however, since this post is inspired by a validation trial for a machine learning algorithm, it is likely that the label balance is already known with a high degree of confidence. Lastly, because there can be discontinuities in the data, the `thresh_ppv` function will always try to find the infimum of values, because we know on a statistical level the relationship should be monotonic (for reasonable assumptions about the distribution of \\(\Phi_0\\) and \\(\Phi_1\\).
+Note the `draw_samp` function, which draws data with replacement, can make use of the `strata` argument. Normally one would want to make use of the variation in the label prevalence, however, since this post is inspired by a validation trial for a machine learning algorithm, it is likely that the label balance is already known with a high degree of confidence.
 
 
 ```python
@@ -315,11 +315,11 @@ print(gg_bs)
 <p align="left"><img src="/figures/bca_python_5_2.png" width="100%"></p>
 <br>   
 
-Figure 3 shows the range of thresholds that would be chosen by the `thresh_PPV` function for PPV different targets, along with the different realizations of the empirical PPV curves. The second figure takes the last draw of the data in the simulation and shows the variation in the threshold statistics generated in that bootstrapping instance. Unsurprisingly the latter has more variation, since the empirical PPV for this data is noisier. Figure 4 compares the distribution of a bootstrap instance with those of the point estimates from the simulation. Note these distributions are not statistically comparable, since the DGP is the true variation and the bootstrap distribution only comes from one example. The inference procedures needed to obtain statistically meaningful insights from the bootstrap distribution are be described below.
+Figure 3 shows the range of thresholds that would be chosen by the `thresh_PPV` function for PPV different targets, along with the different realizations of the empirical PPV curves. The second panel in the figure takes the last draw of the data in the simulation and shows the variation in the threshold statistics generated in that bootstrapping instance. Figure 4 compares the distribution of this bootstrap instance with those of the point estimates from the simulation. Note these distributions are not statistically comparable, since the DGP is the true variation and the bootstrap distribution only comes from one example. The inference procedures needed to obtain statistically meaningful insights from the bootstrap distribution are be described below.
 
 ## (2) Bootstrapping approaches
 
-The statistical quality of a bootstrap CI is determined by its coverage. For example, a two-sided confidence interval of level \\(1-\alpha\\)  has the "right" coverage when:
+The statistical quality of a bootstrap CI is determined by its coverage (\\(c\\)). For example, a two-sided CI of level \\(1-\alpha\\)  has the right coverage when:
 
 $$
 P(\theta_l \leq \theta \leq  \theta_u) = c = 1-\alpha
@@ -334,7 +334,7 @@ P(\theta_u \geq \theta) &= 1-\alpha,
 \end{align*}
 $$
 
-Depending on whether it is an upper or lower bound. One-sided CIs are used when the direction of statistic is known. Using the running example of the PPV, if the researcher wants to establish that the PPV as *at least* some amount, say 50%, then it would be desirable to find a upper-bound of the threshold, \\(t_u\\) such that: \\(P(t_u \geq t^{\*}(p)) = 1-\alpha\\). If \\(t_u > t^{\*}(p)\\) from \eqref{eq:tstar}, then \\(PPV_\Phi(t_u) > p\\) from \eqref{eq:PPV_true}. 
+Depending on whether it is an upper or lower bound. One-sided CIs are used when the direction of statistic is known. Using the running example of the PPV, if the researcher wants to establish that the PPV as *at least* some amount, say 50%, then it would be desirable to find a upper-bound of the threshold, \\(t_u\\) such that: \\(P(t_u \geq t^{\*}(0.5)) = 1-\alpha\\). If \\(t_u > t^{\*}(0.5)\\) from \eqref{eq:tstar}, then \\(PPV_\Phi(t_u) \geq 0.5\\) from \eqref{eq:PPV_true}. 
 
 There are several reasons why the bootstrap distribution of statistics will not provide the right coverage. First, the ECDF is an approximation of the CDF which introduces sampling error. Second, the bootstrap statistic may be biased. When the average of the bootstrapped statistics will differ in expectation to the original statistic \\(E[\bar\theta^* - \hat\theta] \neq 0\\), the bootstrap is said to be biased. This phenomenon can arise for any statistic with [finite-sample bias](https://en.wikipedia.org/wiki/Bias_of_an_estimator). Since sampling with replacement is equivalent to generating a statistic with fewer observations, finite sampling bias will be seen indirectly through this mechanism.[[^2]] Third, the distribution of a (bootstrapped) statistic may be [skewed](https://en.wikipedia.org/wiki/Skewness), which will cause symmetric CIs to be erroneous. 
 
@@ -344,7 +344,7 @@ If the statistic of interest is normally distributed, then confidence intervals 
 
 $$
 \begin{align*}
-[\hat\theta_l, \hat\theta_u ] &= \hat{\theta} \pm t_{\alpha/2} \cdot \hat{\sigma}_\theta
+[\hat\theta_l, \hat\theta_u ] &= \hat{\theta} \pm t_{\alpha/2} \cdot \hat{\sigma}_{\theta^*}
 \end{align*}
 $$
 
@@ -360,9 +360,9 @@ $$
 \end{align*}
 $$
 
-The advantage of the quantile bootstrap is that is easy to calculate, intuitive, and can handle skewed data (i.e. the CIs are not necessarily symmetric about the mean/median). However if the quantile method will be unable to account for a biased statistic.
+The advantage of the quantile bootstrap is that is easy to calculate, intuitive, and can handle skewed data (i.e. the CIs are not necessarily symmetric about the mean/median). However the quantile method will be unable to account for a biased statistic.
 
-### Approach #3: Bias corrected and accelerated (BCa) Bootstrap
+### Approach #3: Bias corrected and accelerated (BCa) bootstrap
 
 The BCa procedure largely remedies the problems of bias and skewness and will obtain coverage rates that are very close to their nominal level. 
 
@@ -383,12 +383,12 @@ $$
 \end{align*}
 $$
 
-Also note that the bias correction term is a count in the median bias (rather than the magnitude of the bias). The acceleration factor is basically Pearson's skewness coefficient divided by 1/6th (see the original Efron paper for a discussion of this constant).
+The acceleration factor uses the Jackknife statistics (\\(\bar \theta^{-i}\\)) to estimate the skew of the statistic's distribution, which is mathematically equivalent to Pearson's skewness coefficient divided by 1/6th (see the original Efron paper for a discussion of this constant). The bias correction term is a count in the median bias (rather than the magnitude of the bias).
 
 
 ## (3) Simulation of PPV CIs
 
-In this section I will define the `bootstrap` class which will carry the three bootstrap-CI approaches discussed above. A simulation will then be run using the DGP discussed above with \\(\mu_0=0\\), \\(\mu_1=2\\), and \\(\sigma_0=\sigma_1=1\\).  
+In this section I will define the `bootstrap` class which implements the three bootstrap-CI approaches from section (2). A simulation will then be run using the DGP discussed above with \\(\mu_0=0\\), \\(\mu_1=2\\), and \\(\sigma_0=\sigma_1=1\\).  
 
 
 ```python
@@ -513,11 +513,11 @@ gg_inf
     
 <p align="center"><img src="/figures/bca_python_9_1.png" width="90%"></p>
 
-Figure 5 shows that only the BCa approach gets anywhere near the right coverage for the upper bound, and the other approaches are much too conservative. Interestingly even the BCa approach has a lower bound interval which is conservative. This likely stems from the obvious finite-sample bias that comes from the empirical PPV curve.
+Figure 5 shows that only the BCa approach gets anywhere near the right coverage for the upper bound, and the other approaches are much too conservative. Interestingly even the BCa approach has a lower bound interval which is conservative. This likely stems from the finite-sample bias that comes from the empirical PPV curve.
 
-## (4) Compare to ARCH
+## (4) Comparison to ARCH
 
-To show that our functions developed in the post will obtain (nearly) identical results to using the `arch` package's BCa approach, we will turn off the stratified sampling and calculate the variance of a standard normal distribution. To comply with the `bootstrap` class, the `var_calc` function will have a built-in Jackknife estimator, which is can calculated efficiently since the determintic formula for the sample variance can be vectorized.
+To show that the `bootstrap` class developed in the post will produce (nearly) identical results to the ones obtained using the `arch` package's BCa approach, we will turn off the stratified sampling and calculate the variance of a standard normal distribution. To comply with the `bootstrap` class, the `var_calc` function will have a built-in Jackknife estimator. The sample variance has a determintic formula which allows for a fast vectorized implementation of the Jackknife.
 
 
 ```python
@@ -602,9 +602,9 @@ gg_comp
 <p align="center"><img src="/figures/bca_python_14_0.png" width="90%"></p>
 <br>
 
-Figure 6 shows that the BCa approach yields (virtually) identical estimate to the one obtainable from the `arch` package. Since the estimate of the variance is skewed, it also shows the superiority of the BCa method over the simpler bootstrapping approaches since ther coverage for both lower and upper bounds is close to the expected level.
+Figure 6 shows that the `bootstrap` class yields (virtually) identical coverage estimates to the one obtainable from the `arch` package. Since the estimate of the variance is a skewed one, it also highlights the superiority of the BCa method over the simpler bootstrapping approaches. The latter have coverage rates that are divergent from their expected level for both lower and upper bounds.
 
-Most researchers that use the bootstrap to carry out inference on a statistic should probably be using the BCa approach. When the Jackknife estimator can be implemented effeciently, there is almost no additional computational overhead for using the BCa and it obtains an empirical coverage much closer to the expected level. Beyond sample means, most statistics show some form of skew or bias meaning the symmetric standard-error or quantile approach will be suboptimal. The BCa not only helps to remedy these problems, it gives researcher estimates that are much more efficient.
+Most researchers that use the bootstrap to carry out inference on a statistic should probably be using the BCa approach. When the Jackknife estimator can be implemented effeciently, there is almost no additional computational overhead for using the BCa and it obtains an empirical coverage much closer to the expected level. Beyond sample means, most statistics show some form of skew or bias meaning the symmetric standard error or quantile approach will be suboptimal. The BCa not only helps to remedy these problems, it gives researchers estimates that are much more efficient.
 
 <br>
 
@@ -612,7 +612,7 @@ Most researchers that use the bootstrap to carry out inference on a statistic sh
 
 ### Footnotes
 
-[^1]: To see why this is *usually* the case, suppose at \\(t=2\\) there are 4 TPs and 8 FPs, so PPV=4/12. If \\(t=1.8\\) was the next smallest threshold in which an false positive was in the numerator and denominator, then there would be 13 observations in the denominator (5/13). Now if the the one observation is deleted by the Jackknife, then this return to 4/12, which was the original statistic. Now of course the observation that is dropped between going from 1.8 to 2 could have been a TP in which case the statistic would actually be 5/12, but since it is reasonable to assume that an increase in the threshold increases the PPV, I opt for the simpler approximation. 
+[^1]: To see why this is *usually* the case, suppose at \\(t=2\\) there are 4 TPs and 8 FPs, so PPV=4/12. If \\(t=1.8\\) was the next smallest threshold in which a false positive was in the numerator and denominator, then there would be 13 observations in the denominator (4/13). Now if the one observation is deleted by the Jackknife, then the PPV returns to 4/12, which was the original statistic. Now of course the observation that is dropped between going from 1.8 to 2 could have been a TP in which case the statistic would actually be 5/12, but since it is reasonable to assume that an increase in the threshold increases the PPV, I opt for the simpler approximation. 
 
 [^2]: In other words we expect the full sample \\(\hat\theta\\) to be closer to the true value than the average of its bootstrap samples. 
 
