@@ -7,7 +7,8 @@ import pandas as pd
 from datetime import datetime
 
 dir_base = os.getcwd()
-dir_posts = os.path.join(dir_base, '..', '..', '_posts')
+dir_posts = os.path.join(dir_base, '..', '_posts')
+assert os.path.exists(dir_posts)
 dir_output = os.path.join(dir_base, 'output')
 if not os.path.exists(dir_output):
     os.mkdir(dir_output)
