@@ -3,6 +3,7 @@ REPLACE ALL $...$ WITH \\(...\\)
 """
 
 import os
+import sys
 import pandas as pd
 from datetime import datetime
 
@@ -16,8 +17,10 @@ if not os.path.exists(dir_output):
 fn_posts = pd.Series(os.listdir(dir_posts))
 fn_posts = fn_posts[fn_posts.str.contains('^[0-9]')]
 date_posts = pd.to_datetime(fn_posts.str.split('\\-[A-Za-z]',1,True).iloc[:,0])
-yy_mm = pd.to_datetime('2020-09-01') #str(datetime.today().year)+'-'+str(datetime.today().month)+'-01'
+yy_mm = pd.to_datetime('2020-10-01') #str(datetime.today().year)+'-'+str(datetime.today().month)+'-01'
 fn_posts = fn_posts[date_posts >= yy_mm].to_list()
+if len(fn_posts) == 0:
+    sys.exit('No posts written since: %s' % yy_mm)
 
 for ii, fn in enumerate(fn_posts):
     print('Post: %s (%i of %i)' % (fn, ii+1, len(fn_posts)))
