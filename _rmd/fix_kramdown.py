@@ -17,7 +17,7 @@ if not os.path.exists(dir_output):
 fn_posts = pd.Series(os.listdir(dir_posts))
 fn_posts = fn_posts[fn_posts.str.contains('^[0-9]')]
 date_posts = pd.to_datetime(fn_posts.str.split('\\-[A-Za-z]',1,True).iloc[:,0])
-yy_mm = pd.to_datetime('2020-10-01') #str(datetime.today().year)+'-'+str(datetime.today().month)+'-01'
+yy_mm = pd.to_datetime('2020-11-01') #str(datetime.today().year)+'-'+str(datetime.today().month)+'-01'
 fn_posts = fn_posts[date_posts >= yy_mm].to_list()
 if len(fn_posts) == 0:
     sys.exit('No posts written since: %s' % yy_mm)
@@ -70,7 +70,10 @@ for ii, fn in enumerate(fn_posts):
     lines = lines.str.replace('@@','$$')
     lines = lines.str.replace('~~', '\\\\$')
     # Now write
-    copy = open(os.path.join(dir_output, fn), 'w')
+    path_w = os.path.join(dir_output,fn)
+#    print(path_w)
+    copy = open(path_w, 'w')
     for line in lines:
         copy.write(line)
     copy.close()
+#    print(os.path.exists(path_w))
