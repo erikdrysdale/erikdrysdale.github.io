@@ -441,7 +441,10 @@ At this point we are ready to run a simulation for the MSE & MAE by modifying th
 1. Learn \\(f_\theta\\) on an independent training dataset
 2. Calculate MSE & MAE on an independent test set
 3. Use the test set to obtain the bootstrap variance of the MSE or MAE: \\(\hat{\sigma}^2_{1,BS}\\)
-4. Get an upper-estimate of performance for the null: \\(\hat{\text{MSE}}_0 \\) = \\(\hat{\text{MSE}}_1 \\) + \\(k \hat{\sigma}^{2}_{1,BS}\\)
+4. Get an upper-estimate of performance for the null: 
+$$
+\hat{\text{MSE}}_0 = \hat{\text{MSE}}_1  + k \cdot \hat{\sigma}^{2}_{1,BS}
+$$
 5. Set the null hypothesis: \\(H_0: \text{MSE} \geq \hat{\text{MSE}}_0\\)
 6. Find the sample size needed to obtain 80% power and its associated critical value \\(t_\alpha\\) using \eqref{eq:quantile}
 7. Estimate model performance on the prospective test set
