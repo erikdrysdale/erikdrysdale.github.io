@@ -450,7 +450,7 @@ $$
 7. Estimate model performance on the prospective test set
 8. Reject the null if $$(\hat{\text{MSE}}_{2}-\hat{\text{MSE}}_{0})/\hat{\sigma}_{2,BS} < t_\alpha$$
 
-In the code block below I am using a [studentized bootstrap](https://www.textbook.ds100.org/ch/18/hyp_studentized.html) to estimate the standard error on both the testing and prospective validation sets. A one-sided confidence interval (CI) of \\(k \cdot \hat{\sigma}_{BS}\\) is an approximation on the CI at the \\(\Phi(k)\\) level: $$ z_{\Phi(-k)} \sqrt{\sigma^2 / n}$$. Since the estimate of \\(\hat{\sigma}_{BS}\\) can be biased downwards for smaller sample sizes and skewed distributions, the studentized bootstrap can "correct" for this. Specifically, the bootstrapped statistic is mapped to a t-score:
+In the code block below I am using a [studentized bootstrap](https://www.textbook.ds100.org/ch/18/hyp_studentized.html) to estimate the standard error on both the testing and prospective validation sets. A one-sided confidence interval (CI) of $$k \cdot \hat{\sigma}_{BS}$$ is an approximation on the CI at the \\(\Phi(k)\\) level: $$ z_{\Phi(-k)} \sqrt{\sigma^2 / n}$$. Since the estimate of $$\hat{\sigma}_{BS}$$ can be biased downwards for smaller sample sizes and skewed distributions, the studentized bootstrap can "correct" for this. Specifically, the bootstrapped statistic is mapped to a t-score:
 
 $$
 \begin{align*}
@@ -458,7 +458,7 @@ t^*_b = \frac{\hat{\text{MSE}^*_b} - \hat{\text{MSE}}}{\hat\sigma{_b^*}}
 \end{align*}
 $$
 
-This approach requires re-bootstrapping a given bootstrapped sample and estimating its standard error $$\hat{\sigma}_{b}^{*}$$. Though this is computationally intensive, it helps give close to exact nominal coverage levels, and, as I show, can be easily vectorized with the `sample` attribute in `pandas` classes and using 3-D arrays in `numpy`. The upper bound of the interval is: $$\hat{\text{MSE}} - q_{\alpha} \hat{\sigma}_{BS}$$, where \\(q_\alpha\\) is the empirical quantile of the \\(t^{*}_b\\) distribution. For example if \\(k=1.5\\), but \\(q_{\alpha}=-1.6\\), then the standard errors are "too small", so we can adjust by rescaling $$\hat{\sigma}_{BS} \gets \hat{\sigma}_{BS}\cdot (-q_{\alpha}/k)$$. The simulations below will target a sample size needed to obtain 80% power, a type-I error rate of 5%, a \\(k\\) of 1.5, and use a training and test set size of 150. The `power_find` function estimates that 399 samples will be needed in the prospective dataset to reject the null at these rates. 
+This approach requires re-bootstrapping a given bootstrapped sample and estimating its standard error $$\hat{\sigma}_{b}^{*}$$. Though this is computationally intensive, it helps give close to exact nominal coverage levels, and, as I show, can be easily vectorized with the `sample` attribute in `pandas` classes and using 3-D arrays in `numpy`. The upper bound of the interval is: $$\hat{\text{MSE}} - q_{\alpha} \hat{\sigma}_{BS}$$, where \\(q_\alpha\\) is the empirical quantile of the $$t^{*}_b$$ distribution. For example if \\(k=1.5\\), but \\(q_\alpha=-1.6\\), then the standard errors are "too small", so we can adjust by rescaling $$\hat{\sigma}_{BS} \gets \hat{\sigma}_{BS}\cdot (-q_{\alpha}/k)$$. The simulations below will target a sample size needed to obtain 80% power, a type-I error rate of 5%, a \\(k\\) of 1.5, and use a training and test set size of 150. The `power_find` function estimates that 399 samples will be needed in the prospective dataset to reject the null at these rates. 
 
 
 ```python
