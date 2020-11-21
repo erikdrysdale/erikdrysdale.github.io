@@ -197,7 +197,7 @@ gg_pp
 ```
  
 ![png](/figures/power_for_regression_metrics_2_0.png)
-
+<br>
 
 Figure 1 shows that the CDF for the conditional distribution in \eqref{eq:cdf_X} accurately captures the distribution of the test statistic when the null is both false and true. When the null is false (\\(z_1^k > 0)\\), for larger values of \\(k\\), the unconditonal distribution of \\(s_2\\) is a close approximation. This result makes sense since when the null hypothesis is set many standard deviations above the point estimate, the null will be false for almost all realizations so the conditioning event excludes very few realizations. 
 
@@ -254,6 +254,7 @@ gg_power
 ```
     
 ![png](/figures/power_for_regression_metrics_4_0.png)
+<br>
 
 Figure 1B reveals that as the second-stage sample size (\\(n_2\\)) or the value of \\(k\\) grows, the power of the test increases. Higher values of \\(k\\) ensures that the expected value between \\(\hat\mu_2 - \hat\mu_0\\) becomes increasingly negative, raising the probability of rejection. A higher second-stage sample size decreases the variation of \\(\hat\mu_2\\), ensuring that the average negative difference is more consistently around the expectation, once again increasing the probability of rejection. 
 
@@ -271,7 +272,7 @@ gg_emp
 ```
  
 ![png](/figures/power_for_regression_metrics_6_0.png)
-
+<br>
 
 Figure 1C shows that the empirical power curves line up with the theoretical expectation, and that the type-I error rates average to the expected level: 5%. Note that the empirical type-I error rates are not exactly 5% by random chance alone. For a sufficiently large number of simulation draws, the estimates will converge to the 5% line.
 
@@ -302,8 +303,8 @@ The errors of such a model have a Gaussian distribution, with a variance equal t
 
 $$
 \begin{align}
-R_{MSE}(\theta) &= E(e^2) = \sigma^2_u + \| \theta^0 - \theta \|^2_2 \tag{5}\label{eq:risk_mse} \\
-R_{MAE}(\theta) &= E( |e| ) = \sqrt{\sigma^2_u + \| \theta^0 - \theta \|^2_2}\cdot\sqrt{2/\pi} \tag{6}\label{eq:risk_mae}
+R_{MSE}(\theta) &= E(e^2) = \sigma^2_u + \| \theta^0 - \theta \|^2_2 \\
+R_{MAE}(\theta) &= E( |e| ) = \sqrt{\sigma^2_u + \| \theta^0 - \theta \|^2_2}\cdot\sqrt{2/\pi} 
 \end{align}
 $$
 
@@ -367,9 +368,9 @@ gg_risk
 ```
 
 ![png](/figures/power_for_regression_metrics_9_0.png)
+<br>
 
-
-Figure 2A confirms that the empirical risk estimates are closely aligned with their theoretical counterparts. Once again, with a sufficient sample size, the scatter plot would show no variation outside the line going through the origin. In section (1), knowledge of the population standard deviation of the statistic (\\(\sigma\\)) was needed in order to calculate the test statistic (\\(s_2\\)). Because this quantity is unknown, the [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)) can be used to estimate the variance of the performance metric of interest (e.g. MSE & MAE). If \\(\hat\sigma_{BS}\\) is the empirical standard deviation of the bootstrap, then the population standard deviation can be estimated by multiplying it by the number of samples \\(n\\). 
+Figure 2A confirms that the empirical risk estimates are closely aligned with their theoretical counterparts. Once again, with a sufficient sample size, the scatter plot would show no variation outside the line going through the origin. In section (1), knowledge of the population standard deviation of the statistic (\\(\sigma\\)) was needed in order to calculate the test statistic (\\(s_2\\)). Because this quantity is unknown, the [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)) can be used to estimate the variance of the performance metric of interest (e.g. MSE & MAE). If \\(\hat{\sigma}_{BS}\\) is the empirical standard deviation of the bootstrap, then the population standard deviation can be estimated by multiplying it by the number of samples \\(n\\). 
 
 In the simulation below, the accuracy of the bootstrap standard deviation will be compared to the true population standard deviation for the MSE. I am using the MSE rather than the MAE because the former can be characterized by a chi-square distribution:
 
@@ -385,7 +386,7 @@ The quality of the bootstrapped variance can be compared to its true second mome
 
 $$
 \begin{align}
-\sigma^2_{MSE} &\approx n\cdot \hat\sigma^2_{BS} \tag{7}\label{eq:sig2_bs}
+\sigma^2_{MSE} &\approx n\cdot \hat\sigma^2_{BS} 
 \end{align}
 $$
 
@@ -429,9 +430,8 @@ gg_sig2 = (ggplot(dat_sig2, aes(x='gt',y='hat')) + theme_bw() +
 gg_sig2
 ```
 
-
 ![png](/figures/power_for_regression_metrics_11_0.png)
-
+<br>
 
 
 ## (3) Applied example
@@ -440,14 +440,14 @@ At this point we are ready to run a simulation for the MSE & MAE by modifying th
 
 1. Learn \\(f_\theta\\) on an independent training dataset
 2. Calculate MSE & MAE on an independent test set
-3. Use the test set to obtain the bootstrap variance of the MSE or MAE: \\(\hat\sigma^2_{1,BS}\\)
-4. Get an upper-estimate of performance for the null: \\(\hat{\text{MSE}}_0 = \hat{\text{MSE}}_1 + k \cdot \hat\sigma_{1,BS}\\)
+3. Use the test set to obtain the bootstrap variance of the MSE or MAE: \\(\hat{\sigma}^2_{1,BS}\\)
+4. Get an upper-estimate of performance for the null: \\(\hat{\text{MSE}}_0 = \hat{\text{MSE}}_1 + k \cdot \hat{\sigma}_{1,BS}\\)
 5. Set the null hypothesis: \\(H_0: \text{MSE} \geq \hat{\text{MSE}}_0\\)
 6. Find the sample size needed to obtain 80% power and its associated critical value \\(t_\alpha\\) using \eqref{eq:quantile}
 7. Estimate model performance on the prospective test set
-8. Reject the null if \\((\hat{\text{MSE}}_2-\hat{\text{MSE}}_0)/\hat\sigma_{2,BS} < t_\alpha\\)
+8. Reject the null if \\((\hat{\text{MSE}}_2-\hat{\text{MSE}}_0)/\hat{\sigma}_{2,BS} < t_\alpha\\)
 
-In the code block below I am using a [studentized bootstrap](https://www.textbook.ds100.org/ch/18/hyp_studentized.html) to estimate the standard error on both the testing and prospective validation sets. A one-sided confidence interval (CI) of \\(k \cdot \hat\sigma_{BS}\\) is an approximation on the CI at the \\(\Phi(k)\\) level: \\(z_{\Phi(-k)}\cdot \sqrt{\sigma^2 / n}\\). Since the estimate of \\(\hat\sigma_{BS}\\) can be biased downwards for smaller sample sizes and skewed distributions, the studentized bootstrap can "correct" for this. Specifically, the bootstrapped statistic is mapped to a t-score:
+In the code block below I am using a [studentized bootstrap](https://www.textbook.ds100.org/ch/18/hyp_studentized.html) to estimate the standard error on both the testing and prospective validation sets. A one-sided confidence interval (CI) of \\(k \cdot \hat{\sigma}_{BS}\\) is an approximation on the CI at the \\(\Phi(k)\\) level: \\(z_{\Phi(-k)}\cdot \sqrt{\sigma^2 / n}\\). Since the estimate of \\(\hat{\sigma}_{BS}\\) can be biased downwards for smaller sample sizes and skewed distributions, the studentized bootstrap can "correct" for this. Specifically, the bootstrapped statistic is mapped to a t-score:
 
 $$
 \begin{align*}
@@ -455,7 +455,7 @@ t^*_b = \frac{\hat{\text{MSE}^*_b} - \hat{\text{MSE}}}{\hat\sigma{_b^*}}
 \end{align*}
 $$
 
-This approach requires re-bootstrapping a given bootstrapped sample and estimating its standard error \\(\hat\sigma_b^*\\). Though this is computationally intensive, it helps give close to exact nominal coverage levels, and, as I show, can be easily vectorized with the `sample` attribute in `pandas` classes and using 3-D arrays in `numpy`. The upper bound of the interval is: \\(\hat{\text{MSE}} - q_{\alpha} \hat\sigma_{BS}\\), where \\(q_\alpha\\) is the empirical quantile of the \\(t^*_b\\) distribution. For example if \\(k=1.5\\), but \\(q_{\alpha}=-1.6\\), then the standard errors are "too small", so we can adjust by rescaling \\(\hat\sigma_{BS} \gets \hat\sigma_{BS}\cdot (-q_{\alpha}/k)\\). The simulations below will target a sample size needed to obtain 80% power, a type-I error rate of 5%, a \\(k\\) of 1.5, and use a training and test set size of 150. The `power_find` function estimates that 399 samples will be needed in the prospective dataset to reject the null at these rates. 
+This approach requires re-bootstrapping a given bootstrapped sample and estimating its standard error \\(\hat\sigma_b^{*}\\). Though this is computationally intensive, it helps give close to exact nominal coverage levels, and, as I show, can be easily vectorized with the `sample` attribute in `pandas` classes and using 3-D arrays in `numpy`. The upper bound of the interval is: \\(\hat{\text{MSE}} - q_{\alpha} \hat{\sigma}_{BS}\\), where \\(q_\alpha\\) is the empirical quantile of the \\(t^{*}_b\\) distribution. For example if \\(k=1.5\\), but \\(q_{\alpha}=-1.6\\), then the standard errors are "too small", so we can adjust by rescaling \\(\hat\sigma_{BS} \gets \hat{\sigma}_{BS}\cdot (-q_{\alpha}/k)\\). The simulations below will target a sample size needed to obtain 80% power, a type-I error rate of 5%, a \\(k\\) of 1.5, and use a training and test set size of 150. The `power_find` function estimates that 399 samples will be needed in the prospective dataset to reject the null at these rates. 
 
 
 ```python
@@ -608,8 +608,6 @@ gg_zdist
 
 Figure 3A shows that the two-stage approach is extremely accurate! The simulated power frequency is between 80-81% and the type-I error between 3-5%, just as was expected. 
 
-<br>
-
 ```python
 dat_sig2 = df_sim.melt(['idx','sig2_gt'],['sig2_prosp','sig2_test'],'msr').assign(msr=lambda x: x.msr.str.replace('sig2_',''))
 di_msr = {'prosp':'Prospective', 'test':'Test', 'gt':'Ground-Truth'}
@@ -637,12 +635,10 @@ gg_k = (ggplot(dat_k,aes(x='value',fill='dset')) + theme_bw() +
         labs(x='q_alpha',y='Density') + ggtitle('Figure 3C: Distribution of studentized quantiles'))
 print(gg_k)
 ```
-  
+
 ![png](/figures/power_for_regression_metrics_15_0.png)
-
-    
 ![png](/figures/power_for_regression_metrics_15_2.png)
-
+<br>
 
 Figure 3B shows that the estimate of the population variance for the MSE is reasonably close to the one obtained from the studentized bootstrap. The variance tends to be overestimated slightly, and Figure 3C explains shows that this is the case because the (negative) \\(\alpha\\) quantile of the studentized bootstrapped statistics tends to be larger than the target of \\(k=1.5\\). In other words, the bootstrap-standard error is usually adjusted upwards. Though not shown here, using a vanilla bootstrap approach will cause the type-II errors and proportion of true nulls to be slightly too large. In fact the empirical coverage of the null, after the studentized adjustment, is basically spot on. For a properly estimated variance, the null hypothesis should be true/false \\(\Phi(-k)\\)/\\(\Phi(k)\\) percent of the time.
 
@@ -673,7 +669,15 @@ The two-stage approach also means that the "posterior" distribution of outcomes 
 
 |       | \\(H_0\\) is true | \\(H_0\\) false     |
 | -----------        |    -----:  |   ------ |
-| Reject \\(H_0\\)      | \\(\alpha\cdot$$\Phi\\)(\\(-k\\))      | (1-\\(\beta\\))\\(\Phi\\)(\\(k\\))   |
-| Do not reject \\(H_0\\)   | (1-\\(\alpha\\))\\(\Phi\\)(\\(-k\\))    | \\(\beta\cdot$$\Phi\\)(\\(k\\))      |
+| Reject \\(H_0\\)      | \\(\alpha\cdot\\)\\(\Phi\\)(\\(-k\\))      | (1-\\(\beta\\))\\(\Phi\\)(\\(k\\))   |
+| Do not reject \\(H_0\\)   | (1-\\(\alpha\\))\\(\Phi\\)(\\(-k\\))    | \\(\beta\cdot\\)\\(\Phi\\)(\\(k\\))      |
 
 This gives researchers significant freedom to control the uncertainty for each of these outcome categories. Lastly, it should be noted that the choice of using \\(k\\)-standard deviations above the point estimate is for mathematical tractability, and probably not for actually applied use. In almost all applied use-cases, the upper-bound will be picked by subject matter experts and that value of \\(k\\) backed-out from this choice, rather than the other way around. Though the ordering of this decision is essential for real-world applications it is immaterial to the mathematics and hence the simpler form is described.
+
+<br> 
+
+* * *
+
+[^1]: If the test set is non-representative of the future data generating process then the results of this subsequent analysis will not hold. Dealing with dataset shift is a large topic area that is beyond the scope of this post.
+
+[^2]: Throughout this post $\Phi$ and $\phi$ denote the standard normal CDF and PDF, respectively.
