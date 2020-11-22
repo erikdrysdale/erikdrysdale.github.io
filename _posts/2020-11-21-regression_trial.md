@@ -63,7 +63,7 @@ For a given \\(n_2\\), as \\(n_1 \to \infty\\), then the probability of rejectin
 
 $$
 \begin{align}
-s_2 | \{\text{\\(H_0\\) is false}\} &\sim \frac{\hat\mu_2-\hat\mu_0}{\sqrt{\sigma^2/n_2}} \hspace{1mm} \Big|\hspace{1mm} \hat\mu_0 > \mu \nonumber \\
+s_2 | \{ H_0 \text{ is false}\} &\sim \frac{\hat\mu_2-\hat\mu_0}{\sqrt{\sigma^2/n_2}} \hspace{1mm} \Big|\hspace{1mm} \hat\mu_0 > \mu \nonumber \\
 &\sim z_2 - r\cdot z_1^k | z_1^k > 0 \tag{1}\label{eq:dist_cond} \\
 z_1^k &= z_1 + k, \hspace{3mm} r = \sqrt{n_2/n_1} \nonumber
 \end{align}
