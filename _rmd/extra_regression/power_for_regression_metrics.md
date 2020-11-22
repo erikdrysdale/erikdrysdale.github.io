@@ -186,10 +186,10 @@ df_res_long = df_res.melt(cn_gg+['idx'],['pval_cond','pval_uncond'],'tt')
 tmp = df_res_long.groupby(cn_gg+['tt']).sample(n=250, random_state=seed,replace=True)
 plotnine.options.figure_size = (8, 7)
 gg_pp = (ggplot(tmp, aes(x='value',y='idx',color='tt')) + theme_bw() + 
-         geom_point() + labs(x='Theoretical',y='Empirical') + 
+         geom_point() + labs(x='Theoretical percentile',y='Empirical percentile') + 
          ggtitle('Figure 1: P-P plot for test statistic') + 
          facet_grid('n2+null~k',labeller=label_both) + 
-         scale_color_discrete(name='P-values',labels=['Conditional','Unconditional']) + 
+         scale_color_discrete(name='Distribution',labels=['Conditional','Unconditional']) + 
          geom_abline(slope=1,intercept=0,linetype='--',color='black',size=1))
 gg_pp
 ```
@@ -203,7 +203,7 @@ gg_pp
 
 
 
-    <ggplot: (8733401386041)>
+    <ggplot: (8778543454497)>
 
 
 
@@ -253,10 +253,10 @@ df_power_long.measure = pd.Categorical(df_power_long.measure,['Power','Critical-
 
 plotnine.options.figure_size = (8, 4)
 gg_power = (ggplot(df_power_long,aes(x='n2',y='value',color='k',group='k')) + theme_bw() + 
-            geom_line() + labs(x='n2',y='Power') + 
+            geom_line() + labs(x='n2',y='Value') + 
             facet_wrap('~measure',labeller=label_both,scales='free_y') + 
             ggtitle('Figure 1B: Power by second-stage sample size and k') + 
-            theme(subplots_adjust={'wspace': 0.15}) + 
+            theme(subplots_adjust={'wspace': 0.20}) + 
             scale_x_continuous(limits=[0,1001]))
 gg_power
 ```
@@ -270,7 +270,7 @@ gg_power
 
 
 
-    <ggplot: (8733369346277)>
+    <ggplot: (8778540787169)>
 
 
 
@@ -280,12 +280,14 @@ Figure 1B reveals that as the second-stage sample size ($n_2$) or the value of $
 ```python
 df_emp_long = df_power.melt(['k','n2'],['emp_power','emp_type1'],'tt')
 df_emp_long.tt = df_emp_long.tt.map({'emp_power':'Empirical Power','emp_type1':'Empirical Type-I'})
+tmp = pd.DataFrame({'tt':'Empirical Type-I', 'vv':0.05},index=[0])
 plotnine.options.figure_size = (8, 4)
 gg_emp = (ggplot(df_emp_long,aes(x='n2',y='value',color='k',group='k')) + theme_bw() + 
-            geom_line() + labs(x='n2',y='Power') + facet_wrap('~tt',scales='free_y') + 
+            geom_line() + labs(x='n2',y='Value') + facet_wrap('~tt',scales='free_y') + 
             ggtitle('Figure 1C: Empirical results match theory') + 
             theme(subplots_adjust={'wspace': 0.15}) + 
-            scale_x_continuous(limits=[0,1001]))
+            scale_x_continuous(limits=[0,1001]) + 
+            geom_hline(aes(yintercept='vv'),data=tmp,inherit_aes=False,linetype='--'))
 gg_emp
 ```
 
@@ -298,7 +300,7 @@ gg_emp
 
 
 
-    <ggplot: (8733370954377)>
+    <ggplot: (8778540759133)>
 
 
 
@@ -387,7 +389,7 @@ df_risk = df_risk.pivot_table('value',['idx','metric'],'tt').reset_index()
 
 plotnine.options.figure_size = (8, 4)
 gg_risk = (ggplot(df_risk,aes(x='hat',y='risk',color='metric')) + theme_bw() + 
-           geom_point() + labs(x='Empirical',y='Theoretical') + 
+           geom_point() + labs(x='Empirical risk',y='Theoretical risk') + 
            facet_wrap('~metric',labeller=labeller(metric={'mae':'MAE','mse':'MSE'}),scales='free') + 
            theme(subplots_adjust={'wspace': 0.15}) + guides(color=False) + 
            ggtitle('Figure 2A: Empirical and theoretical risk estimates') + 
@@ -404,7 +406,7 @@ gg_risk
 
 
 
-    <ggplot: (8733369136853)>
+    <ggplot: (8778540556245)>
 
 
 
@@ -477,7 +479,7 @@ gg_sig2
 
 
 
-    <ggplot: (8733405806457)>
+    <ggplot: (8778540489077)>
 
 
 
@@ -643,7 +645,7 @@ dat_txt = dat_txt.assign(x=lambda x: np.where(x.null_is_false==True,-8, -8),
                          y=lambda x: np.where(x.null_is_false==True,750, 90))
 
 di_metric = {'mse':'MSE', 'mae':'MAE'}
-di_null = {'False':'Null ifs False', 'True':'Null is True'}
+di_null = {'False':'Null is True', 'True':'Null is False'}
 gg_zdist = (ggplot(dat_power, aes(x='value',fill='reject')) + theme_bw() + 
             geom_histogram(alpha=0.5,color='black',breaks=brks) + 
             facet_grid('null_is_false~metric',scales='free',
@@ -651,7 +653,7 @@ gg_zdist = (ggplot(dat_power, aes(x='value',fill='reject')) + theme_bw() +
             labs(x='Z-score', y='Count (out of 5000)') + guides(fill=False,color=False) + 
             ggtitle('Figure 3A: Distribution of second-stage z-scores\nVertical line shows critical value') + 
             geom_vline(xintercept=crit_prosp,color='black') + 
-            geom_text(aes(x='x',y='y',label='lbls',color='null_is_false'),data=dat_txt,size=10,inherit_aes=False))
+            geom_text(aes(x='x',y='y',label='lbls'),color="#00BFC4",data=dat_txt,size=10,inherit_aes=False))
 gg_zdist
 ```
 
@@ -667,7 +669,7 @@ gg_zdist
 
 
 
-    <ggplot: (8733368908205)>
+    <ggplot: (8778540461741)>
 
 
 
@@ -708,7 +710,7 @@ print(gg_k)
     
 
 
-    <ggplot: (8733370937077)>
+    <ggplot: (8778540680745)>
 
 
 
@@ -717,7 +719,7 @@ print(gg_k)
     
 
 
-    <ggplot: (8733400864461)>
+    <ggplot: (8778542932393)>
 
 
 Figure 3B shows that the estimate of the population variance for the MSE is reasonably close to the one obtained from the studentized bootstrap. The variance tends to be overestimated slightly, and Figure 3C explains shows that this is the case because the (negative) $\alpha$ quantile of the studentized bootstrapped statistics tends to be larger than the target of $k=1.5$. In other words, the bootstrap-standard error is usually adjusted upwards. Though not shown here, using a vanilla bootstrap approach will cause the type-II errors and proportion of true nulls to be slightly too large. In fact the empirical coverage of the null, after the studentized adjustment, is basically spot on. For a properly estimated variance, the null hypothesis should be true/false $\Phi(-k)$/$\Phi(k)$ percent of the time.
