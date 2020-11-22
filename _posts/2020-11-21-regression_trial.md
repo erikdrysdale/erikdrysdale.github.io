@@ -7,27 +7,27 @@ status: publish
 mathjax: true
 ---
 
-Imagine you have been given an imaging dataset and you have trained a [convolutional neural network](https://en.wikipedia.org/wiki/Convolutional_neural_network) to count the number of cells in the image for a medical-based task. On a held-out test set you observe an average error ±5 cells. In order to be considered reliable enough for clinical use, the algorithm needs to be further validated on a prospective trial. The purpose of a such a trial is to 1) ensure that the algorithm's performance is close to what was observed on a test set, and 2) increase the rigour of assessment through a pre-specified protocol. How should such a statistical trial be conducted and what statistical quantities should be estimated? In this post I outline a two-stage method to conduct a validation study for a regression model. This strategy amounts to answering two questions:
+Imagine you have been given an imaging dataset and have trained a [convolutional neural network](https://en.wikipedia.org/wiki/Convolutional_neural_network) to count the number of cells in the image for a medical-based task. On a held-out test set you observe an average error ±5 cells. In order to be considered reliable enough for clinical use, the algorithm will need to be further validated with a prospective trial. The purpose of a such a trial is to 1) ensure that the algorithm's performance is close to what was observed on the test set, and 2) increase the rigour of assessment through a pre-specified protocol. How should such a statistical trial be conducted and what statistical quantities should be estimated? In this post I outline a two-stage method to conduct a prospective validation study for a regression model. This strategy amounts to answering two questions:
 
 1. What is the upper-bound error the algorithm could have before it is was no longer of practical use (e.g. ±10 cells)? 
 2. Conditional on this upper bound, how many samples will be needed in a prospective trial to establish that the error is *at most* a certain size?
 
-In a previous [post](http://www.erikdrysdale.com/threshold_and_power) I discussed how to calibrate a machine learning (ML) model for a binary classification task in the context of a statistical trial. The classical ML pipeline is to train and tune a model on a training and validation set, and then make predictions (only once) on a test set to get an "unbiased" estimate of a specific performance metric.[[^1]] A statistical trial represents a further iteration on the ML pipeline: collecting data prospectively to "confirm" that the model works as well as you expect. For binary classifiers there were two statistical procedures when preparing for a prospective trial: 1) using the test set to establish a conservative threshold for a target performance level (e.g. 90% sensitivity), 2) picking a slightly worse trial goal (e.g. 80% sensitivity) and calculating a sample size necessary based on this spread. The first procedure relied on the statistical properties of the threshold (which is a random variable) for a given fixed hypothesis. The second procedure could be trivially calculated using statistical tests for the difference in two binomial proportions. 
+In a previous [post](http://www.erikdrysdale.com/threshold_and_power) I discussed how to calibrate a machine learning (ML) model for a binary classification task in the context of a statistical trial. The classical ML pipeline is to train and tune a model on a training set, and then make predictions (only once) on a test set to get an "unbiased" estimate of a specific performance metric.[[^1]] A statistical trial represents a further iteration on the ML pipeline: collecting data prospectively to "confirm" that the model works as well as you expect. For binary classifiers there were two statistical procedures when preparing for a prospective trial: 1) using the test set to establish a conservative threshold for a target performance level (e.g. 90% sensitivity), 2) picking a slightly worse trial goal (e.g. 80% sensitivity) and calculating a sample size necessary based on this spread. The first procedure relied on the statistical properties of the threshold (which is a random variable) for a given fixed hypothesis. The second procedure could be trivially calculated using statistical tests for the difference in two binomial proportions. 
 
-The regression case is more complicated because the desired performance cannot be chosen in advance: the result is what it is. One possibility is to pre-specify a null hypothesis (e.g. R-squared greater than 10%), and only run prospective trials for algorithms that rejected this null. However, such an approach would create a statistical significance [filter](http://www.erikdrysdale.com/winners_curse) that would, conditional on success (i.e. rejection of null), cause the expected test set performance to be biased upwards. Such a bias would lead to algorithms which fail to generalize and underestimate the prospective sample size that will be needed.
+The regression case is more complicated because the desired performance level cannot be chosen in advance: the result is what it is. One possibility is to pre-specify a null hypothesis, and only run prospective trials for algorithms that rejected this null. Such an approach would, however, create a statistical significance [filter](http://www.erikdrysdale.com/winners_curse) that would, conditional on success (i.e. rejection of null), cause the expected test set performance to be biased upwards. This bias would lead to algorithms which fail to generalize and underestimate the prospective sample size that would be needed.
 
-I have developed a two-stage testing strategy that avoids the problem of statistical significance filters and relies of classical statistical hypothesis testing paradigms. This approach has several advantages:
+I have developed a two-stage testing strategy that avoids the problem on statistical significance filters and relies of classical statistical hypothesis testing paradigms. This approach has several advantages:
 
 1. Model performance will be unbiased
 2. Classical statistical techniques can be used to obtain valid inference
 3. The upper bound can be chosen with respect to power considerations or the application use case, or both
-4. **The analysis applies to any ML algorithm and any performance metric** (conditional on some regularity conditions)
+4. **The strategy works any ML algorithm and any performance metric** (conditional on some regularity conditions)
 
-The rest of the post is structured as follows: section (1) provides the statistical framework for a two-stage testing strategy for estimating the mean of a Gaussian, section (2) shows how two common regression performance metrics can be used and approximated by a Gaussian distribution, and section (3) provides an example pipeline of how this framework can be used and statistical simulation results.
+The rest of the post is structured as follows: section (1) provides the statistical framework for a two-stage testing strategy for estimating the mean of a Gaussian, section (2) shows how two common regression performance metrics can be used and approximated by a Gaussian distribution, and section (3) provides the code needed to implement the two-stage strategy and carries out some statistical simulations.
 
 ## (1) Two-stage testing approach
 
-Imagine you will have access to two independent datasets, and your goal is to establish an upper-bound on the "true" mean of a Gaussian distribution. In the first stage, a sample is drawn, and the distribution of the sample mean is used to estimate the null hypothesis. In the second stage, a new sample is drawn, and the null from stage 1 is used to calculate a test statistic and a p-value. Assume the data is IID and comes from a normal distribution with a known variance: \\(X_i \sim N(\mu, \sigma^2)\\).
+Imagine you will have access to two independent datasets, and your goal is to establish an upper-bound on the "true" mean of a Gaussian distribution. In the first stage, a sample is drawn, and the distribution of the sample mean is used to estimate the null hypothesis. In the second stage, a new sample is drawn, and the null from stage 1 is used to calculate a test statistic and a p-value. Assume the data is IID and comes from a normal distribution with a known variance: \\(X_i \sim N(\mu, \sigma^2)\\).[[^2]]
 
 $$
 \begin{align*}
@@ -59,7 +59,7 @@ s_2&\sim N\big(-\sqrt{n_2/n_1}\cdot k, 1+n_2/n_1\big)
 \end{align*}
 $$
 
-For a given \\(n_2\\), as \\(n_1 \to \infty\\), then the probability of rejecting the null, \\(P(s_2 < t_\alpha)\\), approaches \\(\alpha\\) since \\(s_2 \to N(0,1)\\). For a given \\(n_1\\), as \\(n_2 \to \infty\\), then the probability of rejecting the null approaches \\(\Phi(k)\\).[[^2]] However, in order to calculate the type-I and type-II errors of a testing procedure we need to know the distribution of \\(s_2\\) conditional on the status of the null. Such as distribution is more complex:
+For a given \\(n_2\\), as \\(n_1 \to \infty\\), the statistic approaches a standard normal distribution: \\(s_2 \to N(0,1)\\). For a given \\(n_1\\), as \\(n_2 \to \infty\\), the distribution approaches a normal with a shifted location parameter: \\(s_2 \to N(-k,1)\\). However, in order to calculate the type-I and type-II errors of a testing procedure we need to know the distribution of \\(s_2\\) conditional on the status of the null. This distribution is more complex:
 
 $$
 \begin{align}
@@ -84,16 +84,16 @@ How does this help us? Luckily the distribution of a truncated bivariate normal 
 
 $$
 \begin{align*}
-f_X(x) &= \frac{1}{\Phi(s\cdot k)} \cdot \frac{1}{\sqrt{1+r^2}} \cdot \phi\Bigg(\frac{x+rk}{\sqrt{1+r^2}} \Bigg) \cdot \Phi\Bigg(s\cdot \Bigg[ -r\cdot \frac{x+rk}{\sqrt{1+r^2}} + \sqrt{1+r^2}\cdot  k \Bigg] \Bigg) \\
+f_X(x; s) &= \frac{1}{\Phi(s\cdot k)} \cdot \frac{1}{\sqrt{1+r^2}} \cdot \phi\Bigg(\frac{x+rk}{\sqrt{1+r^2}} \Bigg) \cdot \Phi\Bigg(s\cdot \Bigg[ -r\cdot \frac{x+rk}{\sqrt{1+r^2}} + \sqrt{1+r^2}\cdot  k \Bigg] \Bigg) \\
 s &= \begin{cases}
-+1 &\text{ if } \text{\\(H_0\\) is false, } \hspace{2mm} (Y>0) \\
--1 &\text{ if } \text{\\(H_0\\) is true, }  \hspace{2mm} (Y<0)
++1 &\text{ if } H_0 \text{ is false, } \hspace{2mm} (Y>0) \\
+-1 &\text{ if } H_0 \text{ is true, }  \hspace{2mm} (Y<0)
 \end{cases} \\
-f_W(w) &= \frac{1}{\Phi(k)} \cdot \frac{1}{\sigma_W} \cdot \phi(w) \cdot  \Phi(a + b\cdot w), \hspace{3mm} w=\frac{x+rk}{\sqrt{1+r^2}}
+f_W(w; s) &= \frac{1}{\Phi(s\cdot k)} \cdot \frac{1}{\sigma_W} \cdot \phi(w) \cdot  \Phi(a(s) + b(s)\cdot w), \hspace{3mm} w=\frac{x+rk}{\sqrt{1+r^2}}
 \end{align*}
 $$
 
-Next, we can use the result from Owen's classic [paper](https://www.tandfonline.com/doi/abs/10.1080/03610918008812164) which shows that that [integral](https://mathoverflow.net/questions/283928/closed-form-solution-for-an-integral-involving-the-p-d-f-and-c-d-f-of-a-n0-1) needed for calculating \\(F_W\\) can be calculated from the CDF of a bivariate normal:
+Next, we can use the result from Owen's classic [paper](https://www.tandfonline.com/doi/abs/10.1080/03610918008812164) which shows that the [integral](https://mathoverflow.net/questions/283928/closed-form-solution-for-an-integral-involving-the-p-d-f-and-c-d-f-of-a-n0-1) needed for calculating \\(F_W\\) can be obtained from the CDF of a bivariate normal:
 
 $$
 \begin{align*}
@@ -199,13 +199,13 @@ gg_pp
 ![png](/figures/power_for_regression_metrics_2_0.png)
 <br>
 
-Figure 1 shows that the CDF for the conditional distribution in \eqref{eq:cdf_X} accurately captures the distribution of the test statistic when the null is both false and true. When the null is false (\\(z_1^k > 0)\\), for larger values of \\(k\\), the unconditonal distribution of \\(s_2\\) is a close approximation. This result makes sense since when the null hypothesis is set many standard deviations above the point estimate, the null will be false for almost all realizations so the conditioning event excludes very few realizations. 
+Figure 1 shows that the CDF for the conditional distribution in \eqref{eq:cdf_X} accurately captures the distribution of the test statistic when the null is both false and true. When the null is false (\\(z_1^k > 0)\\), for larger values of \\(k\\), the unconditonal distribution of \\(s_2\\) is a close approximation. This result makes sense since when the null hypothesis is set many standard deviations above the point estimate, the null will be false for almost all realizations. The conditioning event will therefore truncate only a small part of the unconditional density. 
 
-In classical statistics we pick a critical value to reject the null such that when the null is true, then rejection event happens at most \\(\alpha\\) percent of the time. We can use \eqref{eq:cdf_X} to find the \\(\alpha-\\)quantile of the distribution when the null is true so that we reject it at most \\(a\\)-percent of the time:
+In classical frequentist statistics, the critical value of a test is set so that it bounds the probability that the null will be rejected, when it is true. The CDF of \eqref{eq:cdf_X} can be used to find the \\(\alpha-\\)quantile of the distribution of \\(s_2\\) when the null is true to act as the critical value. This will ensure the probability of rejection occurs at most \\(a\\)-percent of the time, when the null is true.
 
 $$
 \begin{align}
-F^{-1}_W(\alpha;-1) &= \sup_w: \{ F_W(w;-1)\leq \alpha \} \tag{4}\label{eq:quantile} \\
+F^{-1}_W(\alpha;-1) &= \sup_w \{ F_W(w;-1)\leq \alpha \} \tag{4}\label{eq:quantile} \\
 &= t_\alpha \nonumber
 \end{align}
 $$
@@ -256,7 +256,7 @@ gg_power
 ![png](/figures/power_for_regression_metrics_4_0.png)
 <br>
 
-Figure 1B reveals that as the second-stage sample size (\\(n_2\\)) or the value of \\(k\\) grows, the power of the test increases. Higher values of \\(k\\) ensures that the expected value between \\(\hat\mu_2 - \hat\mu_0\\) becomes increasingly negative, raising the probability of rejection. A higher second-stage sample size decreases the variation of \\(\hat\mu_2\\), ensuring that the average negative difference is more consistently around the expectation, once again increasing the probability of rejection. 
+Figure 1B reveals that as the second-stage sample size (\\(n_2\\)) or the value of \\(k\\) grows, the power of the test increases. Higher values of \\(k\\) ensures that the expected value between \\(\hat\mu_2 - \hat\mu_0\\) becomes increasingly negative, raising the probability of rejection. A higher second-stage sample size decreases the variation of \\(\hat\mu_2\\), ensuring that the range of negative differences becomes increasingly tight, once again increasing the probability of rejection. 
 
 
 ```python
@@ -274,11 +274,11 @@ gg_emp
 ![png](/figures/power_for_regression_metrics_6_0.png)
 <br>
 
-Figure 1C shows that the empirical power curves line up with the theoretical expectation, and that the type-I error rates average to the expected level: 5%. Note that the empirical type-I error rates are not exactly 5% by random chance alone. For a sufficiently large number of simulation draws, the estimates will converge to the 5% line.
+Figure 1C shows that the empirical power curves line up with the theoretical expectation, and that the type-I error rates average to the expected chosen level: 5%. Note that the empirical type-I error rates are not exactly 5% by random chance alone. For a sufficiently large number of simulation draws, the estimates will converge to the 5% line.
 
 ## (2) Regression statistic inference example
 
-This section will show how to apply the principle of two-stage testing to example regression performance metrics: mean absolute error (MAE) and mean square error (MSE). In addition to being common metrics, these statistics also have known distributional properties when a linear regression model is used with Gaussian data. Hence, the statistical simulations can be benchmarked against a ground truth. However, in practice any regression statistic whose density function is reasonably smooth, and any regression model can be used. To repeat, the simple linear model and choice of statistics is only for convenience and does not signify a loss of generality to any other regression instance. Formally we are interested in the risk of the MAE & MSE loss functions:
+This section will show how to apply the principle of two-stage testing to example regression performance metrics: mean absolute error (MAE) and mean square error (MSE). In addition to being common metrics, these statistics also have known distributional properties when a linear regression model is used with Gaussian data. Hence, the statistical simulations can be benchmarked against a ground truth. However, in practice any regression statistic whose density function is reasonably smooth, and any regression model can be used. To repeat, the simple linear model and choice of performance metrics is only for convenience and does not signify a loss of generality to any other regression instance. Formally we are interested in the risk of the MAE & MSE loss functions:
 
 $$
 \begin{align*}
@@ -317,7 +317,7 @@ $$
 \end{align*}
 $$
 
-On a test set with a sufficiently large \\(n\\), \\(\hat{\text{MSE}}(\theta) \to R_{MSE}(\theta)\\). However, for fininte sample it is clear that \\(\hat{\text{MSE}}(\theta)\\) is a random variable whose first moment will be centered around the risk.
+On a test set with a sufficiently large \\(n\\), \\(\hat{\text{MSE}}(\theta) \to R_{MSE}(\theta)\\). However, for a finite sample it is clear that \\(\hat{\text{MSE}}(\theta)\\) is a random variable whose first moment will be centred around the risk.
 
 
 ```python
@@ -370,7 +370,7 @@ gg_risk
 ![png](/figures/power_for_regression_metrics_9_0.png)
 <br>
 
-Figure 2A confirms that the empirical risk estimates are closely aligned with their theoretical counterparts. Once again, with a sufficient sample size, the scatter plot would show no variation outside the line going through the origin. In section (1), knowledge of the population standard deviation of the statistic (\\(\sigma\\)) was needed in order to calculate the test statistic (\\(s_2\\)). Because this quantity is unknown, the [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)) can be used to estimate the variance of the performance metric of interest (e.g. MSE & MAE). If \\(\hat{\sigma}_{BS}\\) is the empirical standard deviation of the bootstrap, then the population standard deviation can be estimated by multiplying it by the number of samples \\(n\\). 
+Figure 2A confirms that the empirical risk estimates are closely aligned with their theoretical counterparts. With a sufficiently large sample size, the scatter plot would show no variation outside the line going through the origin. In section (1), knowledge of the population standard deviation of the statistic (\\(\sigma\\)) was needed in order to calculate the test statistic (\\(s_2\\)). Because this quantity is unknown, the [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)) can be used to estimate the variance of the performance metric of interest (e.g. MSE & MAE). If \\(\hat{\sigma}_{BS}\\) is the empirical standard deviation of the bootstrap, then the population standard deviation can be estimated by multiplying it by the number of samples \\(n\\). 
 
 In the simulation below, the accuracy of the bootstrap standard deviation will be compared to the true population standard deviation for the MSE. I am using the MSE rather than the MAE because the former can be characterized by a chi-square distribution:
 
@@ -439,9 +439,9 @@ gg_sig2
 At this point we are ready to run a simulation for the MSE & MAE by modifying the procedure outlined in section (1). Instead of estimating the true mean of the Gaussian, the risk of a linear regression model's MSE & MAE will be estimated. The pipeline is as follows:
 
 1. Learn \\(f_\theta\\) on an independent training dataset
-2. Calculate MSE & MAE on an independent test set
+2. Calculate the MSE & MAE on an independent test set
 3. Use the test set to obtain the bootstrap variance of the MSE or MAE: \\(\hat{\sigma}^2_{1,BS}\\)
-4. Get an upper-estimate of performance for the null: 
+4. Get an upper-bound estimate on performance for the null: 
 $$
 \hat{\text{MSE}}_0 = \hat{\text{MSE}}_1  + k \cdot \hat{\sigma}^{2}_{1,BS}
 $$
@@ -593,7 +593,7 @@ dat_txt = dat_txt.assign(x=lambda x: np.where(x.null_is_false==True,-8, -8),
                          y=lambda x: np.where(x.null_is_false==True,750, 90))
 
 di_metric = {'mse':'MSE', 'mae':'MAE'}
-di_null = {'False':'Null ifs False', 'True':'Null is True'}
+di_null = {'True':'Null is False', 'False':'Null is True'}
 gg_zdist = (ggplot(dat_power, aes(x='value',fill='reject')) + theme_bw() + 
             geom_histogram(alpha=0.5,color='black',breaks=brks) + 
             facet_grid('null_is_false~metric',scales='free',
@@ -601,7 +601,7 @@ gg_zdist = (ggplot(dat_power, aes(x='value',fill='reject')) + theme_bw() +
             labs(x='Z-score', y='Count (out of 5000)') + guides(fill=False,color=False) + 
             ggtitle('Figure 3A: Distribution of second-stage z-scores\nVertical line shows critical value') + 
             geom_vline(xintercept=crit_prosp,color='black') + 
-            geom_text(aes(x='x',y='y',label='lbls',color='null_is_false'),data=dat_txt,size=10,inherit_aes=False))
+            geom_text(aes(x='x',y='y',label='lbls'),color='black',data=dat_txt,size=10,inherit_aes=False))
 gg_zdist
 ```
 
@@ -643,7 +643,7 @@ print(gg_k)
 ![png](/figures/power_for_regression_metrics_15_2.png)
 <br>
 
-Figure 3B shows that the estimate of the population variance for the MSE is reasonably close to the one obtained from the studentized bootstrap. The variance tends to be overestimated slightly, and Figure 3C explains shows that this is the case because the (negative) \\(\alpha\\) quantile of the studentized bootstrapped statistics tends to be larger than the target of \\(k=1.5\\). In other words, the bootstrap-standard error is usually adjusted upwards. Though not shown here, using a vanilla bootstrap approach will cause the type-II errors and proportion of true nulls to be slightly too large. In fact the empirical coverage of the null, after the studentized adjustment, is basically spot on. For a properly estimated variance, the null hypothesis should be true/false \\(\Phi(-k)\\)/\\(\Phi(k)\\) percent of the time.
+Figure 3B shows that the estimate of the population variance for the MSE is reasonably close to the one obtained from the studentized bootstrap. The variance tends to be overestimated slightly, and Figure 3C shows that this is the case because the (negative) \\(\alpha\\)-quantile of the studentized bootstrapped statistics tends to be larger than the target of \\(k=1.5\\). In other words, the bootstrap-standard error is usually adjusted upwards. Though not shown here, using a vanilla bootstrap approach will cause the type-II errors and proportion of true nulls to be slightly too large. In fact the empirical coverage of the null, after the studentized adjustment, is basically spot on. For a properly estimated variance, the null hypothesis should be true/false \\(\Phi(-k)\\)/\\(\Phi(k)\\) percent of the time.
 
 
 ```python
@@ -659,13 +659,13 @@ print(np.round(dat_coverage.groupby(['metric']).null_is_false.mean().reset_index
 
 This post has shown how to construct a prospective trial to validate any ML regression model for any performance metric of interest. There are a few caveats. First, the statistic of interest needs to have a bootstrapped distribution that is reasonably "smooth". Discontinuities or extreme skewness will limit the quality of the estimate. Second, the distribution of the data for the test set and prospective trial needs to representative. 
 
-On a statistical level there are several, what I find to be, surprising conclusions that this analysis has shown:
+On a statistical level there are several, what I find to be, surprising conclusions that this reveals:
 
 1. The sum of a truncated normal and standard Gaussian can be re-written as a conditionally correlated bivariate normal whose density has a known closed-form solution, and whose CDF can be calculated from leveraging the CDF from a multivariate normal distribution \eqref{eq:cdf_X}. 
 2. The conditional distribution noted above is only a function of the ratio of the two sample sizes, rather than their absolute level, and \\(k\\).
 3. Sample-size calculations can be determined by specifying only three of the four terms: \\(n_2/n_1\\), \\(k\\), \\(\alpha\\), or \\(1-\beta\\) (the power).
 
-What is remarkable about these three conclusions is that they are completely independent of the choice of ML model or performance metric. In other words, the sample size calculation used in section (3) would work just as well for a [Random Forest](https://en.wikipedia.org/wiki/Random_forest) predicting house prices and evaluated by its [Tweedie deviance](https://en.wikipedia.org/wiki/Tweedie_distribution#The_Tweedie_deviance) as it would for a [Gaussian Process Regression](https://en.wikipedia.org/wiki/Kriging) predicting patient volumes and evaluated using [R-squared](https://en.wikipedia.org/wiki/Coefficient_of_determination). This approach proves to be generalizable because the variance of the performance metric is the unknown quantity that is allowed to vary. In the binary classification case the variance of the performance metric was known because the variance of a binomial proportion is a function of its mean, whereas the threshold was the random variable.
+What is remarkable about these three conclusions is that they are completely independent of the choice of ML model or performance metric. In other words, the sample size calculation used in section (3) would work just as well for a [Random Forest](https://en.wikipedia.org/wiki/Random_forest) predicting house prices and evaluated by its [Tweedie deviance](https://en.wikipedia.org/wiki/Tweedie_distribution#The_Tweedie_deviance) as it would for a [Gaussian Process Regression](https://en.wikipedia.org/wiki/Kriging) predicting patient volumes and evaluated using [R-squared](https://en.wikipedia.org/wiki/Coefficient_of_determination). The two-stage strategy proves to be generalizable because the variance of the performance metric is the unknown quantity that is allowed to vary. In the binary classification case, the variance of the performance metric was known because the variance of a binomial proportion is a function of its mean, whereas the threshold was the random variable.
 
 The two-stage approach also means that the "posterior" distribution of outcomes on the prospective validation set can be defined by the following 2x2 table:
 
@@ -675,12 +675,14 @@ The two-stage approach also means that the "posterior" distribution of outcomes 
 | Reject \\(H_0\\)      | \\(\alpha\cdot\\)\\(\Phi\\)(\\(-k\\))      | (1-\\(\beta\\))\\(\Phi\\)(\\(k\\))   |
 | Do not reject \\(H_0\\)   | (1-\\(\alpha\\))\\(\Phi\\)(\\(-k\\))    | \\(\beta\cdot\\)\\(\Phi\\)(\\(k\\))      |
 
-This gives researchers significant freedom to control the uncertainty for each of these outcome categories. Lastly, it should be noted that the choice of using \\(k\\)-standard deviations above the point estimate is for mathematical tractability, and probably not for actually applied use. In almost all applied use-cases, the upper-bound will be picked by subject matter experts and that value of \\(k\\) backed-out from this choice, rather than the other way around. Though the ordering of this decision is essential for real-world applications it is immaterial to the mathematics and hence the simpler form is described.
+The two-stage testing strategy gives researchers significant freedom to control the uncertainty for each of these outcome categories. Lastly, it should be noted that the choice of using \\(k\\)-standard deviations above the point estimate is for mathematical tractability, and probably not for actual applied use. In almost all real-world use-cases, the upper-bound will be picked by subject matter experts and that value of \\(k\\) backed-out from this choice, rather than the other way around. Though the ordering of this decision is essential for actual applications, it is immaterial to the underlying analysis.
 
 <br> 
 
 * * *
 
-[^1]: If the test set is non-representative of the future data generating process then the results of this subsequent analysis will not hold. Dealing with dataset shift is a large topic area that is beyond the scope of this post.
+<br> 
 
-[^2]: Throughout this post $\Phi$ and $\phi$ denote the standard normal CDF and PDF, respectively.
+[^1]: If the test set is non-representative of the future data generating process, then all of the statistical results shown in this post will not hold. Dealing with dataset shift is a large topic area that is beyond the scope of this discussion.
+
+[^2]: Throughout this post $\Phi$ and $\phi$ will be used to denote the standard normal CDF and PDF, respectively. 
