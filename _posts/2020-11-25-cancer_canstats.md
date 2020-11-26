@@ -1,5 +1,5 @@
 ---
-title: "Canadian cancer statistics: a mixed story"
+title: "Canadian cancer statistics - a mixed story"
 output: html_document
 fontsize: 12pt
 published: true
