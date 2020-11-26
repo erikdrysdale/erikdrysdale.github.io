@@ -109,7 +109,7 @@ gg_age_rate = (ggplot(tmp, aes(x='years',y='value',color='age',group='age')) + t
                ggtitle("Figure 2A: Trend in population structure age-specific death rates"))
 print(gg_age_rate)
 ```
-<img src="/figures/cancer_calc_4_0.png" width="90%">
+<img src="/figures/cancer_calc_4_0.png" width="99%">
 
 
 Two statistical facts drive the increase in per capita cancer deaths in Canada, as Figure 2A shows below:
@@ -135,7 +135,7 @@ gg_rate_delta = (ggplot(tmp3, aes(x='age',y='rate_d',color='years',group='years'
                  scale_color_discrete(name='Years'))
 gg_rate_delta
 ```
-<img src="/figures/cancer_calc_6_0.png" width="90%">
+<img src="/figures/cancer_calc_6_0.png" width="65%">
 
 Figure 2B shows the exponential trend is age-specific mortality rates has been fairly constant over 20 years suggesting that the increases in cancer risk are biological. Environmental factors may also be present (e.g. lung cancer takes decades to kill you), but these effects are likely to be consistent over time. To make the trends shown in Figure 2A more clear, it can be useful to index the population shares and age-specific cancer mortality rates to the year 2000.
 
@@ -150,7 +150,7 @@ gg_age_rate_idx = (ggplot(tmp, aes(x='years',y='idx',color='age',group='age')) +
                ggtitle("Figure 2C: Trend in population structure age-specific death rates\nIndexed 100==2000"))
 print(gg_age_rate_idx)
 ```
-<img src="/figures/cancer_calc_8_0.png" width="90%">
+<img src="/figures/cancer_calc_8_0.png" width="99%">
 
 Figure 2C shows that the biggest relative gains in the population share have occurred for the  65-74, 75-84, and 85+ age categories, with the latter increasing by more than 60% in 20 years. Because cancer deaths in the 85+ age range are extremely high, a trend of the population structure towards this age demographic will drastically increase overall cancer death numbers. The second panel in figure in 2C is the more promising: age-specific cancer death rates have declined in a consistent manner for every age group since 2000. While the relative decline has been a modest 5% for 65-74 year olds, it has been an impressive 35% reduction for those aged 15-24. This finding was the most surprising result of this analysis for me, and gives definitive evidence that we are getting better at preventing people from dying from cancer. I will discuss this further in the conclusion.
 
@@ -169,7 +169,7 @@ gg_age_breakdown = (ggplot(tmp4, aes(x='years',weight='value',fill='age')) + the
                     theme(subplots_adjust={'wspace': 0.15}))
 gg_age_breakdown
 ```
-<img src="/figures/cancer_calc_10_0.png" width="90%">
+<img src="/figures/cancer_calc_10_0.png" width="99%">
     
 
 In 2018 half and three-quarters of all cancer deaths today come from those over the age of 75 and 65, respectively. Cancer deaths for those less than 55 made up only 7% of the total share in 2018. Cancer is overwhelmingly an killer of the elderly and retired. So far the data has shown that:
@@ -282,7 +282,7 @@ gg_cod = (ggplot(df_cod2_long, aes(x='years',y='value',color='cod2')) +
 gg_cod
 ```
 
-<img src="/figures/cancer_calc_16_1.png" width="90%">
+<img src="/figures/cancer_calc_16_1.png" width="100%">
 
 
 The majority of cancer deaths come from lung and gastrointestinal (digestive) cancers. Many GI cancers like pancreatic, gallbladder, or esophageal are notoriously difficult to treat. Overall the actual (raw) per capita death rates has been rising for some cancers and declining for others, as shown in the first column in Figure 3A. However, these rates may be rising for the same reason aggregate per capita death rates are increasing: a greying population. The second column of the figure re-calculates these trends using the population-consistent approach discussed in section (2). After applying these adjustments, the results are much more impressive: the major cancer categories have seen a decline in per capita mortality rates ranging from 15 to 40%. The one exception to this trend in the "other" category, which has shown no improvement, much like Dr. Raza's MDS and AML patients. It is worth looking into these categories.
@@ -308,7 +308,7 @@ gg_other = (ggplot(df_cod_long, aes(x='years',y='value',color='cod')) +
 gg_other
 
 ```
-<img src="/figures/cancer_calc_19_1.png" width="90%">
+<img src="/figures/cancer_calc_19_1.png" width="100%">
 
 
 
