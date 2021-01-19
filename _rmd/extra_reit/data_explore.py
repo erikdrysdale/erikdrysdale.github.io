@@ -8,7 +8,8 @@ import numpy as np
 import plotnine
 from plotnine import *
 from datetime import datetime
-import requests
+# import shutil
+# import requests
 
 # # For custom packages
 # pip install yahoofinancials
@@ -21,31 +22,54 @@ sc = StatsCan()
 
 from support_funs import makeifnot, add_date_int
 
+dir_base = os.getcwd()
+dir_figures = os.path.join(dir_base, 'figures')
+makeifnot(dir_figures)
+
 dstart = '2001-01-01' # Begin analysis at 2001 (lines up with StatsCan)
 ystart = int(pd.to_datetime(dstart).strftime('%Y'))
 dnow = datetime.now().strftime('%Y-%m-%d')
+print('Current date: %s' % dnow)
 
 ###############################
 ### --- (1) TERANET HPI --- ###
 
 # Download Teranet data (assume Linux/WSL)
-url_tera = 'https://housepriceindex.ca/_data/House_Price_Index.csv'
-os.system('wget ' + url_tera)
+fn_url = 'House_Price_Index.csv'
+url_tera = 'https://housepriceindex.ca/_data/' + fn_url
+if fn_url in os.listdir():
+    print('Removing existing CSV')
+    os.remove(fn_url)
+os.system('wget ' + url_tera + ' --no-check-certificate')
 
 df_tera = pd.read_csv('House_Price_Index.csv',header=[0,1])
 idx = pd.IndexSlice
 df_tera.rename(columns={'Unnamed: 0_level_1':'Index'},level=1,inplace=True)
+tmp = df_tera.loc[:,idx[:,'Sales Pair Count']].values[:,0]
 df_tera = df_tera.loc[:,idx[:,'Index']]
 df_tera.columns = df_tera.columns.droplevel(1)
 df_tera.rename(columns={'Transaction Date':'date','c11':'canada'},inplace=True)
 df_tera.date = pd.to_datetime(df_tera.date,format='%b-%Y')
-
-df_tera.query('date >= @dstart').melt('date',None,'city').assign(city=lambda x: x.city.str.split('_'))
-
+dat_sales_tera = pd.DataFrame({'date':df_tera.date, 'sales':tmp})
+# df_tera.query('date >= @dstart').melt('date',None,'city').assign(city=lambda x: x.city.str.split('_'))
 df_tera = df_tera[df_tera.date >= pd.to_datetime(dstart)].melt('date',None,'city').assign(city=lambda x: x.city.str.split('_'))
 df_tera.city = df_tera.city.apply(lambda x: x[-1])
 df_tera = add_date_int(df_tera).drop(columns=['day'])
 df_tera_wide = df_tera.pivot_table('value',['year','month','date'],'city').reset_index()
+
+# Calculate for four example cities (VAN/TOR/CAL/MON)
+city_lvls = ['calgary','toronto','montreal','vancouver']
+city_lbls = ['Calgary','Toronto','Montreal','Vancouver']
+df_tera_sample = df_tera_wide.melt(['date'],city_lvls)
+df_tera_sample = df_tera_sample.merge(df_tera_sample.groupby('city').head(1)[['city','value']],'left',['city'])
+df_tera_sample = df_tera_sample.assign(price = lambda x: x.value_x / x.value_y*100,
+                    city=lambda x: pd.Categorical(x.city.str.capitalize(),city_lbls))
+
+# # Calculate annual sales
+# dat_sales_tera = dat_sales_tera[dat_sales_tera.date >= pd.to_datetime(dstart)].assign(sales=lambda x: x.sales.astype(int))
+# dat_sales_tera = add_date_int(dat_sales_tera).drop(columns=['day','date'])
+# dat_sales_tera.groupby('year').sales.mean().reset_index().assign(sales=lambda x: (x.sales*12).astype(int))
+
 
 ################################
 ### --- (2) STATSCAN CPI --- ###
@@ -58,23 +82,17 @@ df_cpi.date = pd.to_datetime(df_cpi.date)
 df_cpi = df_cpi.query('products=="All-items" & date >= @dstart').reset_index(None,True).drop(columns='products')
 df_cpi = df_cpi.assign(cpi = lambda x: x.cpi / x.cpi[0] * 100)
 
-df_tera_sample = df_tera_wide.melt(['date'],['toronto','vancouver','calgary','montreal'])
-df_tera_sample = df_tera_sample.merge(df_tera_sample.groupby('city').head(1)[['city','value']],'left',['city'])
-df_tera_sample = df_tera_sample.assign(price = lambda x: x.value_x / x.value_y*100,
-                    city=lambda x: pd.Categorical(x.city.str.capitalize(),['Calgary','Toronto','Montreal','Vancouver']))
-
-# Visualize housing market
-plotnine.options.figure_size = (5.5, 3.5)  #legend_position='bottom', legend_box_spacing=0.2
+# Visualize housing market vs CPI
 tmp = pd.DataFrame({'date':pd.to_datetime(['2015-01-01']),'y':150, 'txt':'CPI'})
 gg_tera = (ggplot(df_tera_sample, aes(x='date',y='price',color='city')) +
            geom_line() + theme_bw() + labs(y='Index (100 == 2001)') +
-           ggtitle("Figure 2: House price growth in Canada's major cities") +
+           ggtitle("Teranet HPI; CPI-All Items") +
            theme(axis_title_x=element_blank(), axis_text_x=element_text(angle=90)) +
            scale_color_discrete(name='City') +
            scale_x_datetime(breaks='3 years',date_labels='%Y') +
            geom_text(aes(x='date',y='y',label='txt'),data=tmp,inherit_aes=False) +
            geom_line(aes(x='date',y='cpi'),color='black',data=df_cpi))
-gg_tera
+gg_tera.save(os.path.join(dir_figures, 'gg_tera.png'),width=6, height=4)
 
 #######################################
 ### --- (3) STATSCAN POPULATION --- ###
@@ -125,18 +143,41 @@ df_employ = df_employ.assign(metric=lambda x: x.tmp.str.split('_',1,True).iloc[:
 df_employ = df_employ.pivot_table('value',['year','city_comb','lf','metric'],'geo').reset_index().sort_values(['year','lf','metric','city_comb'])
 df_employ = df_employ.query('year > @ystart').reset_index(None,True).assign(share = lambda x: x.city / x.cad)
 
+# Figure: Greater Toronto leads in Canadian job creation
 tmp = df_employ.query('((metric=="delta" & lf=="Employment") | '
                 '(metric=="level" & lf=="Population")) & city_comb != "other"')
 gg_emp = (ggplot(tmp,aes(x='year',y='share',color='city_comb')) +
           theme_bw() + geom_point() + geom_line() + facet_wrap('~lf') +
           labs(y='Share of net job creation/population levels') +
-          ggtitle('Figure 1: Greater Toronto leads in Canadian job creation') +
+          ggtitle('') +
           theme(axis_title_x=element_blank(), legend_position='bottom', legend_box_spacing=0.2) +
           scale_color_discrete(name='City'))
-gg_emp.save('gg_emp.png',width=9,height=5)
+gg_emp.save(os.path.join(dir_figures,'gg_emp.png'),width=9,height=5)
+
+#########################################
+### --- (4) Mortgage originations --- ###
+
+di_mort = {'REF_DATE':'date','Categories':'tt','VALUE':'value'}
+df_mort = sc.table_to_df('38-10-0238-01')
+df_mort.rename(columns=di_mort,inplace=True)
+df_mort = df_mort[list(di_mort.values())]
+df_mort = df_mort[df_mort.tt.str.contains('^Mortgages')]
+df_mort.date = pd.to_datetime(df_mort.date)
+df_mort.tt = np.where(df_mort.tt.str.contains('flow'),'flow','stock')
+df_mort = df_mort.sort_values(['tt','date']).reset_index(None,True)
+# Note the difference in stock does not equal flow: determine why flow!=stock
+df_mort = df_mort.pivot('date','tt','value').reset_index()
+
+# Mortgage originations vs sales and HPI
+
+
+#########################################
+### --- (5) Housing resales --- ###
+
+
 
 #########################
-### --- (4) REITS --- ###
+### --- (6) REITS --- ###
 
 # ---- (1.C) REIT list ---- #
 lnk = 'https://raw.githubusercontent.com/ErikinBC/gists/master/data/reit_list.csv'
