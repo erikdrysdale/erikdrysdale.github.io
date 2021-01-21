@@ -16,3 +16,4 @@ package.json
 *.ipynb_checkpoints
 *.csv
 !_rmd/extra_cancer/*.csv
+*.pdf
