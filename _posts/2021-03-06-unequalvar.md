@@ -7,13 +7,13 @@ status: publish
 mathjax: true
 ---
 
-Almost all modern data science tasks begin with exploratory data analysis ([EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis)) phase. Visualizing summary statistics and testing for associations forms the basis of hypothesis generation and subsequent exploration and modeling. Applied statisticians need to be careful not to over-interpret the results of EDA since the p-values generated during this phase do not correspond to their formal definition when used in a highly proscribed scenario. Speed is often an asset during EDA. I recently encountered the problem of needing to assess thousands of AUROC statistics (discussed in the past [here](http://www.erikdrysdale.com/auc_CI/) and [here](http://www.erikdrysdale.com/auc_max/)), and found the bootstrapping procedure to be too slow for high-throughput assessment. By relying on the asymptotic normality of the AUROC statistic (which is an instance of the [Mann-Whitney U-test](https://en.wikipedia.org/wiki/Mann–Whitney_U_test)), rapid inference could be performed because an analytic solution was available. However, I needed to develop code that could properly address the bottlenecks of my analysis:
+Almost all modern data science tasks begin with an exploratory data analysis ([EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis)) phase. Visualizing summary statistics and testing for associations forms the basis of hypothesis generation and subsequent modelling. Applied statisticians need to be careful not to over-interpret the results of EDA since the p-values generated during this phase do not correspond to their formal definition. Speed is often an asset during EDA. I recently encountered the problem of needing to assess thousands of AUROC statistics (discussed in the past [here](http://www.erikdrysdale.com/auc_CI/) and [here](http://www.erikdrysdale.com/auc_max/)), and found the bootstrapping procedure to be too slow for high-throughput assessment. By relying on the asymptotic normality of the AUROC statistic (which is an instance of the [Mann-Whitney U-test](https://en.wikipedia.org/wiki/Mann–Whitney_U_test)), rapid inference could be performed because an analytic solution was available. However, I needed to develop code that could properly address the bottlenecks of my analysis:
 
 1. Use only the moments of the data (mean, variance, and sample size)
 2. (Possibly) accounting for unequal variances
 3. Vectorizing all functions
 
-In the rest of the post, I'll provide simple functions in `python` that will vectorize the [Student's t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) and the [F-test](https://en.wikipedia.org/wiki/F-test) for the multiple comparisons problem. Each of these functions will rely on only the first two moments of the data distribution (plus the sample size). Using only the sufficient statistics of the data helps to reduce the memory overhead that other functions normally have. Means and variances can be computed quickly using methods that are already part of `pandas` and `numpy` classes. The functions in this post will also be able to account for unequal variances, which to best of my knowledge, is not available in existing `python` packages for the F-test.
+In the rest of the post, I'll provide simple functions in `python` that will vectorize the [Student's t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) and the [F-test](https://en.wikipedia.org/wiki/F-test). Each of these functions will rely on the first two moments of the data distribution (plus the sample size). Using only the sufficient statistics of the data helps to reduce the memory overhead that other functions normally have. Means and variances can be computed quickly using methods that are already part of `pandas` and `numpy` classes. The functions in this post will also be able to account for unequal variances, which to best of my knowledge, is not available in existing `python` packages for the F-test.
 
 ## (1) Student's t-test for equal means
 
@@ -53,7 +53,7 @@ d = f(\bar x, \bar y, \hat\sigma^2_x, \hat\sigma^2_y, n, m),
 \end{align*}
 $$
 
-A function can written that takes uses only these sufficient statistics from the data. The code block below will provide the first function `ttest_vec` to carry out the testing and return the test statistic and associated p-values from a two-sided hypothesis test.
+A function can written that uses only these sufficient statistics from the data. The code block below will provide the first function `ttest_vec` to carry out the testing and return the test statistic and associated p-values from a two-sided hypothesis test.
 
 
 
@@ -92,7 +92,7 @@ def cvec(x):
 
 As a rule, I always conduct statistical simulations to make sure the functions I have written actually perform the way I expect them to when the null is known. If you can't get your method to work on a data generating procedure of your choosing, it should not leave the statistical laboratory! In the simulations below, \\(\mu_y = 0\\), and \\(\mu_x\\) will vary from zero to 0.2. At the same time, both variance homoskedasticity (\\(\sigma_y = \sigma_x\\)) and heteroskedasticity (\\(\sigma_y \neq \sigma_x\\)) will be assessed. To further ensure the approach works, the respective sample sizes, \\(n\\) and \\(m\\), for each of the `nsim`=100K experiments will be a random integer between 25 and 75. In order to avoid an inner loop and rely of pure `numpy` vectorization, a data matrix of dimension 75 x 100000 will be generated. To account for the different sample sizes, if \\(n\\) or \\(m\\) is less than 75, the corresponding difference in rows will be set as a missing value `np.NaN`. The `np.nanmean` and `np.nanstd` functions will be used to handle missing values.
 
-Note that in all of the subsequent simulations, the type-I error rate target will be fixed to 5% (\\(\alpha=0.05\\)), and 100K simulations will be run.
+Note that in all of the subsequent simulations, the type-I error rate target will be fixed to 5% (\\(\alpha=0.05\\)), 100K simulations will be run, and the null hypothesis will be two-sided.
 
 
 ```python
@@ -152,11 +152,11 @@ gg_power_ttest
 <p align="center"><img src="/figures/unequalvar_3_0.png"></p>
 
 
-Figure 1 above shows that the `ttest_vec` function is working as expected. When the variances of \\(x\\) and \\(y\\) are equivalent, there is no difference in performance between approaches. When the mean difference is zero, the probability of rejecting the null is exactly equivalent to the level of the test (5%). However, when the variances differ, using the degrees of freedom calculation assuming they are equal leads to an inflated type-I error rate. Whereas using the adjustment from [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test) gets to the right nominal level.
+Figure 1 above shows that the `ttest_vec` function is working as expected. When the variances of \\(x\\) and \\(y\\) are equivalent, there is no difference in performance between approaches. When the mean difference is zero, the probability of rejecting the null is exactly equivalent to the type-I error rate of the test (5%). However, when the variances differ, using the degrees of freedom calculation assuming they are equal leads to an inflated type-I error rate. Whereas using the adjustment from [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test) gets to the right nominal level.
 
 ## (2) Checking power calculations
 
-After checking that function's test-statistic has the right nominal coverage on simulated data, I find is useful to check whether the power of the test can be predicted for different values of the alternative hypothesis. For some test statistics, this is not possible to do analytically, since the distribution of the test statistic under the alternative may not be known. However, for the student-t distribution, a difference in true means amounts to a [noncentral t-distribution](https://en.wikipedia.org/wiki/Noncentral_t-distribution).
+After checking that a function's test statistic has the right nominal coverage on simulated data, I find it useful to check whether the power of the test can be predicted for different values of the alternative hypothesis. For some test statistics, this is not possible to do analytically, since the distribution of the test statistic under the alternative may not be known. However, for the student-t distribution, a difference in true means amounts to a [noncentral t-distribution](https://en.wikipedia.org/wiki/Noncentral_t-distribution).
 
 $$
 \begin{align*}
@@ -237,7 +237,7 @@ Figure 2 shows that the power calculations line up exactly with the analytical e
 
 ## (3) F-test for equality of means
 
-Suppose there are \\(K\\) normal data vectors: \\(x_1=(x_{1,1},\dots,x_{1,n_1})\\) to \\(x_k=(x_{k,1},\dots,x_{1,n_k})\\), and we want to test the null hypothesis of \\(\mu_1 = \mu_2 = \dots = \mu_K\\) against an alternative hypothesis that there is at least 1 inequality in the means, where \\(x_{k,i} \sim N(\mu_k,\sigma^2_k)\\). As before, the variances of each vector may or may not be equal. When the variances are equal, the sum of squared differences between the total mean and any one group mean will be chi-square. Similarly, the sum of the sample variances will also have a chi-square distribution. Hence, the F-test for equality of means is the ratio of the variation "between" versus "within" the groups,
+Suppose there are \\(K\\) normal data vectors: \\(x_1=(x_{1,1},\dots,x_{1,n_1})\\) to \\(x_k=(x_{k,1},\dots,x_{1,n_k})\\), and we want to test the null hypothesis of \\(\mu_1 = \mu_2 = \dots = \mu_K\\) against an alternative hypothesis that there is at least 1 inequality in the means, where \\(x_{k,i} \sim N(\mu_k,\sigma^2_k)\\). As before, the variances of each vector may or may not be equal. When the variances are equal, the sum of squared differences between the total mean and any one group mean will be chi-squared. Similarly, the sum of the sample variances will also have a chi-squared distribution. Hence, the F-test for equality of means is the ratio of the variation "between" versus "within" the groups,
 
 $$
 \begin{align*}
@@ -260,7 +260,7 @@ $$
 
 The `ftest_vec` function below carries out an F-test for the equality of means using only the empirical means, standard deviations, and sample sizes for either variance assumption. In `R` this would be equivalent to using `aov` for equal variances or `oneway.test` for unequal variances. In `python`, it will replicate the `scipy.stats.f_oneway` function (for equal variances). I am unaware of a `python` function that does a Welch-adjustment (if you know please message me and I will provide an update with this information). As before, because the function only relies on the moments of the data, it can be fully vectorized to handle matrices of means, variances, and sample sizes. 
 
-The simulation below assesses how well the two F-test approaches (homoskedasticity vs heteroskedasticity) do when the ground truth variances are either all equal or vary. To vary the signal in the data, I generate the \\(K\\) different means from \\((-\mu,\dots,0,\dots,\mu)\\), where \\(\mu\\) is referred to as "mean dispersion" in the subsequent figures.
+The simulation below assesses how well the two F-test approaches (homoskedasticity vs heteroskedasticity) do when the ground truth variances are either all equal or differ. To vary the signal in the data, I generate the \\(K\\) different means from \\((-\mu,\dots,0,\dots,\mu)\\), where \\(\mu\\) is referred to as "mean dispersion" in the subsequent figures.
 
 
 ```python
@@ -328,7 +328,6 @@ for k in k_seq:
         reject_eq2, reject_neq2 = np.mean(pval_eq2 < alpha), np.mean(pval_neq2 < alpha)
         reject_seq = [reject_eq1, reject_neq1, reject_eq2, reject_neq2]
         tmp = pd.DataFrame({'k':k,'disp':disp,'dgp':dgp_seq,'method':method_seq,'reject':reject_seq})
-        # print(tmp)
         holder.append(tmp)
 res_f = pd.concat(holder).reset_index(None,True)
 res_f[['dgp','method']] = res_f[['dgp','method']].apply(lambda x: x.map(di_method),0)
@@ -510,15 +509,15 @@ q_0&= (n_0- 1)\cdot ( AUC^2 / (1+AUC) - AUC^2)
 \end{align*}
 $$
 
-The standard error from the normal approximation (\\(\sigma_N\\)) is only a function of the positive (\\(n_1\\)) and negative (\\(n_0\\)) class sample sizes whereas the Hanley and McNeil adjustment (\\(\sigma_{HM}\\)) uses the empirical AUROC as well. The previous t- and F-tests relied on the fact that the sample mean had a variance that \\(O(1/n)\\) so that \\(\bar x \sim N(\mu, \sigma^2/n)\\). As can be seen from either formula, the sample variance for the AUROC can not be nearly re-written as a function of the sample size. We can still appeal to the t-test, the only difference being that the sample size is built into the variance estimate:
+The standard error from the normal approximation (\\(\sigma_N\\)) is only a function of the positive (\\(n_1\\)) and negative (\\(n_0\\)) class sample sizes whereas the Hanley and McNeil adjustment (\\(\sigma_{HM}\\)) uses the empirical AUROC as well. The previous t- and F-tests relied on the fact that the sample mean had a variance that was \\(O(1/n)\\) so that \\(\bar x \sim N(\mu, \sigma^2/n)\\). As can be seen from either formula, the sample variance for the AUROC can not be neatly re-written as a function of the sample size. We can still appeal to the t-test, the only difference being that the sample size is built into the variance estimate:
 
 $$
 \begin{align*}
-\frac{AUC_A - AUC_B}{\sqrt{\sigma^2_{HM_A} + \sigma^2_{HM_B}}} &\sim N(0,1) \hspace{3mm} \text{ if \\(H_0\\) is true} 
+\frac{AUC_A - AUC_B}{\sqrt{\sigma^2_{HM_A} + \sigma^2_{HM_B}}} &\sim N(0,1) \hspace{3mm} \text{ if $H_0$ is true} 
 \end{align*}
 $$
 
-In the simulation below, scores will come from one of two distributions. The negative class will have 200 samples drawn from a standard normal (\\(n_0\\)). The positive class scores will have 100 samples (\\(n_1\\)) drawn from either a standard normal (for the null distribution) and a normal with a mean at or above zero. The difference in AUROCs between these two distributions will be evaluated. Since the null distribution will have an (average) AUROC of 50%, the difference in these distribution will be above zero when the mean from the alternative is greater than zero.
+In the simulation below, scores will come from one of two distributions. The negative class will have 200 samples (\\(n_0\\)) drawn from a standard normal. The positive class scores will have 100 samples (\\(n_1\\)) drawn from either a standard normal (for the null distribution) and a normal with a mean at or above zero. The difference in AUROCs between these two distributions will be evaluated. Since the null distribution will have an (average) AUROC of 50%, the difference in these distribution will be above zero only when the mean from the alternative is greater than zero.
 
 
 ```python
@@ -579,4 +578,4 @@ gg_auc
 <p align="center"><img src="/figures/unequalvar_14_0.png"></p>
 
 
-Figure 4 shows that the standard errors from both methods yield almost identical results. Furthermore, the standard errors are conservative (too large), leading to an under-rejection of the null hypothesis when the null is true (i.e. the alternative hypothesis AUROC is 50%). The alternative hypothesis AUROC needs to reach around 53% before the rejection rate reaches the expected normal level. However, between 53%-70%, the power of the test approaches 100% for this sample size combination.
+Figure 4 shows that the standard errors from both methods yield almost identical results. Furthermore, the standard errors are conservative (too large), leading to an under-rejection of the null hypothesis when the null is true (i.e. the alternative nominal level. However, as the ground truth alternative AUROC increases from 53% to 70%, the power of the test approaches 100% for this sample size combination.
