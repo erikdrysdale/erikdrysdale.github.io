@@ -17,7 +17,7 @@ Imagine that an algorithm has been developed for a clinical task. Its performanc
 
 Assume that the goal of the clinical trial is to establish that an algorithm has at least \\(k\\)% sensitivity.[[^1]] To establish the notation that will be used in the rest of this post, assume there is a pre-trained model with parameters \\(\theta\\) that maps an input to a continuous score \\(f_\theta(x): \mathbb{R}^p \to \mathbb{R}\\).[[^2]] The classifier is a version of the model that maps the output score to a binary outcome \\(\psi_t(f)=I(f_\theta(x)>t)\\), where \\(I(\cdot)\\) is the indicator function. Clearly the functional \\(\psi\\) derives its statistical properties from the choice of \\(t\\). The goal is to pick \\(t\\) so that the \\(k\\)% sensitivity target is established.
 
-An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold \\(\hat{t}_k\\) that matches the empirical quantile of \\((1-k)\\)%. This threshold will ensure that the sensitivity on the test set is exactly \\(k\\)%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because \\(\hat t_k\\) is a random variable, it will have a large chance of being above the true value. 
+An intuitive approach to solve this problem would be to use the positive labels from a test set, and pick a threshold \\(\hat{t}_k\\) that matches the empirical quantile of \\((1-k)\\)%. This threshold will ensure that the sensitivity on the test set is exactly \\(k\\)%. But will this sensitivity be maintained for future observations that will occur during a clinical trial? Assuming that the distribution of the input and labels remains constant, the answer is no. Because \\(\hat t_k\\) is a random variable, it will have a meaningful chance of being above the true value. 
 
 To make the math simpler, assume that the distribution of the positive label scores from the model is \\(f_\theta(x\|y=1) \sim N(\mu_1, \sigma_1^{2})\\). A classifier with a threshold \\(t_k^{\*}(\mu_1,\sigma_1) = \mu_1 + \sigma_1\cdot\Phi^{-1}(1-k)\\) will have a sensivity of exactly \\(k\%\\). But in the real world, we only observe some draw of \\(\hat{p}^1 = f_\theta(\hat{x}\|\hat{y}=1)\\), where \\(\hat{x}\\) and \\(\hat{y}\\) are a vector of IID draws from the data generating process. The simulation below shows the distribution of \\(\hat t_{0.95}\\) to \\(t_{0.95}^{\*}\\) for 50 positive cases in the test set (\\(n=50\\)).
 
@@ -57,13 +57,13 @@ gg_thresh_sim
 
 <p align="center"><img src="/figures/power_calc_phn_2_0.png" width="65%"></p>
 
-Most of the time \\(\hat{t}_{0.95}\\) would lead to long-run sensitivity of below 95%! Even if the 5th percentile were symmetric then at best \\(P(\hat{t} > t^*) = 0.5\\)
+Most of the time \\(\hat{t}_{0.95}\\) would lead to long-run sensitivity of below 95% (around 66% in this simulation)! Even if the 5th percentile were symmetric then at best \\(P(\hat{t} > t^*) = 0.5\\)
 
 ## (2) Getting \\(k\\)% sensitivity \\(j\\)% of the time
 
-Since the intuitive approach will yield a threshold that will fail to give an asymptotic threshold target at least half of the time, a more robust method would be to select \\(\hat{t}\\) so that it will achieve an asymptotic  sensitivity of **at least** \\(k\%\\) for \\(j\%\\) of the time (this is equivalent to a one-sided confidence interval). Of course picking a \\(t\\) that is very small (e.g. \\(\hat{t}=\min[\hat{p}_1]-10\\)) will guarantee a sensitivity of at least \\(k\%\\) close to 100% of the time, but this will yield unnessary false positives (as sensitivity increases, the false positive rate must necessarily as well). An ideal threshold estimator will have a \\(\hat t \leq t^*\\) exactly \\(j\%\\) of the time (no more and no less).[[^3]] This property is known as the [coverage](https://en.wikipedia.org/wiki/Coverage_probability).
+Since the intuitive approach will yield a threshold that will fail to give an asymptotic threshold target at least half of the time, a more robust method would be to select \\(\hat{t}\\) so that it will achieve an asymptotic  sensitivity of **at least** \\(k\%\\) for \\(j\%\\) of the time (this is equivalent to a one-sided confidence interval). Of course picking a \\(t\\) that is very small (e.g. \\(\hat{t}=\min[\hat{p}_1]\\)) will guarantee a sensitivity of at least \\(k\%\\) close to 100% of the time, but this will yield a surfeit of false positives (as sensitivity increases, the false positive rate must necessarily as well). An ideal threshold estimator will have a \\(\hat t \leq t^*\\) exactly \\(j\%\\) of the time (no more and no less).[[^3]] This property is known as the [coverage](https://en.wikipedia.org/wiki/Coverage_probability).
 
-In order to find this one-sided confidence interval, the distribution of \\(\hat t_k\\) has to be known. Unfortunately there is no parametric distribution for such a statistic. Instead non-parametric methods must be used. The first (and my preferred) approach is to use the bias-corrected and accelerated (BCa) bootstrap. Even before taking the bootstrap, the distribution of \\(\hat t_{0.95}\\) is skewed as Figure 1 shows above. Simpler bootstrapping approaches will fail both because there is a bias in the bootstrapped sample (the mean of the bootstrapped quantiles is larger than the empirical quantile) and because there is a right-skew in the data. The simulations below will show that the BCa gets close to the target coverage of \\(j=80\\)%.
+In order to find this one-sided confidence interval, the distribution of \\(\hat t_k\\) has to be known. Unfortunately there is no parametric distribution for such a statistic. Instead non-parametric methods must be used. The first (and my preferred) approach is to use the bias-corrected and accelerated (BCa) bootstrap. Even before taking the bootstrap, the distribution of \\(\hat t_{0.95}\\) is skewed as Figure 1 shows above. Simpler bootstrapping approaches will fail both because there is a bias in the bootstrapped sample (the mean of the bootstrapped quantiles is larger than the empirical quantile) and because there is a left-skew in the data. The simulations below will show that the BCa gets close to the target coverage of \\(j=80\\)%.
 
 
 ```python
@@ -80,8 +80,6 @@ np.random.seed(seed)
 cn_boot = ['basic','percentile','norm','bca']
 holder = np.zeros([nsim, len(cn_boot)]) # Four boot
 for i in range(nsim):
-  # if (i + 1) % 25 == 0:    
-  #   print('Iteration %i of %i' % (i+1,nsim))
   # A draw of the data from the universe of test set probabilities
   phat_1 = np.random.randn(n_test_pos)*sd_1 + mu_1
   bs = IIDBootstrap(a=phat_1) # CI for the different approaches
@@ -172,7 +170,7 @@ P( R(\hat{\psi}_r) > 1-k ) &\leq 1 - \sum_{l=r}^n \begin{pmatrix} n \\ r \end{pm
 \end{align*}
 $$
 
-To find the rank \\(r\\) that leads to a type-II less than \\((1-j)\\)% of the time the goal is to find \\(r^* = \max_r [v(r) \leq 1-j]\\). The function below shows the relationship between the sample size and the require rank needed to obtain this bound.
+To find the rank \\(r\\) that leads to a type-II error less than \\((1-j)\\)% of the time the goal is to find \\(r^* = \max_r [v(r) \leq 1-j]\\). The function below shows the relationship between the sample size and the required rank needed to obtain this bound.
 
 
 ```python
@@ -384,7 +382,7 @@ gg_n
 
 <p align="center"><img src="/figures/power_calc_phn_15_0.png" width="70%"></p>
 
-Figure 5 shows three stylized facts. First, increasing \\(k\\) makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 75%. Second, and obviously, lowering \\(\beta\\) increases the number of samples needed. The third and most important factor is \\(b\\). Increasing \\(b\\) from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
+Figure 5 shows three stylized facts. First, increasing \\(k\\) makes it easier to reject the null. This is because it's easier to distinguish the difference between a sensitivity of 99% and 98% compared to 51% and 50%. Second, and obviously, lowering \\(\beta\\) increases the number of samples needed. The third and most important factor is \\(b\\). Increasing \\(b\\) from 1% to 5% can lead to a decrease in the number of samples by a factor of 30! 
 
 The implications of this are that high sensitivity targets are difficult to prove because if \\(k-l\\)=95%, then \\(k\\)=100! Just as central banks can hit the [zero lower bound](https://en.wikipedia.org/wiki/Zero_lower_bound) when setting interest rate policies, there are some thresholds that cannot be establish if the nominal level is too high. Note that the sample-size formula \\(n^*\\) is based on a normal approximation of a binomial proportion. The simulation below shows that this approximation is yields an estimate predicted power that is within 2% of the actual power target.
 
@@ -473,7 +471,7 @@ This post has explained what the main statistical challenges are for validating 
 
 * * * 
 
-[^1]: Metrics other than sensitivity can be used of course: precision, specificity, etc. The math in the rest of the this post is based on this type-II error rate assumption, but can be adjusted for the appropriate metric.
+[^1]: Metrics other than sensitivity can be used of course: precision, specificity, etc. However the math in the rest of the this post is based on using sensitivity, but can be easily adjusted for the appropriate metric.
 
 [^2]: By pre-trained I mean that \\(\theta\\) has been learned on data outside of the test set.
 
