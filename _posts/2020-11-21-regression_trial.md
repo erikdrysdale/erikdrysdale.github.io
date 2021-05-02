@@ -45,7 +45,7 @@ In the first stage, the null is estimated as the point estimate of the sample me
 
 $$
 \begin{align*}
-s_2&= \frac{\hat\mu_2-[\hat\mu_1+k\sqrt{\sigma^2/n_1}]}{\sigma^2/n_2} \\
+s_2&= \frac{\hat\mu_2-[\hat\mu_1+k\sqrt{\sigma^2/n_1}]}{\sqrt{\sigma^2/n_2}} \\
 &= z_2 - \sqrt{n_2/n_1}(z_1 + k) \\
 z_i &= \frac{\hat\mu_i - \mu}{\sqrt{\sigma^2 / n_i}}
 \end{align*}
