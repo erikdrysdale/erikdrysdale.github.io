@@ -1,13 +1,11 @@
 import os
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, truncnorm
-from scipy.stats import multivariate_normal as MVN
-from scipy.linalg import cholesky
-from scipy.integrate import quad
-from scipy.optimize import minimize_scalar
+from scipy.stats import norm
 from plotnine import *
 from timeit import timeit
+
+from classes import BVN, NTS
 
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base,'figures')
@@ -18,81 +16,6 @@ dir_figures = os.path.join(dir_base,'figures')
 # https://stats.stackexchange.com/questions/61080/how-can-i-calculate-int-infty-infty-phi-left-fracw-ab-right-phiw?noredirect=1&lq=1
 # https://math.stackexchange.com/questions/449875/expected-value-of-normal-cdf/1125935
 # https://math.stackexchange.com/questions/2392827/normal-random-variable-as-argument-of-standard-normal-cdf
-
-
-def rvec(x):
-    return np.atleast_2d(x)
-
-def cvec(x):
-    return rvec(x).T
-
-class BVN():
-    # mu=np.array([1,2]);sigma=np.array([2,3]); rho=0.5; # del mu, sigma, rho, seed
-    def __init__(self, mu, sigma, rho):
-        """
-        mu: array of means
-        sigma: array of variances
-        rho: correlation coefficient
-        """
-        if isinstance(mu,list):
-            mu, sigma = np.array(mu), np.array(sigma)
-        assert mu.shape[0]==sigma.shape[0]==2
-        assert np.abs(rho) <= 1
-        self.mu = mu.reshape([1,2])
-        self.sigma = sigma.flatten()
-        od = rho*np.sqrt(sigma.prod())
-        self.rho = rho
-        self.Sigma = np.array([[sigma[0],od],[od, sigma[1]]])
-        self.A = cholesky(self.Sigma) # A.T.dot(A) = Sigma
-
-    # size=1000;seed=1234 # del size, seed
-    def rvs(self, size, seed=None):
-        """
-        size: number of samples to simulate
-        seed: to pass onto np.random.seed
-        """
-        np.random.seed(seed)
-        X = np.random.randn(size,2)
-        Z = self.A.T.dot(X.T).T + self.mu
-        return Z
-
-    def imills(self, a):
-        return norm.pdf(a)/norm.cdf(-a)
-
-    def sheppard(self, theta, h, k):
-        return (1/(2*np.pi))*np.exp(-0.5*(h**2+k**2-2*h*k*np.cos(theta))/(np.sin(theta)**2))
-
-    # self=dist_BVN; h, k = np.array([1,2,3]), np.array([2,3,4])
-    def orthant(self, h, k, method='scipy'):
-        # P(X1 >= h, X2 >=k)
-        assert method in ['scipy','cox','sheppard']
-        if isinstance(h,int) or isinstance(h, float):
-            h, k = np.array([h]), np.array([k])
-        else:
-            assert isinstance(h,np.ndarray) and isinstance(k,np.ndarray)
-        assert len(h) == len(k)
-        # assert np.all(h >= 0) and np.all(k >= 0)
-        # Calculate the number of standard deviations away it is        
-        Y = (np.c_[h, k] - self.mu)/np.sqrt(self.sigma)
-        Y1, Y2 = Y[:,0], Y[:,1]
-
-        # (i) scipy: L(h, k)=1-(F1(h)+F2(k))+F12(h, k)
-        if method == 'scipy':
-            sp_bvn = MVN([0, 0],[[1,self.rho],[self.rho,1]])
-            pval = 1+sp_bvn.cdf(Y)-(norm.cdf(Y1)+norm.cdf(Y2))
-            return pval 
-        
-        # A Simple Approximation for Bivariate and Trivariate Normal Integrals
-        if method == 'cox':
-            mu_a = self.imills(Y1)
-            root = np.sqrt(1-self.rho**2)
-            xi = (self.rho * mu_a - Y2) / root
-            pval = norm.cdf(-Y1) * norm.cdf(xi)
-            return pval
-
-        if method == 'sheppard':
-            pval = [quad(self.sheppard, np.arccos(self.rho), np.pi, args=(y1,y2))[0] for y1, y2 in zip(Y1,Y2)]
-            return pval
 
 
 # Set up a BVN
@@ -166,75 +89,6 @@ gg_rtime.save(os.path.join(dir_figures,'gg_rtime.png'),width=7,height=4.5)
 ################################
 # --- NORMAL-TRUNCATED-SUM --- #
 
-# self = NTS(mu=np.array([0.5,0.75]),tau=np.array([1,3]), a=0, b=3)
-class NTS():
-    def __init__(self, mu, tau, a, b):
-        """
-        mu: array of means
-        tau: array of standard errors
-        rho: correlation coefficient
-        """
-        assert mu.shape[0]==tau.shape[0]==2
-        # Assign parameters
-        self.mu, self.tau = mu.flatten(), tau.flatten()
-        self.a, self.b = a, b
-        # Truncated normal (Z2)
-        self.alpha = (self.a - self.mu[1]) / self.tau[1]
-        self.beta = (self.b - self.mu[1]) / self.tau[1]
-        self.Z = norm.cdf(self.beta) - norm.cdf(self.alpha)
-        self.Q = norm.pdf(self.alpha) - norm.pdf(self.beta)
-        # Average will be unweighted combination of the two distributions
-        self.mu_W = self.mu[0] + self.mu[1] + self.tau[1]*self.Q/self.Z
-        # Distributions
-        self.dist_X1 = norm(loc=self.mu[0], scale=self.tau[0])
-        self.dist_X2 = truncnorm(a=self.alpha, b=self.beta, loc=self.mu[0], scale=self.tau[1])
-        # W
-        self.theta1 = self.mu.sum()
-        self.theta2 = self.mu[1]
-        self.sigma1 = np.sqrt(np.sum(self.tau**2))
-        self.sigma2 = self.tau[1]
-        self.rho = self.sigma2/self.sigma1
-
-    def pdf(self, x):
-        term1 = self.sigma1 * self.Z
-        m1 = (x - self.theta1) / self.sigma1
-        term2 = (self.beta-self.rho*m1)/np.sqrt(1-self.rho**2)
-        term3 = (self.alpha-self.rho*m1)/np.sqrt(1-self.rho**2)
-        f = norm.pdf(m1)*(norm.cdf(term2) - norm.cdf(term3)) / term1
-        return f
-
-    def cdf(self, x, method='scipy'):
-        if isinstance(x, list):
-            x = np.array(x)
-        if isinstance(x, float) or isinstance(x, int):
-            x = np.array([x])
-        nx = len(x)
-        m1 = (x - self.theta1) / self.sigma1
-        bvn = BVN(mu=[0,0],sigma=[1,1],rho=self.rho)
-        orthant1 = bvn.orthant(m1,np.repeat(self.alpha,nx),method=method)
-        orthant2 = bvn.orthant(m1,np.repeat(self.beta,nx),method=method)
-        return 1 - (orthant1 - orthant2)/self.Z
-
-    def ppf(self, p):
-        if isinstance(p, list):
-            p = np.array(p)
-        if isinstance(p, float) or isinstance(p, int):
-            p = np.array([p])
-        # Set up reasonable lower bounds
-        lb = self.mu_W - self.sigma1*4
-        ub = self.mu_W + self.sigma1*4
-        w = np.repeat(np.NaN, len(p))
-        for i, px in enumerate(p):
-            tmp = float(minimize_scalar(fun=lambda w: (self.cdf(w)-px)**2,method='bounded',bounds=(lb,ub)).x)
-            w[i] = tmp
-        return w
-
-    def rvs(self, n, seed=1234):
-        r1 = self.dist_X1.rvs(size=n,random_state=seed)
-        r2 = self.dist_X2.rvs(size=n,random_state=seed)
-        return r1 + r2
-
-
 # Demonstrated with example
 mu1, tau1 = 1, 1
 mu2, tau2, a, b = 1, 2, -1, 4
@@ -283,36 +137,128 @@ gg_ppqq = (ggplot(dat_ppqq,aes(x='theory',y='emp')) +
 gg_ppqq.save(os.path.join(dir_figures,'gg_ppqq.png'),width=8,height=3.5)
 
 
+################################
+# --- TWO-STAGE REGRESSION --- #
+
+import os
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+from plotnine import *
+from timeit import timeit
+
+from classes import BVN, NTS
+
+dir_base = os.getcwd()
+dir_figures = os.path.join(dir_base,'figures')
+
+# http://www.erikdrysdale.com/figures/power_for_regression_metrics_4_0.png
+# GRID OF N1/N2
+# WHATS HAPPENING TO THE CRITICAL VALUE? 
+# WHATS HAPPENING TO THE MEAN OF S0, SA?
+# WHAT'S HAPPENING TO DELTA | H0, HA?
+
+
+
+# WRITE A FUNCTION WRAPPER TO GENERATE DATA
+
+
+delta, sigma2 = 2, 4
+n, m = 1749, 1
+gamma, alpha = 0.1, 0.05
+
+# DISTRIBUTIONS 
+mu_2stage = np.array([0, -np.sqrt(m/n)*norm.ppf(1-gamma)])
+tau_2stage = np.sqrt([1, m/n])
+dist_2s_H0 = NTS(mu=mu_2stage,tau=tau_2stage, a=0, b=np.infty)
+dist_2s_HA = NTS(mu=mu_2stage,tau=tau_2stage, a=-np.infty, b=0)
+crit_val = dist_2s_H0.ppf(alpha)[0]
+power = 1 - dist_2s_HA.cdf(crit_val)
+print('Power: %0.3f' % power)
+
+
+# SIMULATIONS
+
+# Compare to simulation
+nsim = 50000
+np.random.seed(nsim)
+S = delta+np.sqrt(sigma2)*np.random.randn(nsim,n)
+T = delta+np.sqrt(sigma2)*np.random.randn(nsim,m)
+delta1, delta2 = S.mean(1), T.mean(1)
+# ESTIMATE 
+
+sigS, sigT = S.std(1,ddof=1), T.std(1,ddof=1)
+del S, T
+delta0 = delta1 + (sigS/np.sqrt(n))*norm.ppf(1-gamma)
+shat = (delta2 - delta0)/(sigT/np.sqrt(m))
+p_seq = np.arange(0.01,1,0.01)
+s_null_H0 = shat[delta > delta0]
+s_null_HA = shat[delta < delta0]
+qq_emp_H0 = np.quantile(s_null_H0,p_seq)
+qq_emp_HA = np.quantile(s_null_HA,p_seq)
+qq_theory_H0 = dist_2s_H0.ppf(p_seq)
+qq_theory_HA = dist_2s_H0.ppf(p_seq)
+tmp1 = pd.DataFrame({'pp':p_seq,'emp':qq_emp_H0,'theory':qq_emp_H0,'Null':'H0'})
+tmp2 = pd.DataFrame({'pp':p_seq,'emp':qq_emp_HA,'theory':qq_emp_HA,'Null':'HA'})
+dat_2stage = pd.concat([tmp1, tmp2]).melt(['pp','Null'],None,'tt','qq')
+# dat_2stage.pivot_table('qq',['pp','Null'],'tt').reset_index().groupby('Null').apply(lambda x: np.corrcoef(x.emp,x.theory)[0,1])
+
+gg_2stage_alpha = (ggplot(dat_2stage,aes(x='pp',y='qq',color='tt')) + 
+    theme_bw() + geom_line() +  
+    facet_wrap('~Null',scales='free',labeller=label_both) + 
+    labs(x='Percentile',y='Quantile') + 
+    theme(subplots_adjust={'wspace': 0.15}) + 
+    scale_color_discrete(name='Method',labels=['Empirical','Theory']))
+gg_2stage_alpha.save(os.path.join(dir_figures,'gg_2stage_alpha.png'),width=7,height=3.5)
+
+# Compare predicted to actual power (SEQUENCE OVER TAU)
+n_seq = np.arange(50,750,50)
+nm = 750
+m_seq = nm - n_seq
+
+holder = []
+np.random.seed(nm)
+for n in n_seq:
+    m = nm - n
+    print('n: %i, m: %i' % (n, m))
+    mu_2stage = np.array([0, -np.sqrt((m+n)/n)*norm.ppf(1-gamma)])
+    tau_2stage = np.sqrt([1, (m+n)/n])
+    dist_2s_H0 = NTS(mu=mu_2stage,tau=tau_2stage, a=0, b=np.infty)
+    dist_2s_HA = NTS(mu=mu_2stage,tau=tau_2stage, a=-np.infty, b=0)
+    crit_val_theory = dist_2s_H0.ppf(alpha)[0]
+    power_theory = 1 - dist_2s_HA.cdf(crit_val_theory)
+    power_theory
+    # Compare to reality
+    S, T = np.random.randn(nsim,n), np.random.randn(nsim,m)
+    delta1, delta2 = S.mean(1), T.mean(1)
+    sigS, sigT = S.std(1,ddof=1), np.c_[S,T].std(1,ddof=1)
+    del S, T
+    delta0 = delta1 + (sigS/np.sqrt(n))*norm.ppf(1-gamma)
+    shat = (delta2 - delta0)/(sigT/np.sqrt(n+m))
+    s_null_H0 = shat[delta0 < 0]  # Null true
+    s_null_HA = shat[delta0 > 0]  # Null false
+    crit_val_emp = np.quantile(s_null_H0,alpha)    
+    power_emp = np.mean(s_null_HA > crit_val_emp)
+    # Store: 'mu':mu_2stage[1],'tau':tau_2stage[1]
+    power_emp
+    tmp = pd.DataFrame({'n':n, 'm':m, 'gamma':gamma,
+                    'mu_W':dist_2s_HA.mu_W,'delta_hat':delta0.mean(),
+                    'theory':power_theory,'emp':power_emp},index=[0])
+    holder.append(tmp)
+# Merge and analyze
+dat_power_2s = pd.concat(holder).reset_index(None,True)
+dat_power_2s[['n','m','theory','emp']]
+
+
+# Compare along a sequence of gamma's
+gamma_seq = np.round(np.arange(0.01,0.21,0.01),2)
+
+
+
+
+
 
 ########################
 # --- QUERIES 1964 --- #
 # X~N(100,6), Y~TN(50,3,44,Inf)
 
-
-
-
-
-    
-    def cdf_w(self, w):
-        a = np.sqrt(1+self.r**2) * self.k * self.s
-        b = -self.r * self.s
-        rho = -b/np.sqrt(1+b**2)
-        Sigma = np.array([[1,rho],[rho,1]])
-        dist_MVN = MVN(mean=np.repeat(0,2),cov=Sigma)
-        x1 = a / np.sqrt(1+b**2)
-        if isinstance(w, float):
-            X = [x1, w]
-        else:
-            X = np.c_[np.repeat(x1,len(w)), w]
-        pval = dist_MVN.cdf(X)
-        return pval
-    
-    def cdf_x(self, x):
-        const = 1 / norm.cdf(self.s * self.k)
-        w = (x + self.r * self.k) / np.sqrt(1+self.r**2)
-        pval = self.cdf_w(w) * const
-        return pval
-    
-    def quantile(self, p):
-        res = minimize_scalar(fun=lambda x: (self.cdf_x(x)-p)**2, method='brent').x
-        return res
