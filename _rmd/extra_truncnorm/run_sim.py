@@ -1,14 +1,24 @@
 import os
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
+from scipy.stats import norm, truncnorm, chi2, t
 from plotnine import *
 from timeit import timeit
 
-from classes import BVN, NTS
+import warnings
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
+
+from classes import BVN, NTS, two_stage
 
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base,'figures')
+
+########################
+# --- QUERIES 1964 --- #
+# X~N(100,6), Y~TN(50,3,44,Inf)
+
+
+
 
 ###########################################
 # --- COMPARE BVN INTEGRATION METHODS --- #
@@ -140,125 +150,82 @@ gg_ppqq.save(os.path.join(dir_figures,'gg_ppqq.png'),width=8,height=3.5)
 ################################
 # --- TWO-STAGE REGRESSION --- #
 
-import os
-import numpy as np
-import pandas as pd
-from scipy.stats import norm
-from plotnine import *
-from timeit import timeit
-
-from classes import BVN, NTS
-
-dir_base = os.getcwd()
-dir_figures = os.path.join(dir_base,'figures')
-
-# http://www.erikdrysdale.com/figures/power_for_regression_metrics_4_0.png
-# GRID OF N1/N2
-# WHATS HAPPENING TO THE CRITICAL VALUE? 
-# WHATS HAPPENING TO THE MEAN OF S0, SA?
-# WHAT'S HAPPENING TO DELTA | H0, HA?
-
-
-
-# WRITE A FUNCTION WRAPPER TO GENERATE DATA
-
-
 delta, sigma2 = 2, 4
-n, m = 1749, 1
-gamma, alpha = 0.1, 0.05
-
-# DISTRIBUTIONS 
-mu_2stage = np.array([0, -np.sqrt(m/n)*norm.ppf(1-gamma)])
-tau_2stage = np.sqrt([1, m/n])
-dist_2s_H0 = NTS(mu=mu_2stage,tau=tau_2stage, a=0, b=np.infty)
-dist_2s_HA = NTS(mu=mu_2stage,tau=tau_2stage, a=-np.infty, b=0)
-crit_val = dist_2s_H0.ppf(alpha)[0]
-power = 1 - dist_2s_HA.cdf(crit_val)
-print('Power: %0.3f' % power)
-
-
-# SIMULATIONS
-
-# Compare to simulation
-nsim = 50000
-np.random.seed(nsim)
-S = delta+np.sqrt(sigma2)*np.random.randn(nsim,n)
-T = delta+np.sqrt(sigma2)*np.random.randn(nsim,m)
-delta1, delta2 = S.mean(1), T.mean(1)
-# ESTIMATE 
-
-sigS, sigT = S.std(1,ddof=1), T.std(1,ddof=1)
-del S, T
-delta0 = delta1 + (sigS/np.sqrt(n))*norm.ppf(1-gamma)
-shat = (delta2 - delta0)/(sigT/np.sqrt(m))
+n, m = 100, 100
+gamma, alpha = 0.01, 0.05
+nsim = 10000000
 p_seq = np.arange(0.01,1,0.01)
-s_null_H0 = shat[delta > delta0]
-s_null_HA = shat[delta < delta0]
-qq_emp_H0 = np.quantile(s_null_H0,p_seq)
-qq_emp_HA = np.quantile(s_null_HA,p_seq)
-qq_theory_H0 = dist_2s_H0.ppf(p_seq)
-qq_theory_HA = dist_2s_H0.ppf(p_seq)
-tmp1 = pd.DataFrame({'pp':p_seq,'emp':qq_emp_H0,'theory':qq_emp_H0,'Null':'H0'})
-tmp2 = pd.DataFrame({'pp':p_seq,'emp':qq_emp_HA,'theory':qq_emp_HA,'Null':'HA'})
-dat_2stage = pd.concat([tmp1, tmp2]).melt(['pp','Null'],None,'tt','qq')
-# dat_2stage.pivot_table('qq',['pp','Null'],'tt').reset_index().groupby('Null').apply(lambda x: np.corrcoef(x.emp,x.theory)[0,1])
+two_stage(n=n, m=m, gamma=gamma, alpha=alpha, pool=True).power[0]
 
-gg_2stage_alpha = (ggplot(dat_2stage,aes(x='pp',y='qq',color='tt')) + 
-    theme_bw() + geom_line() +  
-    facet_wrap('~Null',scales='free',labeller=label_both) + 
+# --- (A) CALCULATE N=M=100 PP-QQ PLOT --- #
+dist_2s = two_stage(n=n, m=m, gamma=gamma, alpha=alpha, pool=True)
+print('Power: %0.3f' % dist_2s.power)
+df_2s = dist_2s.rvs(nsim=nsim, delta=delta, sigma2=sigma2)
+df_2s = df_2s.assign(Null=lambda x: x.d0hat < delta)
+df_2s = df_2s.assign(reject=lambda x: x.shat < dist_2s.t_alpha)
+df_2s.groupby('Null').reject.mean()
+
+qq_emp = df_2s.groupby('Null').apply(lambda x: pd.DataFrame({'pp':p_seq,'qq':np.quantile(x.shat,p_seq)}))
+qq_emp = qq_emp.reset_index().drop(columns='level_1')
+qq_theory_H0 = dist_2s.H0.ppf(p_seq)
+qq_theory_HA = dist_2s.HA.ppf(p_seq)
+tmp1 = pd.DataFrame({'pp':p_seq,'theory':qq_theory_H0,'Null':True})
+tmp2 = pd.DataFrame({'pp':p_seq,'theory':qq_theory_HA,'Null':False})
+qq_pp = qq_emp.merge(pd.concat([tmp1, tmp2]))
+qq_pp = qq_pp.melt(['pp','Null'],['qq','theory'],'tt')
+
+gtit = 'n=%i, m=%i, nsim=%i' % (n, m, nsim)
+gg_qp_2s = (ggplot(qq_pp,aes(x='pp',y='value',color='tt')) + 
+    theme_bw() + geom_line() +  ggtitle(gtit) + 
+    facet_wrap('~Null',scales='free_y',labeller=label_both,ncol=1) + 
     labs(x='Percentile',y='Quantile') + 
-    theme(subplots_adjust={'wspace': 0.15}) + 
+    theme(legend_position=(0.3,0.8)) + 
     scale_color_discrete(name='Method',labels=['Empirical','Theory']))
-gg_2stage_alpha.save(os.path.join(dir_figures,'gg_2stage_alpha.png'),width=7,height=3.5)
+gg_qp_2s.save(os.path.join(dir_figures,'gg_qp_2s.png'),width=4,height=7)
 
-# Compare predicted to actual power (SEQUENCE OVER TAU)
-n_seq = np.arange(50,750,50)
-nm = 750
-m_seq = nm - n_seq
-
-holder = []
-np.random.seed(nm)
-for n in n_seq:
-    m = nm - n
-    print('n: %i, m: %i' % (n, m))
-    mu_2stage = np.array([0, -np.sqrt((m+n)/n)*norm.ppf(1-gamma)])
-    tau_2stage = np.sqrt([1, (m+n)/n])
-    dist_2s_H0 = NTS(mu=mu_2stage,tau=tau_2stage, a=0, b=np.infty)
-    dist_2s_HA = NTS(mu=mu_2stage,tau=tau_2stage, a=-np.infty, b=0)
-    crit_val_theory = dist_2s_H0.ppf(alpha)[0]
-    power_theory = 1 - dist_2s_HA.cdf(crit_val_theory)
-    power_theory
-    # Compare to reality
-    S, T = np.random.randn(nsim,n), np.random.randn(nsim,m)
-    delta1, delta2 = S.mean(1), T.mean(1)
-    sigS, sigT = S.std(1,ddof=1), np.c_[S,T].std(1,ddof=1)
-    del S, T
-    delta0 = delta1 + (sigS/np.sqrt(n))*norm.ppf(1-gamma)
-    shat = (delta2 - delta0)/(sigT/np.sqrt(n+m))
-    s_null_H0 = shat[delta0 < 0]  # Null true
-    s_null_HA = shat[delta0 > 0]  # Null false
-    crit_val_emp = np.quantile(s_null_H0,alpha)    
-    power_emp = np.mean(s_null_HA > crit_val_emp)
-    # Store: 'mu':mu_2stage[1],'tau':tau_2stage[1]
-    power_emp
-    tmp = pd.DataFrame({'n':n, 'm':m, 'gamma':gamma,
-                    'mu_W':dist_2s_HA.mu_W,'delta_hat':delta0.mean(),
-                    'theory':power_theory,'emp':power_emp},index=[0])
-    holder.append(tmp)
-# Merge and analyze
-dat_power_2s = pd.concat(holder).reset_index(None,True)
-dat_power_2s[['n','m','theory','emp']]
-
-
-# Compare along a sequence of gamma's
+# --- (B) POWER AS GAMMA VARIES --- #
 gamma_seq = np.round(np.arange(0.01,0.21,0.01),2)
+power_theory = np.array([two_stage(n=n, m=m, gamma=g, alpha=alpha, pool=False).power[0] for g in gamma_seq])
+ub_theory = delta + np.sqrt(sigma2/n)*t(df=n-1).ppf(1-gamma_seq)
+power_emp, ub_emp = np.zeros(power_theory.shape), np.zeros(ub_theory.shape)
+for i, g in enumerate(gamma_seq):
+    print('%i of %i' % (i+1, len(gamma_seq)))
+    tmp_dist = two_stage(n=n, m=m, gamma=g, alpha=alpha, pool=False)
+    tmp_sim = tmp_dist.rvs(nsim=nsim, delta=delta, sigma2=sigma2)
+    tmp_sim = tmp_sim.assign(Null=lambda x: x.d0hat < delta, 
+                reject=lambda x: x.shat < tmp_dist.t_alpha)
+    power_emp[i] = tmp_sim.query('Null==False').reject.mean()
+    ub_emp[i] = tmp_sim.d0hat.mean()
+
+tmp1 = pd.DataFrame({'tt':'theory','gamma':gamma_seq,'power':power_theory,'ub':ub_theory})
+tmp2 = pd.DataFrame({'tt':'emp','gamma':gamma_seq,'power':power_emp,'ub':ub_emp})
+dat_gamma = pd.concat([tmp1, tmp2]).melt(['tt','gamma'],None,'msr')
+di_msr = {'power':'Power','ub':'delta0'}
+
+gg_gamma = (ggplot(dat_gamma,aes(x='gamma',y='value',color='tt')) + 
+    theme_bw() + geom_line() +  ggtitle(gtit) + 
+    facet_wrap('~msr',scales='free_y',ncol=1,labeller=labeller(msr=di_msr)) + 
+    labs(x='gamma',y='Value') + 
+    theme(legend_position=(0.6,0.8)) + 
+    scale_x_continuous(limits=[0,0.2]) + 
+    scale_color_discrete(name='Method',labels=['Empirical','Theory']))
+gg_gamma.save(os.path.join(dir_figures,'gg_gamma.png'),width=4,height=7)
+
+# --- (C) POWER AS N = K - M VARIES --- #
+
+k = n + m
+n_seq = np.arange(5,k,5)
+dat_nm = pd.concat([pd.DataFrame({'n':nn,'m':k-nn,
+    'power':two_stage(n=nn, m=k-nn, gamma=gamma, alpha=alpha, pool=True).power[0]},index=[nn]) for nn in n_seq])
+dat_nm = dat_nm.reset_index(None,True).assign(ub=delta + np.sqrt(sigma2/n_seq)*t(df=n_seq-1).ppf(1-gamma))
+dat_nm = dat_nm.melt(['n','m'],None,'msr')
+
+gg_nm = (ggplot(dat_nm,aes(x='n',y='value')) + 
+    theme_bw() + geom_line() +  
+    ggtitle('gamma=0.01, m=200-n') + 
+    facet_wrap('~msr',scales='free_y',ncol=1,labeller=labeller(msr=di_msr)) + 
+    labs(x='n',y='Value'))
+gg_nm.save(os.path.join(dir_figures,'gg_nm.png'),width=4,height=7)
 
 
-
-
-
-
-########################
-# --- QUERIES 1964 --- #
-# X~N(100,6), Y~TN(50,3,44,Inf)
 
