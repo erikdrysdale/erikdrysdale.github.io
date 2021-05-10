@@ -13,20 +13,25 @@ from classes import BVN, NTS, two_stage
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base,'figures')
 
-########################
-# --- QUERIES 1964 --- #
+#############################
+# --- (4C) DATA CARVING --- #
+
+
+
+
+#############################
+# --- (4A) QUERIES 1964 --- #
 # X~N(100,6), Y~TN(50,3,44,Inf)
 
+mu1, tau1 = 100, 6
+mu2, tau2, a, b = 50, 3, 44, np.inf
+mu, tau = np.array([mu1, mu2]), np.array([tau1,tau2])
+dist_A = NTS(mu=mu,tau=tau, a=a, b=b)
+dist_A.cdf(138)
 
 
-
-###########################################
-# --- COMPARE BVN INTEGRATION METHODS --- #
-
-# https://stats.stackexchange.com/questions/61080/how-can-i-calculate-int-infty-infty-phi-left-fracw-ab-right-phiw?noredirect=1&lq=1
-# https://math.stackexchange.com/questions/449875/expected-value-of-normal-cdf/1125935
-# https://math.stackexchange.com/questions/2392827/normal-random-variable-as-argument-of-standard-normal-cdf
-
+#######################################
+# --- (2) BVN INTEGRATION METHODS --- #
 
 # Set up a BVN
 mu = np.array([1,2])
@@ -96,13 +101,13 @@ gg_rtime = (ggplot(df_pval,aes(x='xlbl',y='rtime',color='method')) +
     theme(axis_text_x=element_text(angle=90)))
 gg_rtime.save(os.path.join(dir_figures,'gg_rtime.png'),width=7,height=4.5)
 
-################################
-# --- NORMAL-TRUNCATED-SUM --- #
+####################################
+# --- (3) NORMAL-TRUNCATED-SUM --- #
 
 # Demonstrated with example
 mu1, tau1 = 1, 1
 mu2, tau2, a, b = 1, 2, -1, 4
-mu, tau = np.array([mu1, mu2]), np.array([tau1,tau2])**2
+mu, tau = np.array([mu1, mu2]), np.array([tau1,tau2])
 dist_NTS = NTS(mu=mu,tau=tau, a=a, b=b)
 n_iter = 100000
 W_sim = dist_NTS.rvs(n=n_iter,seed=1)
@@ -147,8 +152,8 @@ gg_ppqq = (ggplot(dat_ppqq,aes(x='theory',y='emp')) +
 gg_ppqq.save(os.path.join(dir_figures,'gg_ppqq.png'),width=8,height=3.5)
 
 
-################################
-# --- TWO-STAGE REGRESSION --- #
+#####################################
+# --- (4B) TWO-STAGE REGRESSION --- #
 
 delta, sigma2 = 2, 4
 n, m = 100, 100
