@@ -8,7 +8,7 @@ from timeit import timeit
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
-from classes import BVN, NTS, two_stage
+from classes import BVN, NTS, two_stage, ols, dgp_yX, CI_truncnorm
 
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base,'figures')
@@ -16,6 +16,62 @@ dir_figures = os.path.join(dir_base,'figures')
 #############################
 # --- (4C) DATA CARVING --- #
 
+from time import time
+
+p_seq = np.arange(0.005,1,0.005)
+n, p, sig2 = 100, 20, 1
+alpha = 0.05
+beta_null = np.repeat(0, p)
+nsim = 5000
+
+cutoff = 1
+# Visualize the 2.5% percentile for (1,inf) as mu varies
+
+
+
+
+
+dist_lb = CI_truncnorm(a=cutoff, b=np.infty, scale=np.sqrt(sig2))
+
+np.random.seed(nsim)
+holder = []
+stime = time()
+for i in range(nsim):
+    if (i+1) % 10 == 0:
+        nrun, nleft = (i+1), nsim - (i+1)
+        rate = (time() - stime)/nrun
+        seta = nleft/rate
+        print('ETA: %0.1f minute (%i)' % (seta/60,i+1))
+    z = np.random.randn(p)
+    z = z[np.abs(z) > cutoff*1.01]
+    if len(z) == 0:
+        continue
+    res_z = dist_lb.CI_truncnorm(x=z,alpha=alpha,bound=1000)
+    res_z = np.c_[z, res_z]
+    holder.append(res_z)
+dist_trunc = pd.DataFrame(np.concatenate(holder),columns=['z','lb','ub'])
+dist_trunc = dist_trunc.assign(az=lambda x: np.sign(x.z).astype(int),
+                               coverage=lambda x: np.sign(x.lb) != np.sign(x.ub))
+dist_trunc.to_csv('dist_trunc.csv',index=False)
+print('Coverage = %0.1f%%' % (dist_trunc.coverage.mean()*100))
+dist_trunc.groupby('az').coverage.apply(lambda x: pd.Series({'n':len(x),'mu':x.mean()}))
+dist_trunc.groupby(['az','coverage']).z.mean().reset_index()
+
+
+holder = []
+for i in range(nsim):
+    if (i+1) % 1000 == 0:
+        print(i+1)
+    resp, xx = dgp_yX(n=n, p=p, beta=beta_null, seed=i)
+    mdl = ols(y=resp, X=xx, has_int=False, sig2=sig2)
+    mdl.get_CI(alpha=alpha)
+    holder.append(np.c_[mdl.lb, mdl.ub, mdl.z])
+# Check that it follows student-T dist
+dist_bhat = pd.DataFrame(np.concatenate(holder),columns=['lb','ub','z'])
+dist_bhat = dist_bhat.assign(coverage=lambda x: np.sign(x.lb) != np.sign(x.ub))
+df_z_qq = dist_bhat.z.quantile(p_seq).rename_axis('pp').reset_index()
+df_z_qq = df_z_qq.rename(columns={'z':'emp'}).assign(theory=lambda x: norm.ppf(x.pp))
+print('Coverage = %0.1f%%' % (dist_bhat.coverage.mean()*100))
 
 
 

@@ -5,6 +5,74 @@ from scipy.stats import multivariate_normal as MVN
 from scipy.linalg import cholesky
 from scipy.integrate import quad
 from scipy.optimize import minimize_scalar
+from sklearn.linear_model import LinearRegression
+
+
+class CI_truncnorm():
+    def __init__(self, a, b, scale):
+        self.a, self.b, self.scale = a, b, scale
+
+    def find_mu_trunc(self, x, level, lb, ub):
+        fun = lambda w: (truncnorm(loc=w, a=(self.a - w) / self.scale, b=(self.b - w) / self.scale, 
+                                   scale=self.scale).ppf(level) - x)**2
+        res = minimize_scalar(fun,method='bounded',bounds=(lb,ub))
+        return res
+
+    # self=dist_lb;x=z.copy();alpha=0.05;tol=1e-5
+    def CI_truncnorm(self, x, alpha=0.05, tol=1e-5, bound=100):
+        if isinstance(x, float) | isinstance(x, int):
+            x = np.array([x])
+        sx = np.sign(x)
+        ax = np.abs(x)
+        holder = np.zeros([len(x),2])
+        for ii, xx in enumerate(ax):
+            root_lb = self.find_mu_trunc(x=xx, level=1-alpha/2, lb=-bound, ub=xx)
+            root_ub = self.find_mu_trunc(x=xx, level=alpha/2, lb=-xx, ub=bound)
+            assert (root_lb.fun<tol) and (root_ub.fun<tol)
+            CI_lb, CI_ub = root_lb.x, root_ub.x
+            holder[ii] = [CI_lb, CI_ub]
+        holder = holder * np.atleast_2d(sx).T
+        holder[sx==-1] = holder[sx==-1][:,[1,0]]
+        return holder
+
+class ols():
+    def __init__(self, y, X, sig2=None, has_int=True):
+        self.linreg = LinearRegression(fit_intercept=has_int)
+        self.linreg.fit(X=X,y=y)
+        self.n = len(X)
+        self.k = X.shape[1]+has_int
+        if sig2 is None:
+            yhat = self.linreg.predict(X)
+            self.sig2hat = np.sum((y - yhat)**2) / (self.n - self.k)
+        else:
+            self.sig2hat = sig2
+        self.bhat = self.linreg.coef_
+        if has_int:
+            self.bhat = np.append(np.array([self.linreg.intercept_]),self.bhat)
+            iX = np.c_[np.repeat(1,self.n), X]
+            gram = np.linalg.inv(iX.T.dot(iX))
+        else:
+            gram = np.linalg.inv(X.T.dot(X))
+        self.covar = self.sig2hat * gram
+        self.se = np.sqrt(np.diagonal(self.covar))
+        self.z = self.bhat / self.se
+    
+    def get_CI(self, alpha=0.05):
+        cv = norm.ppf(1-alpha/2)
+        self.lb = self.bhat - cv*self.se
+        self.ub = self.bhat + cv*self.se
+
+
+def dgp_yX(n,p,b0=0,sig2=1,seed=1,beta=None):
+    np.random.seed(seed)
+    X = np.random.randn(n,p)
+    X = (X - X.mean(0))/X.std(0,ddof=1)
+    if beta is None:
+        beta = np.repeat(np.sqrt(sig2/p),p)
+    u = np.sqrt(sig2)*np.random.randn(n)
+    eta = X.dot(beta)
+    y = b0 + eta + u
+    return y, X
 
 # WRITE A FUNCTION WRAPPER TO GENERATE DATA
 class two_stage():
