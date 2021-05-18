@@ -4,11 +4,12 @@ import pandas as pd
 from scipy.stats import norm, truncnorm, chi2, t
 from plotnine import *
 from timeit import timeit
+from time import time
 
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
-from classes import BVN, NTS, two_stage, ols, dgp_yX, CI_truncnorm
+from classes import BVN, NTS, two_stage, ols, dgp_yX, tnorm
 
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base,'figures')
@@ -16,62 +17,94 @@ dir_figures = os.path.join(dir_base,'figures')
 #############################
 # --- (4C) DATA CARVING --- #
 
-from time import time
-
-p_seq = np.arange(0.005,1,0.005)
-n, p, sig2 = 100, 20, 1
+# Truncated normal specification
 alpha = 0.05
+dist = tnorm(mu=0, sig2=1, a=1, b=np.inf)
+np.round(pd.DataFrame({'CI_2.5%':dist.CI(dist.ppf(alpha/2)),'CI_97.%':dist.CI(dist.ppf(1-alpha/2))}),1)
+
+cutoff = 0.1
+n, p, sig2 = 100, 20, 1
+m = int(n/2)
 beta_null = np.repeat(0, p)
-nsim = 5000
-
-cutoff = 1
-# Visualize the 2.5% percentile for (1,inf) as mu varies
-
-
-
-
-
-dist_lb = CI_truncnorm(a=cutoff, b=np.infty, scale=np.sqrt(sig2))
-
-np.random.seed(nsim)
-holder = []
-stime = time()
+nsim = 2000
+holder_ols, holder_SI = [], []
 for i in range(nsim):
-    if (i+1) % 10 == 0:
-        nrun, nleft = (i+1), nsim - (i+1)
-        rate = (time() - stime)/nrun
-        seta = nleft/rate
-        print('ETA: %0.1f minute (%i)' % (seta/60,i+1))
-    z = np.random.randn(p)
-    z = z[np.abs(z) > cutoff*1.01]
-    if len(z) == 0:
-        continue
-    res_z = dist_lb.CI_truncnorm(x=z,alpha=alpha,bound=1000)
-    res_z = np.c_[z, res_z]
-    holder.append(res_z)
-dist_trunc = pd.DataFrame(np.concatenate(holder),columns=['z','lb','ub'])
-dist_trunc = dist_trunc.assign(az=lambda x: np.sign(x.z).astype(int),
-                               coverage=lambda x: np.sign(x.lb) != np.sign(x.ub))
-dist_trunc.to_csv('dist_trunc.csv',index=False)
-print('Coverage = %0.1f%%' % (dist_trunc.coverage.mean()*100))
-dist_trunc.groupby('az').coverage.apply(lambda x: pd.Series({'n':len(x),'mu':x.mean()}))
-dist_trunc.groupby(['az','coverage']).z.mean().reset_index()
-
-
-holder = []
-for i in range(nsim):
-    if (i+1) % 1000 == 0:
+    if (i+1) % 100 == 0:
         print(i+1)
-    resp, xx = dgp_yX(n=n, p=p, beta=beta_null, seed=i)
+    resp, xx = dgp_yX(n=n, p=p, snr=1, b0=0, seed=i)
+    # Data splitting
+    mdl1 = ols(y=resp[:m], X=xx[:m], has_int=False, sig2=sig2)
+    abhat1 = np.abs(mdl1.bhat)
+    M1 = abhat1 > cutoff
+    if M1.sum() > 0:
+        mdl2 = ols(y=resp[m:], X=xx[m:,M1], has_int=False, sig2=sig2)
+        mdl2.CI(alpha)
+        tmp_ols = pd.DataFrame({'sim':i,'bhat':mdl2.bhat,'lb':mdl2.lb,'ub':mdl2.ub,'z':mdl2.z})
+        holder_ols.append(tmp_ols)
+    # Selective inference
     mdl = ols(y=resp, X=xx, has_int=False, sig2=sig2)
-    mdl.get_CI(alpha=alpha)
-    holder.append(np.c_[mdl.lb, mdl.ub, mdl.z])
-# Check that it follows student-T dist
-dist_bhat = pd.DataFrame(np.concatenate(holder),columns=['lb','ub','z'])
-dist_bhat = dist_bhat.assign(coverage=lambda x: np.sign(x.lb) != np.sign(x.ub))
-df_z_qq = dist_bhat.z.quantile(p_seq).rename_axis('pp').reset_index()
-df_z_qq = df_z_qq.rename(columns={'z':'emp'}).assign(theory=lambda x: norm.ppf(x.pp))
-print('Coverage = %0.1f%%' % (dist_bhat.coverage.mean()*100))
+    M = np.abs(mdl.bhat)>cutoff
+    if M.sum() > 0:        
+        tmp_M = pd.DataFrame({'sim':i,'bhat':mdl.bhat[M],'Vjj':np.diagonal(mdl.covar)[M]})
+    holder_SI.append(tmp_M)
+# Is truncated Gaussian?
+dat_TN = pd.concat(holder_SI).assign(tt='TN')
+dat_TN = dat_TN.assign(abhat=lambda x: x.bhat.abs(), sbhat=lambda x: np.sign(x.bhat).astype(int))
+dist_TN_ols = tnorm(mu=0,sig2=dat_TN.Vjj,a=cutoff,b=np.inf)
+pval_TN = dist_TN_ols.cdf(dat_TN.abhat)
+dat_TN['pval'] = 2*np.minimum(pval_TN,1-pval_TN)
+dat_TN = dat_TN.sort_values('abhat',ascending=False).reset_index(None,True)
+
+# Speed up solution with warm start
+lb, ub = 0.2, 0.7
+stime, holder = time(), []
+for j, (ab, vj) in enumerate(zip(dat_TN.abhat, dat_TN.Vjj)):
+    if j < 14000:
+        continue
+    if j % 25 == 0:
+        nleft, rate = dat_TN.shape[0] - (j+1), (j+1)/(time() - stime)
+        seta = nleft/rate
+        print('ETA: %0.1f seconds (%i, %i)' % (seta, j, dat_TN.shape[0]))
+    tmp_dist = tnorm(mu=0,sig2=vj, a=cutoff, b=np.inf)
+    if j == 1:
+        lb, ub = tmp_dist.CI(x=ab,alpha=alpha,method='BFGS',lb=0.2,ub=0.7)
+    else:
+        lb, ub = tmp_dist.CI(x=ab,alpha=alpha,method='BFGS',lb=lb,ub=ub)
+    lb, ub = lb[0], ub[0]
+    if (np.sign(lb) != np.sign(ub)) & (dat_TN.pval[j] < alpha):
+        print('woops!!')
+        break
+    tmp = pd.DataFrame({'lb':lb,'ub':ub},index=[j])
+    holder.append(tmp)
+
+# dat_CI = pd.concat(holder).reset_index(None,True)
+
+dat_CI.iloc[50:60]
+
+# Add on the UB/LB
+dat_TN = pd.concat([dat_TN, dat_CI],1)
+dat_TN = dat_TN.assign(reject=lambda x: x.pval < alpha, cover=lambda x: np.sign(x.lb)!=np.sign(x.ub))
+
+dat_TN.query('reject==True & cover==True').index
+dat_TN.groupby(['reject','cover']).size()
+
+dat_TN[['reject','cover']].mean()
+
+
+# Check for coverage
+dat_ols = pd.concat(holder_ols).assign(tt='LS')
+
+dat_sim = pd.concat([dat_ols, dat_TN]).reset_index(None,True)
+dat_sim = dat_sim.assign(cover=lambda x: np.sign(x.lb)!=np.sign(x.ub), reject=lambda x: x.pval<alpha)
+dat_sim.groupby('tt').apply(lambda x: pd.Series({'pval':x.reject.mean(),'cover':x.cover.mean()}))
+dat_sim.groupby(['tt','cover','reject']).size()
+dat_sim.query('tt=="TN"').groupby(['cover','reject']).size()
+
+np.quantile(np.abs(dat_TN.bhat),0.025)
+tnorm(mu=0,sig2=0.0107,a=cutoff,b=np.inf).ppf(0.025)
+np.quantile(np.abs(dat_TN.bhat),0.975)
+tnorm(mu=0,sig2=0.0107,a=cutoff,b=np.inf).ppf(0.975)
+
 
 
 

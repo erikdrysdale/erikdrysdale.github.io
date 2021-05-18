@@ -5,35 +5,51 @@ from scipy.stats import multivariate_normal as MVN
 from scipy.linalg import cholesky
 from scipy.integrate import quad
 from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize
 from sklearn.linear_model import LinearRegression
 
+class tnorm():
+    def __init__(self, mu, sig2, a, b):
+        self.mu, self.sig2, self.a, self.b = mu, sig2, a, b
+        self.sig = np.sqrt(sig2)
+        self.alpha, self.beta = (a-mu)/self.sig, (b-mu)/self.sig
+        self.dist = truncnorm(loc=mu, scale=self.sig, a=self.alpha, b=self.beta)
 
-class CI_truncnorm():
-    def __init__(self, a, b, scale):
-        self.a, self.b, self.scale = a, b, scale
+    def cdf(self, x):
+        return self.dist.cdf(x)
 
-    def find_mu_trunc(self, x, level, lb, ub):
-        fun = lambda w: (truncnorm(loc=w, a=(self.a - w) / self.scale, b=(self.b - w) / self.scale, 
-                                   scale=self.scale).ppf(level) - x)**2
-        res = minimize_scalar(fun,method='bounded',bounds=(lb,ub))
-        return res
+    def ppf(self, x):
+        return self.dist.ppf(x)
 
-    # self=dist_lb;x=z.copy();alpha=0.05;tol=1e-5
-    def CI_truncnorm(self, x, alpha=0.05, tol=1e-5, bound=100):
-        if isinstance(x, float) | isinstance(x, int):
-            x = np.array([x])
-        sx = np.sign(x)
-        ax = np.abs(x)
-        holder = np.zeros([len(x),2])
-        for ii, xx in enumerate(ax):
-            root_lb = self.find_mu_trunc(x=xx, level=1-alpha/2, lb=-bound, ub=xx)
-            root_ub = self.find_mu_trunc(x=xx, level=alpha/2, lb=-xx, ub=bound)
-            assert (root_lb.fun<tol) and (root_ub.fun<tol)
-            CI_lb, CI_ub = root_lb.x, root_ub.x
-            holder[ii] = [CI_lb, CI_ub]
-        holder = holder * np.atleast_2d(sx).T
-        holder[sx==-1] = holder[sx==-1][:,[1,0]]
-        return holder
+    def pdf(self, x):
+        return self.dist.pdf(x)
+
+    def rvs(self, n):
+        return self.dist.rvs(n)
+
+    # x, gamma, x0, lb, ub, method, nline, tol = ab, 1-alpha/2, -164, -1000, 10, 'BFGS', 50, 1e-2
+    def CI(self, x, gamma=0.05, x0=0, lb=-1000, ub=10, method='BFGS', nline=1000, tol=1e-2):
+        fun = lambda w, pv, xx: (100*(tnorm(w,self.sig2,self.a,self.b).cdf(xx)-pv))**2
+        if method == 'search':
+            aerr = 1
+            mu_seq = np.sinh(np.linspace(np.arcsinh(lb), np.arcsinh(ub),num=nline))
+            while aerr > tol:
+                q_seq = tnorm(mu=mu_seq,sig2=self.sig2,a=self.a,b=self.b).ppf(gamma)
+                istar = np.argmin((q_seq - x)**2)
+                qstar, mu_star = q_seq[istar], mu_seq[istar]
+                err = 100*(tnorm(mu=mu_star,sig2=self.sig2,a=self.a,b=self.b).cdf(x)-gamma)
+                aerr = np.abs(err)
+                ibound = istar + int(np.where(err < 0, -1, +1))
+                (q_seq - x)[istar]
+                (q_seq - x)[ibound]
+
+        elif method == 'bounded':
+            bb = minimize_scalar(fun, args=(1-alpha/2, x),bounds=(lb, ub), method=method).x
+        elif method == 'brent':
+            bb = minimize_scalar(fun, args=(1-alpha/2, x), method=method).x
+        else:
+            bb = minimize(fun, x0=x0, args=(1-alpha/2, x), method=method).x
+        return bb
 
 class ols():
     def __init__(self, y, X, sig2=None, has_int=True):
@@ -57,21 +73,24 @@ class ols():
         self.se = np.sqrt(np.diagonal(self.covar))
         self.z = self.bhat / self.se
     
-    def get_CI(self, alpha=0.05):
+    def CI(self, alpha=0.05):
         cv = norm.ppf(1-alpha/2)
         self.lb = self.bhat - cv*self.se
         self.ub = self.bhat + cv*self.se
 
 
-def dgp_yX(n,p,b0=0,sig2=1,seed=1,beta=None):
+def dgp_yX(n, p, b0=1, snr=1, seed=1, intercept=0):
     np.random.seed(seed)
     X = np.random.randn(n,p)
     X = (X - X.mean(0))/X.std(0,ddof=1)
-    if beta is None:
-        beta = np.repeat(np.sqrt(sig2/p),p)
+    beta = np.repeat(b0, p)
+    var_exp = np.sum(beta**2)
+    sig2 = 1
+    if var_exp > 0:
+        sig2 =  var_exp / snr
     u = np.sqrt(sig2)*np.random.randn(n)
     eta = X.dot(beta)
-    y = b0 + eta + u
+    y = intercept + eta + u
     return y, X
 
 # WRITE A FUNCTION WRAPPER TO GENERATE DATA
