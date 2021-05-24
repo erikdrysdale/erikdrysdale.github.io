@@ -18,16 +18,27 @@ dir_figures = os.path.join(dir_base,'figures')
 #############################
 # --- (4C) DATA CARVING --- #
 
-# Truncated normal specification
+mu1, mu2 = 0, 0
+v1, v2 = 1.5, 2.5
+a, b = 1, np.inf
+nsim = 100000
 alpha = 0.05
-dist = tnorm(mu=0, sig2=1, a=1, b=np.inf)
-q95 = dist.ppf([alpha/2, 1-alpha/2])
-np.round(pd.DataFrame({'lb':dist.CI(x=q95,gamma=1-alpha/2),
-                        'ub':dist.CI(x=q95,gamma=alpha/2)}),1)
+p_alpha = [alpha/2, 1-alpha/2]
+# CI check for NTS
+Z1 = norm(loc=mu1,scale=v1).rvs(nsim,random_state=nsim)
+Z2 = tnorm(mu2,v2**2,a,b).rvs(nsim,seed=nsim)
+W = Z1 + Z2
+dist_NTS = NTS(mu=[mu1,mu2],tau=[v1,v2],a=a, b=b)
+q_NTS = dist_NTS.ppf(p_alpha).flatten()
+print(np.round(pd.DataFrame({'q_theory':q_NTS,'q_emp':np.quantile(W,p_alpha)}),2))
+CI_NTS = pd.DataFrame({'q':q_NTS,'lb':dist_NTS.CI(q_NTS,1-alpha/2).flat,'ub':dist_NTS.CI(q_NTS,alpha/2).flat})
+print(np.round(CI_NTS,2))
 
-# tmp = tnorm(mu=0,sig2=[0.1,1],a=0.1,b=np.inf)
-# tmp.cdf([0.5,0.5])
-# tmp.CI(x=0.5,gamma=0.025)
+# CI check for TN
+dist_TN = tnorm(mu=0, sig2=1, a=1, b=np.inf)
+q_TN = dist_TN.ppf([alpha/2, 1-alpha/2])
+CI_TN = pd.DataFrame({'q':q_TN,'lb':dist_TN.CI(q_TN,1-alpha/2),'ub':dist_TN.CI(q_TN,alpha/2)})
+np.round(CI_TN,1)
 
 alpha = 0.05
 cutoff = 0.1
@@ -35,13 +46,13 @@ n, p, sig2 = 100, 20, 1
 m = int(n/2)
 beta_null = np.repeat(0, p)
 nsim = 1000
-holder_SI, holder_ols = [], []
+holder_SI, holder_ols, holder_carv = [], [], []
 np.random.seed(nsim)
 for i in range(nsim):
     if (i+1) % 100 == 0:
         print(i+1)
     resp, xx = dgp_yX(n=n, p=p, snr=1, b0=0, seed=i)
-    # Data splitting
+    # (i) Data splitting
     mdl1 = ols(y=resp[:m], X=xx[:m], has_int=False, sig2=sig2)
     abhat1 = np.abs(mdl1.bhat)
     M1 = abhat1 > cutoff
@@ -49,19 +60,48 @@ for i in range(nsim):
         mdl2 = ols(y=resp[m:], X=xx[m:,M1], has_int=False, sig2=sig2)
         tmp_ols = pd.DataFrame({'sim':i,'bhat':mdl2.bhat,'Vjj':np.diagonal(mdl2.covar)})
         holder_ols.append(tmp_ols)
-    # Selective inference
+    # (iii) Data carving
+    if M1.sum() > 0:
+        tmp_carv = pd.DataFrame({'bhat1':mdl1.bhat[M1],'bhat2':mdl2.bhat,
+                      'Vm':np.diagonal(mdl1.covar)[M1],'Vk':np.diagonal(mdl2.covar)})
+        holder_carv.append(tmp_carv)    
+    # (ii) Selective inference
     mdl = ols(y=resp, X=xx, has_int=False, sig2=sig2)
     M = np.abs(mdl.bhat)>cutoff
     if M.sum() > 0:        
         tmp_M = pd.DataFrame({'sim':i,'bhat':mdl.bhat[M],'Vjj':np.diagonal(mdl.covar)[M]})
     holder_SI.append(tmp_M)
+# In NTS?
+dat_NTS = pd.concat(holder_carv).reset_index(None,True).assign(tt='NTS')
+# dat_NTS.insert(0,'s_bhat1',np.sign(dat_NTS.bhat1).astype(int))
+# Distribution under the null
+idx_bhat1_pos = np.sign(dat_NTS.bhat1) == 1
+tau_seq = np.sqrt(np.c_[dat_NTS[idx_bhat1_pos].Vk, dat_NTS[idx_bhat1_pos].Vm])
+mu_seq = np.zeros(tau_seq.shape)
+a_seq = np.repeat(cutoff, idx_bhat1_pos.sum())
+b_seq = np.repeat(np.inf, idx_bhat1_pos.sum())
+dist_H0_NTS = NTS(mu_seq, tau_seq, a_seq, b_seq)
+bhat12 = dat_NTS.loc[idx_bhat1_pos,['bhat1','bhat2']].sum(1).values
+pval_NTS = dist_H0_NTS.cdf(bhat12).flatten()
+pval_NTS = 2*np.minimum(pval_NTS,1-pval_NTS)
+
+kk = 1
+mu_seq = np.tile(np.arange(kk),[2,1]).T/10
+tau_seq = mu_seq + 1
+a_seq, b_seq = a_seq[:kk], b_seq[:kk]
+tmp = NTS(mu_seq, tau_seq, a_seq, b_seq)
+self = tmp; gamma=alpha/2; x = np.tile(np.repeat(0.15,kk),[3,1])
+
+tmp.CI(x=bhat12[:kk],gamma=alpha/2)
+
+
+
 # Coverage for OLS
 dat_ols = pd.concat(holder_ols).reset_index(None,True).assign(tt='OLS')
 pval_ols = norm(loc=0,scale=np.sqrt(dat_ols.Vjj)).cdf(dat_ols.bhat)
 pval_ols = 2*np.minimum(pval_ols,1-pval_ols)
 CI_ols = cvec(dat_ols.bhat) + np.array([-1,1])*cvec(norm.ppf(1-alpha/2)*np.sqrt(dat_ols.Vjj))
 dat_ols = dat_ols.assign(reject=pval_ols<alpha,cover=np.sign(CI_ols).sum(1)==0)
-dat_ols[['reject','cover']].mean()
 
 # Is truncated Gaussian?
 dat_TN = pd.concat(holder_SI).assign(tt='TN')
@@ -77,7 +117,14 @@ ub_TN = dist_TN_ols.CI(x=dat_TN.abhat.values,gamma=alpha/2,verbose=True,tol=1e-2
 CI_TN = np.c_[lb_TN, ub_TN]
 dat_TN = dat_TN.assign(reject=pval_TN<0.05, cover=np.sign(CI_TN).sum(1)==0)
 dat_TN.groupby(['reject','cover']).size()
-dat_TN[['reject','cover']].mean()
+
+# Save data for later
+dat_TN_ols = pd.concat([dat_TN[dat_ols.columns], dat_ols],0).reset_index(None,True)
+dat_TN_ols.to_csv('dat_TN_ols.csv',index=False)
+dat_TN_ols.groupby('tt')['reject','cover'].mean()
+
+
+
 
 
 

@@ -19,3 +19,4 @@ package.json
 *.pdf
 .Rproj.user
 *.Rproj
+*.Rhistory
