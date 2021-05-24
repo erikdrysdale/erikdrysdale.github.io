@@ -7,137 +7,15 @@ from timeit import timeit
 from time import time
 from classes import cvec
 
+from statsmodels.stats.proportion import proportion_confint as propCI
+
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
-from classes import BVN, NTS, two_stage, ols, dgp_yX, tnorm
+from classes import BVN, NTS, two_stage, ols, dgp_yX, tnorm, rvec
 
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base,'figures')
-
-#############################
-# --- (4C) DATA CARVING --- #
-
-mu1, mu2 = 0, 0
-v1, v2 = 1.5, 2.5
-a, b = 1, np.inf
-nsim = 100000
-alpha = 0.05
-p_alpha = [alpha/2, 1-alpha/2]
-# CI check for NTS
-Z1 = norm(loc=mu1,scale=v1).rvs(nsim,random_state=nsim)
-Z2 = tnorm(mu2,v2**2,a,b).rvs(nsim,seed=nsim)
-W = Z1 + Z2
-dist_NTS = NTS(mu=[mu1,mu2],tau=[v1,v2],a=a, b=b)
-q_NTS = dist_NTS.ppf(p_alpha).flatten()
-print(np.round(pd.DataFrame({'q_theory':q_NTS,'q_emp':np.quantile(W,p_alpha)}),2))
-CI_NTS = pd.DataFrame({'q':q_NTS,'lb':dist_NTS.CI(q_NTS,1-alpha/2).flat,'ub':dist_NTS.CI(q_NTS,alpha/2).flat})
-print(np.round(CI_NTS,2))
-
-# CI check for TN
-dist_TN = tnorm(mu=0, sig2=1, a=1, b=np.inf)
-q_TN = dist_TN.ppf([alpha/2, 1-alpha/2])
-CI_TN = pd.DataFrame({'q':q_TN,'lb':dist_TN.CI(q_TN,1-alpha/2),'ub':dist_TN.CI(q_TN,alpha/2)})
-np.round(CI_TN,1)
-
-alpha = 0.05
-cutoff = 0.1
-n, p, sig2 = 100, 20, 1
-m = int(n/2)
-beta_null = np.repeat(0, p)
-nsim = 1000
-holder_SI, holder_ols, holder_carv = [], [], []
-np.random.seed(nsim)
-for i in range(nsim):
-    if (i+1) % 100 == 0:
-        print(i+1)
-    resp, xx = dgp_yX(n=n, p=p, snr=1, b0=0, seed=i)
-    # (i) Data splitting
-    mdl1 = ols(y=resp[:m], X=xx[:m], has_int=False, sig2=sig2)
-    abhat1 = np.abs(mdl1.bhat)
-    M1 = abhat1 > cutoff
-    if M1.sum() > 0:
-        mdl2 = ols(y=resp[m:], X=xx[m:,M1], has_int=False, sig2=sig2)
-        tmp_ols = pd.DataFrame({'sim':i,'bhat':mdl2.bhat,'Vjj':np.diagonal(mdl2.covar)})
-        holder_ols.append(tmp_ols)
-    # (iii) Data carving
-    if M1.sum() > 0:
-        tmp_carv = pd.DataFrame({'bhat1':mdl1.bhat[M1],'bhat2':mdl2.bhat,
-                      'Vm':np.diagonal(mdl1.covar)[M1],'Vk':np.diagonal(mdl2.covar)})
-        holder_carv.append(tmp_carv)    
-    # (ii) Selective inference
-    mdl = ols(y=resp, X=xx, has_int=False, sig2=sig2)
-    M = np.abs(mdl.bhat)>cutoff
-    if M.sum() > 0:        
-        tmp_M = pd.DataFrame({'sim':i,'bhat':mdl.bhat[M],'Vjj':np.diagonal(mdl.covar)[M]})
-    holder_SI.append(tmp_M)
-# In NTS?
-dat_NTS = pd.concat(holder_carv).reset_index(None,True).assign(tt='NTS')
-# dat_NTS.insert(0,'s_bhat1',np.sign(dat_NTS.bhat1).astype(int))
-# Distribution under the null
-idx_bhat1_pos = np.sign(dat_NTS.bhat1) == 1
-tau_seq = np.sqrt(np.c_[dat_NTS[idx_bhat1_pos].Vk, dat_NTS[idx_bhat1_pos].Vm])
-mu_seq = np.zeros(tau_seq.shape)
-a_seq = np.repeat(cutoff, idx_bhat1_pos.sum())
-b_seq = np.repeat(np.inf, idx_bhat1_pos.sum())
-dist_H0_NTS = NTS(mu_seq, tau_seq, a_seq, b_seq)
-bhat12 = dat_NTS.loc[idx_bhat1_pos,['bhat1','bhat2']].sum(1).values
-pval_NTS = dist_H0_NTS.cdf(bhat12).flatten()
-pval_NTS = 2*np.minimum(pval_NTS,1-pval_NTS)
-
-kk = 1
-mu_seq = np.tile(np.arange(kk),[2,1]).T/10
-tau_seq = mu_seq + 1
-a_seq, b_seq = a_seq[:kk], b_seq[:kk]
-tmp = NTS(mu_seq, tau_seq, a_seq, b_seq)
-self = tmp; gamma=alpha/2; x = np.tile(np.repeat(0.15,kk),[3,1])
-
-tmp.CI(x=bhat12[:kk],gamma=alpha/2)
-
-
-
-# Coverage for OLS
-dat_ols = pd.concat(holder_ols).reset_index(None,True).assign(tt='OLS')
-pval_ols = norm(loc=0,scale=np.sqrt(dat_ols.Vjj)).cdf(dat_ols.bhat)
-pval_ols = 2*np.minimum(pval_ols,1-pval_ols)
-CI_ols = cvec(dat_ols.bhat) + np.array([-1,1])*cvec(norm.ppf(1-alpha/2)*np.sqrt(dat_ols.Vjj))
-dat_ols = dat_ols.assign(reject=pval_ols<alpha,cover=np.sign(CI_ols).sum(1)==0)
-
-# Is truncated Gaussian?
-dat_TN = pd.concat(holder_SI).assign(tt='TN')
-dat_TN = dat_TN.assign(abhat=lambda x: x.bhat.abs(),
-                       sbhat=lambda x: np.sign(x.bhat).astype(int))
-dat_TN = dat_TN.sort_values('abhat',ascending=False).reset_index(None,True)
-dist_TN_ols = tnorm(mu=0,sig2=dat_TN.Vjj.values,a=cutoff,b=np.inf)
-pval_TN = dist_TN_ols.cdf(dat_TN.abhat)
-pval_TN = 2*np.minimum(pval_TN,1-pval_TN)
-dat_TN['pval'] = pval_TN
-lb_TN = dist_TN_ols.CI(x=dat_TN.abhat.values,gamma=1-alpha/2,verbose=True,tol=1e-2)
-ub_TN = dist_TN_ols.CI(x=dat_TN.abhat.values,gamma=alpha/2,verbose=True,tol=1e-2)
-CI_TN = np.c_[lb_TN, ub_TN]
-dat_TN = dat_TN.assign(reject=pval_TN<0.05, cover=np.sign(CI_TN).sum(1)==0)
-dat_TN.groupby(['reject','cover']).size()
-
-# Save data for later
-dat_TN_ols = pd.concat([dat_TN[dat_ols.columns], dat_ols],0).reset_index(None,True)
-dat_TN_ols.to_csv('dat_TN_ols.csv',index=False)
-dat_TN_ols.groupby('tt')['reject','cover'].mean()
-
-
-
-
-
-
-#############################
-# --- (4A) QUERIES 1964 --- #
-# X~N(100,6), Y~TN(50,3,44,Inf)
-
-mu1, tau1 = 100, 6
-mu2, tau2, a, b = 50, 3, 44, np.inf
-mu, tau = np.array([mu1, mu2]), np.array([tau1,tau2])
-dist_A = NTS(mu=mu,tau=tau, a=a, b=b)
-dist_A.cdf(138)
-
 
 #######################################
 # --- (2) BVN INTEGRATION METHODS --- #
@@ -213,6 +91,44 @@ gg_rtime.save(os.path.join(dir_figures,'gg_rtime.png'),width=7,height=4.5)
 ####################################
 # --- (3) NORMAL-TRUNCATED-SUM --- #
 
+# --- NTS --- #
+
+# Check vectorization works for cdf, pdf, and ppf
+# r == 1 & x == 1
+nts1 = NTS(mu=[0,0],tau=[1,1],a=1,b=np.inf)
+nts1.pdf(x=2); nts1.cdf(x=2); nts1.ppf(p=0.025)
+nts1.CI(x=nts1.ppf(p=[alpha/2,1-alpha/2]),gamma=0.975)
+nts1.CI(x=nts1.ppf(p=0.025),gamma=1-0.975)
+# r == 1 & x > 1
+nts1.pdf(x=[2,2]); nts1.cdf(x=[2,2]); nts1.ppf(p=[0.2,0.5])
+# r > 1 & x == 1
+nts2 = NTS(mu=[[0,0],[1,1]],tau=[[1,1],[1,1]],a=[1,1],b=[np.inf,np.inf])
+nts2.pdf(x=2); nts2.cdf(x=2); nts2.ppf(p=0.5)
+# r > 1 & x == r
+nts2.pdf(x=[2,3]); nts2.cdf(x=[1.5,2.8]); nts2.ppf(p=[0.5,0.5])
+# r > 1 & x == c*r
+xx = np.arange(6).reshape([3,2])
+pp = np.tile([0.25,0.5,0.75],[2,1]).T
+nts2.pdf(xx); nts2.cdf(xx); nts2.ppf(pp)
+
+tmp_mu = np.array([[0,0],[1,1],[2,2]])
+tmp_tau = tmp_mu + 0.5
+nts3 = NTS(tmp_mu, tmp_tau, np.repeat(1,3),np.repeat(np.inf,3))
+nts3.pdf(x=2); nts3.cdf(x=2); nts3.ppf(p=0.025); nts3.ppf(p=0.975)
+x = nts3.ppf(p=0.025)
+nts3.CI(x,1-alpha/2)
+
+# # Sample distribution
+# nsim = 1000
+# nts_rvs = NTS(mu=[0,0],tau=[1,1],a=1,b=np.inf)
+# gauss_rvs = norm(loc=nts_rvs.theta1,scale=nts_rvs.sigma1)
+# d1 = pd.DataFrame({'x':nts_rvs.rvs(nsim,seed=nsim),'tt':'NTS'})
+# d2 = pd.DataFrame({'x':gauss_rvs.rvs(nsim,random_state=nsim),'tt':'Gaussian'})
+# df = pd.concat([d1,d2]).reset_index(None,True)
+# gg = (ggplot(df,aes(x='x',fill='tt')) + theme_bw() + 
+#     geom_histogram(alpha=0.5,color='black',bins=25,position='identity') )
+# gg.save(os.path.join(dir_figures,'gg_tmp.png'),height=4,width=5)
+
 # Demonstrated with example
 mu1, tau1 = 1, 1
 mu2, tau2, a, b = 1, 2, -1, 4
@@ -232,12 +148,11 @@ print(pd.DataFrame({'method':methods,'mu':mus}))
 dat_W_sim = pd.DataFrame({'W':W_sim,'f':dist_NTS.pdf(W_sim)})
 
 # Plot empirical frequency to theory
-gg_Wsim = (ggplot(dat_W_sim) + 
-    theme_bw() +
+gg_Wsim = (ggplot(dat_W_sim) + theme_bw() +
     labs(x='W',y='Simulation density') + 
     ggtitle('Blue curve shows Eq. (3)') + 
     stat_bin(aes(x='W',y=after_stat('density')),bins=40,geom='geom_histogram',
-        fill='red',alpha=0.5,color='black') +  
+        fill='red',alpha=0.5,color='black') + 
     stat_function(aes(x='W'),fun=dist_NTS.pdf,color='blue'))
 gg_Wsim.save(os.path.join(dir_figures,'gg_Wsim.png'),width=5,height=4)
 
@@ -268,8 +183,8 @@ delta, sigma2 = 2, 4
 n, m = 100, 100
 gamma, alpha = 0.01, 0.05
 nsim = 10000000
-p_seq = np.arange(0.01,1,0.01)
-two_stage(n=n, m=m, gamma=gamma, alpha=alpha, pool=True).power[0]
+p_seq = np.round(np.arange(0.01,1,0.01),2)
+two_stage(n=n, m=m, gamma=gamma, alpha=alpha, pool=True).power
 
 # --- (A) CALCULATE N=M=100 PP-QQ PLOT --- #
 dist_2s = two_stage(n=n, m=m, gamma=gamma, alpha=alpha, pool=True)
@@ -299,7 +214,7 @@ gg_qp_2s.save(os.path.join(dir_figures,'gg_qp_2s.png'),width=4,height=7)
 
 # --- (B) POWER AS GAMMA VARIES --- #
 gamma_seq = np.round(np.arange(0.01,0.21,0.01),2)
-power_theory = np.array([two_stage(n=n, m=m, gamma=g, alpha=alpha, pool=False).power[0] for g in gamma_seq])
+power_theory = np.array([two_stage(n=n, m=m, gamma=g, alpha=alpha, pool=False).power for g in gamma_seq])
 ub_theory = delta + np.sqrt(sigma2/n)*t(df=n-1).ppf(1-gamma_seq)
 power_emp, ub_emp = np.zeros(power_theory.shape), np.zeros(ub_theory.shape)
 for i, g in enumerate(gamma_seq):
@@ -330,7 +245,7 @@ gg_gamma.save(os.path.join(dir_figures,'gg_gamma.png'),width=4,height=7)
 k = n + m
 n_seq = np.arange(5,k,5)
 dat_nm = pd.concat([pd.DataFrame({'n':nn,'m':k-nn,
-    'power':two_stage(n=nn, m=k-nn, gamma=gamma, alpha=alpha, pool=True).power[0]},index=[nn]) for nn in n_seq])
+    'power':two_stage(n=nn, m=k-nn, gamma=gamma, alpha=alpha, pool=True).power},index=[nn]) for nn in n_seq])
 dat_nm = dat_nm.reset_index(None,True).assign(ub=delta + np.sqrt(sigma2/n_seq)*t(df=n_seq-1).ppf(1-gamma))
 dat_nm = dat_nm.melt(['n','m'],None,'msr')
 
@@ -342,4 +257,132 @@ gg_nm = (ggplot(dat_nm,aes(x='n',y='value')) +
 gg_nm.save(os.path.join(dir_figures,'gg_nm.png'),width=4,height=7)
 
 
+#############################
+# --- (4A) QUERIES 1964 --- #
+# X~N(100,6), Y~TN(50,3,44,Inf)
 
+mu1, tau1 = 100, 6
+mu2, tau2, a, b = 50, 3, 44, np.inf
+mu, tau = np.array([mu1, mu2]), np.array([tau1,tau2])
+dist_A = NTS(mu=mu,tau=tau, a=a, b=b)
+dist_A.cdf(138)
+
+
+#############################
+# --- (4C) DATA CARVING --- #
+
+mu1, mu2 = 0, 0
+v1, v2 = 1.5, 2.5
+a, b = 1, np.inf
+nsim = 100000
+alpha = 0.05
+p_alpha = [alpha/2, 1-alpha/2]
+# CI check for NTS
+Z1 = norm(loc=mu1,scale=v1).rvs(nsim,random_state=nsim)
+Z2 = tnorm(mu2,v2**2,a,b).rvs(nsim,seed=nsim)
+W = Z1 + Z2
+dist_NTS = NTS(mu=[mu1,mu2],tau=[v1,v2],a=a, b=b)
+q_NTS = np.array([dist_NTS.ppf(p) for p in p_alpha])
+print(np.round(pd.DataFrame({'q_theory':q_NTS,'q_emp':np.quantile(W,p_alpha)}),2))
+CI_NTS = pd.DataFrame({'q':q_NTS,'lb':dist_NTS.CI(q_NTS,1-alpha/2),'ub':dist_NTS.CI(q_NTS,alpha/2).flat})
+print(np.round(CI_NTS,2))
+
+# CI check for TN
+dist_TN = tnorm(mu=0, sig2=1, a=1, b=np.inf)
+q_TN = dist_TN.ppf([alpha/2, 1-alpha/2])
+CI_TN = pd.DataFrame({'q':q_TN,'lb':dist_TN.CI(q_TN,1-alpha/2),'ub':dist_TN.CI(q_TN,alpha/2)})
+np.round(CI_TN,2)
+
+alpha = 0.05
+cutoff = 0.1
+n, p, sig2 = 100, 20, 1
+m = int(n/2)
+beta_null = np.repeat(0, p)
+nsim = 1000
+holder_SI, holder_ols, holder_carv = [], [], []
+np.random.seed(nsim)
+for i in range(nsim):
+    if (i+1) % 100 == 0:
+        print(i+1)
+    resp, xx = dgp_yX(n=n, p=p, snr=1, b0=0, seed=i)
+    # (i) Data splitting
+    mdl1 = ols(y=resp[:m], X=xx[:m], has_int=False, sig2=sig2)
+    abhat1 = np.abs(mdl1.bhat)
+    M1 = abhat1 > cutoff
+    if M1.sum() > 0:
+        mdl2 = ols(y=resp[m:], X=xx[m:,M1], has_int=False, sig2=sig2)
+        tmp_ols = pd.DataFrame({'sim':i,'bhat':mdl2.bhat,'Vjj':np.diagonal(mdl2.covar)})
+        holder_ols.append(tmp_ols)
+    # (iii) Data carving
+    if M1.sum() > 0:
+        tmp_carv = pd.DataFrame({'sim':i,'bhat1':mdl1.bhat[M1],'bhat2':mdl2.bhat,
+                      'Vm':np.diagonal(mdl1.covar)[M1],'Vk':np.diagonal(mdl2.covar)})
+        holder_carv.append(tmp_carv)    
+    # (ii) Selective inference
+    mdl = ols(y=resp, X=xx, has_int=False, sig2=sig2)
+    M = np.abs(mdl.bhat)>cutoff
+    if M.sum() > 0:        
+        tmp_M = pd.DataFrame({'sim':i,'bhat':mdl.bhat[M],'Vjj':np.diagonal(mdl.covar)[M]})
+    holder_SI.append(tmp_M)
+# In NTS?
+dat_NTS = pd.concat(holder_carv).reset_index(None,True).assign(tt='NTS')
+# dat_NTS = dat_NTS.assign(pval=np.NaN,lb=np.NaN,ub=np.NaN)
+# Assume we're in positive region, and then swap for negative signs
+a_seq = np.repeat(cutoff, len(dat_NTS))
+b_seq = np.repeat(np.inf, len(dat_NTS))
+tau_seq = np.sqrt(np.c_[dat_NTS.Vk, dat_NTS.Vm])
+mu_seq = np.zeros(tau_seq.shape)
+dist_H0_NTS = NTS(mu_seq, tau_seq, a_seq, b_seq)
+bhat12 = (dat_NTS.bhat1.abs() + dat_NTS.bhat2).values
+pval_NTS = dist_H0_NTS.cdf(bhat12)
+pval_NTS = 2*np.minimum(pval_NTS,1-pval_NTS)
+assert np.abs(alpha - np.mean(pval_NTS < alpha)) < 2*np.sqrt(alpha*(1-alpha) / len(dat_NTS))
+ub_NTS = dist_H0_NTS.CI(bhat12,gamma=alpha/2,nline=10,verbose=True)
+lb_NTS = dist_H0_NTS.CI(bhat12,gamma=1-alpha/2,nline=10,verbose=True)
+tmp_plu = pd.DataFrame(np.c_[np.sign(dat_NTS.bhat1),pval_NTS, lb_NTS, ub_NTS],columns=['sbhat','pval','lb','ub'])
+tmp_plu.loc[tmp_plu.sbhat==-1,['lb','ub']] = (-1*tmp_plu.loc[tmp_plu.sbhat==-1,['lb','ub']]).iloc[:,[1,0]].values
+tmp_plu = tmp_plu.assign(reject=lambda x: x.pval<alpha, cover=lambda x: np.sign(x.lb)!=np.sign(x.ub))
+dat_NTS_inf = pd.concat([dat_NTS,tmp_plu[['lb','ub','reject','cover']]],1)
+
+# Coverage for OLS
+dat_ols = pd.concat(holder_ols).reset_index(None,True).assign(tt='OLS')
+pval_ols = norm(loc=0,scale=np.sqrt(dat_ols.Vjj)).cdf(dat_ols.bhat)
+pval_ols = 2*np.minimum(pval_ols,1-pval_ols)
+CI_ols = cvec(dat_ols.bhat) + np.array([-1,1])*cvec(norm.ppf(1-alpha/2)*np.sqrt(dat_ols.Vjj))
+dat_ols = dat_ols.assign(reject=pval_ols<alpha,cover=np.sign(CI_ols).sum(1)==0)
+
+# Is truncated Gaussian?
+dat_TN = pd.concat(holder_SI).assign(tt='TN')
+dat_TN = dat_TN.assign(abhat=lambda x: x.bhat.abs(),
+                       sbhat=lambda x: np.sign(x.bhat).astype(int))
+dat_TN = dat_TN.sort_values('abhat',ascending=False).reset_index(None,True)
+dist_TN_ols = tnorm(mu=0,sig2=dat_TN.Vjj.values,a=cutoff,b=np.inf)
+pval_TN = dist_TN_ols.cdf(dat_TN.abhat)
+pval_TN = 2*np.minimum(pval_TN,1-pval_TN)
+dat_TN['pval'] = pval_TN
+lb_TN = dist_TN_ols.CI(x=dat_TN.abhat.values,gamma=1-alpha/2,verbose=True,tol=1e-2)
+ub_TN = dist_TN_ols.CI(x=dat_TN.abhat.values,gamma=alpha/2,verbose=True,tol=1e-2)
+CI_TN = np.c_[lb_TN, ub_TN]
+dat_TN = dat_TN.assign(reject=pval_TN<0.05, cover=np.sign(CI_TN).sum(1)==0)
+
+cn_sub = ['sim','tt','reject','cover']
+# Save data for later
+dat_bhat = pd.concat([dat_TN[cn_sub], dat_ols[cn_sub],dat_NTS_inf[cn_sub]],0).reset_index(None,True)
+dat_bhat.to_csv('dat_bhat.csv',index=False)
+# dat_bhat.groupby('tt')['reject','cover'].mean()
+
+res_NTS = dat_bhat.melt('tt',['reject','cover'],'msr').groupby(['tt','msr'])
+res_NTS = res_NTS.value.apply(lambda x: pd.DataFrame({'p':x.mean(),'s':x.sum(),'n':len(x)},index=[0])).reset_index()
+res_NTS = pd.concat([res_NTS,pd.concat(propCI(res_NTS.s,res_NTS.n,alpha,'beta'),1)],1)
+res_NTS = res_NTS.rename(columns={0:'lb',1:'ub'}).drop(columns='level_2')
+hlines = pd.DataFrame({'msr':['cover','reject'],'val':[1-alpha,alpha]})
+gtit = 'Vertical lines show simulation uncertainty ranges\nHorizontal lines show level target'
+gg_ols = (ggplot(res_NTS,aes(x='tt',y='p')) + theme_bw() + 
+    geom_point() + 
+    labs(y='Percentage',x='Method') + 
+    facet_wrap('~msr',scales='free_y',
+        labeller=labeller(msr={'cover':'CI-Coverage','reject':'P-value < 5%'})) + 
+    theme(subplots_adjust={'wspace': 0.15}) + 
+    geom_linerange(aes(ymin='lb',ymax='ub')) +  ggtitle(gtit) + 
+    geom_hline(aes(yintercept='val'),data=hlines,linetype='--'))
+gg_ols.save(os.path.join(dir_figures,'gg_ols.png'),width=9,height=4)

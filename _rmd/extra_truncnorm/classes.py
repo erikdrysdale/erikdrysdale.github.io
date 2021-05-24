@@ -123,6 +123,8 @@ class NTS():
         self.Q = norm.pdf(self.alpha) - norm.pdf(self.beta)
         # Average will be unweighted combination of the two distributions
         self.mu_W = self.mu[:,0] + self.mu[:,1] + self.tau[:,1]*self.Q/self.Z
+        if np.prod(self.mu_W.shape) == 1:
+            self.mu_W = self.mu_W[0]
         # Distributions
         self.dist_X1 = norm(loc=self.mu[:,0], scale=self.tau[:,0])
         self.dist_X2 = truncnorm(a=self.alpha, b=self.beta, loc=self.mu[:,1], scale=self.tau[:,1])
@@ -135,24 +137,7 @@ class NTS():
         # Initialize BVN for CDF
         self.di_BVN = {i:BVN(mu=[0,0],sigma=[1,1],rho=self.rho[i]) for i in range(self.r)}
 
-    # x = np.c_[np.repeat(2,10),np.repeat(3,10)].T
-    def pdf(self, x):
-        if isinstance(x, list):
-            x = np.array(x)
-        if isinstance(x, float) or isinstance(x, int):
-            x = np.array([x])
-        term1 = self.sigma1 * self.Z
-        m1 = (x - self.theta1) / self.sigma1
-        term2 = (self.beta-self.rho*m1)/np.sqrt(1-self.rho**2)
-        term3 = (self.alpha-self.rho*m1)/np.sqrt(1-self.rho**2)
-        f = norm.pdf(m1)*(norm.cdf(term2) - norm.cdf(term3)) / term1
-        return f
-
-    def cdf(self, x, method='scipy'):
-        """
-        THE SIZE OF x NEEDS TO MATCH VECTORIZIATION
-        if self.r > 1:  x ~ [nr, self.r]
-        """
+    def reshape(self, x):
         if isinstance(x, list) | isinstance(x, pd.Series):
             x = np.array(x)
         if isinstance(x, float) or isinstance(x, int):
@@ -165,14 +150,37 @@ class NTS():
             nr += 1
         else:
             x = x.reshape([nr, self.r])
-        nc = x.shape[1]
+        return x
+
+    # x = np.c_[np.repeat(2,10),np.repeat(3,10)].T
+    def pdf(self, x):
+        if isinstance(x, list):
+            x = np.array(x)
+        if isinstance(x, float) or isinstance(x, int):
+            x = np.array([x])
+        term1 = self.sigma1 * self.Z
+        m1 = (x - self.theta1) / self.sigma1
+        term2 = (self.beta-self.rho*m1)/np.sqrt(1-self.rho**2)
+        term3 = (self.alpha-self.rho*m1)/np.sqrt(1-self.rho**2)
+        f = norm.pdf(m1)*(norm.cdf(term2) - norm.cdf(term3)) / term1
+        if np.prod(f.shape) == 1:
+            f = f[0]
+        return f
+
+    def cdf(self, x, method='scipy'):
+        """
+        THE SIZE OF x NEEDS TO MATCH VECTORIZIATION
+        if self.r > 1:  x ~ [nr, self.r]
+        """
+        x = self.reshape(x)
+        nr, nc = x.shape
         m1 = (x - self.theta1) / self.sigma1
         alpha_seq = np.where(self.alpha == -np.infty, -10, self.alpha)
         beta_seq = np.where(self.beta == np.infty, +10, self.beta)
         if self.r == 1:
             assert nc == 1
-            alpha_seq = cvec(np.repeat(self.alpha,nr))
-            beta_seq = cvec(np.repeat(self.beta,nr))
+            alpha_seq = cvec(np.repeat(alpha_seq,nr))
+            beta_seq = cvec(np.repeat(beta_seq,nr))
         else:  # (self.r > 1):
             alpha_seq, beta_seq = np.tile(alpha_seq, [nr,1]), np.tile(beta_seq, [nr,1])
         # Looping must be done because self.rho varies by di_BVN...
@@ -181,65 +189,74 @@ class NTS():
         orthant = 1 - (orthant1 - orthant2)/self.Z
         if np.any(np.array(orthant.shape)==1):
             orthant = orthant.flatten()
+        if np.prod(orthant.shape) == 1:
+            orthant = orthant[0]
         return orthant
 
-    # self=tmp;x=bhat12[0:kk];gamma=alpha/2;verbose=True
-    def CI(self, x, gamma, verbose=False):
-        # NEEDS LINE SEARCH LIKE TRUNCNORM
-        
-
-        # if isinstance(x,float) | isinstance(x,int):
-        #     x = np.array([x])
-        # else:
-        #     x = np.array(x)
-        # nele = np.prod(x.shape)
-        # nr = int(nele / self.r)
-        # if nr == 0:
-        #     assert len(x) == 1
-        #     x = rvec(np.repeat(x,self.r))
-        #     nr += 1
-        # else:
-        #     x = x.reshape([nr, self.r])
-        # nc = x.shape[1]
-        # if (nr == 1) & (self.r > 1):
-        #     x0 = np.array([0])
-        #     mfun = lambda w, tau, a, b, z, g: np.sum((NTS([w[0],w[0]], tau, a, b).cdf(z) - g)**2)
-        # if (nr > 1) | (self.r > 1):  #(nr > 1) & (self.r == 1)
-        #     x0 = np.repeat(0, nr)
-        #     mfun = lambda w, tau, a, b, z, g: np.sum((NTS(np.c_[w,w], tau, a, b).cdf(z) - g)**2)        
-        # holder_CI = np.zeros(x.shape) * np.NaN
-        # for i in range(self.r):
-        #     tau, a, b = self.tau[i], self.a[i], self.b[i]
-        #     if (self.r > 1) | (nr > 1):
-        #         tau, a, b = np.tile(tau,[nr,1]), np.repeat(a,nr), np.repeat(b,nr)
-        #     xi = x[:,i]
-        #     stime = time()
-        #     res = minimize(fun=mfun,x0=x0,args=(tau, a, b, xi, gamma),method='L-BFGS-B')
-        #     etime = time() - stime
-        #     vprint('Took %i seconds to run column %i (of %i)' % (etime,i+1,nc), verbose)
-        #     holder_CI[:,i] = res.x
+    # self = dist_H0_NTS; x=bhat12
+    # gamma=alpha/2;verbose=True; nline=10; imax=10; kse=8; tol=0.01
+    def CI(self, x, gamma, nline=25, imax=10, kse=8, tol=0.01, verbose=False):
+        x = rvec(x)
+        nc = x.shape[1]
+        lb, ub = self.mu_W-kse*self.sigma1, self.mu_W+kse*self.sigma1
+        mu_seq = np.linspace(lb,ub,nline)
+        if (mu_seq.shape[1]==1) & (nc>1):
+            mu_seq = np.tile(mu_seq,[1,nc])
+            tau = np.tile(self.tau,[nc,1])
+            a, b = np.repeat(self.a,nc), np.repeat(self.b,nc)
+        else:
+            tau, a, b, = self.tau, self.a, self.b
+        cidx = list(range(nc))
+        cidx_flat = pd.Series(np.tile(cidx,[nline,1]).flatten())
+        p_err_flat = np.ones(cidx_flat.shape)
+        iactive = cidx.copy()
+        # tau, a, b don't change
+        taus = np.tile(tau,[nline,1])
+        aas = np.tile(a,[nline,1]).flatten()
+        bbs = np.tile(b,[nline,1]).flatten()
+        xs = np.tile(x,[nline,1])
+        xs_flat = xs.flatten()
+        # Loop it
+        j = 0
+        while (j<=imax) & (len(iactive)>0):
+            j += 1
+            vprint('Iteration %i (%i active)' % (j, len(iactive)),verbose)
+            mus_flat = mu_seq.flatten()
+            mus_mat = np.c_[mus_flat,mus_flat]
+            iactive_flat = cidx_flat.isin(iactive)
+            # pd.DataFrame({'tau':taus[:,0],'mu':mus_flat}).groupby('tau').mu.describe()[['min','max']]
+            # np.c_[mu_seq.min(0),mu_seq.max(0)]
+            dist_j = NTS(mus_mat[iactive_flat],taus[iactive_flat],aas[iactive_flat],bbs[iactive_flat])
+            p_err_flat[iactive_flat] = dist_j.cdf(xs_flat[iactive_flat]) - gamma
+            p_err = p_err_flat.reshape(mu_seq.shape)
+            # Make sure there is an intermediate value
+            istar = np.nanargmin(p_err**2,0)
+            assert np.all((istar != 0) & (istar != (nline-1)))
+            a_p_err = 100*np.abs(p_err[istar,cidx])
+            iactive = np.where(~(a_p_err < tol))[0]
+            if len(iactive) > 0:
+                mus = mus_flat.reshape(mu_seq.shape)
+                new_mus = np.linspace(mus[istar-1,cidx],mus[istar+1,cidx],nline)
+                mu_seq[:,iactive] = new_mus[:,iactive]
+        # Get the final value
+        mu_star = mu_seq[istar, cidx]
+        return mu_star
 
     def ppf(self, p):
-        if isinstance(p, list):
-            p = np.array(p)
-        if isinstance(p, float) or isinstance(p, int):
-            p = np.array([p])
-        nele = np.prod(p.shape)
-        nr = int(nele / self.r)
-        if (nr > 1) & (self.r) > 1:
-            p = p.reshape([nr, self.r])
-        # if nr == 0:
-        #     nr += 1
-        #     assert len(p) == 1
-        #     p = rvec(np.repeat(p,self.r))
-        # else:
-        #     p = p.reshape([nr, self.r])
-        x0 = (np.zeros(p.shape)+self.mu_W).flatten()
-        mfun = lambda w: np.sum((self.cdf(w.reshape(p.shape))-p)**2)
-        res = minimize(fun=mfun,x0=x0,method='L-BFGS-B')
+        p = self.reshape(p)
+        def mfun(w, pp):
+            pval = self.cdf(w.reshape(pp.shape)).reshape(pp.shape)
+            err2 = np.sum((pval - pp)**2)
+            return err2
+        # Initialize guess with conservative standard normal
+        x0 = self.mu_W+norm.ppf(p)*self.tau[:,0]        
+        # x0 = np.zeros(p.shape) + self.mu_W
+        res = minimize(fun=mfun,x0=x0,args=(p),method='L-BFGS-B')
         w = res.x.reshape(p.shape)
         if np.any(np.array(w.shape)==1):
             w = w.flatten()
+        if np.prod(w.shape) == 1:
+            w = w[0]
         return w
 
     def rvs(self, n, seed=1234):
@@ -389,7 +406,7 @@ class two_stage():
         tau_2stage = np.sqrt([1, mn_ratio])
         self.H0 = NTS(mu=mu_2stage,tau=tau_2stage, a=0, b=np.infty)
         self.HA = NTS(mu=mu_2stage,tau=tau_2stage, a=-np.infty, b=0)
-        self.t_alpha = self.H0.ppf(alpha)[0]
+        self.t_alpha = self.H0.ppf(alpha)
         self.power = self.HA.cdf(self.t_alpha)
 
     # self = dist_2s; nsim=100000; delta=2; sigma2=4; seed=None
