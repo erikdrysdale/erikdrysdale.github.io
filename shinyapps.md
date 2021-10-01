@@ -13,6 +13,5 @@ Below you can find some Shiny Apps I have built (note they make take a few secon
 Public talks can be found here:
 
 1. [Forecasting Emergency Department Capacity Constraints for COVID Isolation Beds](https://slideslive.com/38943508/forecasting-emergency-department-capacity-constraints-for-covid-isolation-beds)
-
-<!---2. [Visualising Translink data](https://erikinwest.shinyapps.io/compass_shiny/)
--->
+2. [A second-look at reported statistics - AUA 2021](https://youtu.be/hfT0A1Mu1mg)
+3. [Artifical Intelligence and Nursing - NPAO 2021](https://youtu.be/ZTiLwk3VO3s)
