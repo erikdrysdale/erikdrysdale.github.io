@@ -76,8 +76,20 @@ class BPFI():
         c = self.s1*(2*self.n*self.s1+self.t_a**2*(self.s1-2*self.n))
         s2hat1 = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
         fi1 = self.s2 - s2hat1
+
         # Calculation FI(approx)
         s2hat2 = (self.s1 + np.sqrt(2*self.n*self.pi0_hat*(1-self.pi0_hat))*self.t_a)
         fi2 = self.s2 - s2hat2
-        self.df_fi = pd.DataFrame({'reject':self.reject,'fi':fi1, 'fia':fi2})
+        
+        # Calculation of power
+        pi1hat = self.s1/self.n
+        pi2hat = self.s2/self.n
+        se_alt = np.sqrt(pi1hat*(1-pi1hat) + pi2hat*(1-pi2hat))
+        power_mu = norm.cdf(fi2/(np.sqrt(self.n*se_alt)))
+        
+        # Store
+        self.df_fi = pd.DataFrame({'reject':self.reject,'power':power_mu,'fi':fi1, 'fia':fi2})
+        
+        
+
 
