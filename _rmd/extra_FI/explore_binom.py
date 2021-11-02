@@ -32,7 +32,7 @@ gg_fi_approx = (pn.ggplot(sim1.df_fi,pn.aes(x='fia',y='fi')) +
 gg_save('gg_fi_approx.png',dir_figures,gg_fi_approx,6,4)
 
 # Check FI function
-FI_func(n1A=40,n1=1000,n2A=100,n2=1000,stat=pval_fisher)
+FI_func(n1A=50,n1=1000,n2A=100,n2=1000,stat=pval_fisher)
 
 
 #################################
