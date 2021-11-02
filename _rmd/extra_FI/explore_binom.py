@@ -2,15 +2,9 @@ import os
 import numpy as np
 import pandas as pd
 import plotnine as pn
-from plotnine.geoms.geom_abline import geom_abline
-from plotnine.geoms.geom_density import geom_density
-from plotnine.geoms.geom_histogram import geom_histogram
-from plotnine.geoms.geom_linerange import geom_linerange
-from plotnine.labels import ggtitle
-from plotnine.scales.scale_xy import scale_x_log10, scale_y_continuous
-from scipy import stats
 from scipy.stats import norm
 from funs_explore import BPFI, gg_save
+from funs_fragility import FI_func, pval_fisher
 
 dir_base = os.getcwd()
 dir_figures = os.path.join(dir_base, 'figures')
@@ -36,6 +30,9 @@ gg_fi_approx = (pn.ggplot(sim1.df_fi,pn.aes(x='fia',y='fi')) +
     pn.ggtitle(gtit) + pn.geom_point() + 
     pn.geom_abline(intercept=0,slope=1,color='blue',linetype='--'))
 gg_save('gg_fi_approx.png',dir_figures,gg_fi_approx,6,4)
+
+# Check FI function
+FI_func(n1A=40,n1=1000,n2A=100,n2=1000,stat=pval_fisher)
 
 
 #################################
