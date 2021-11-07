@@ -64,8 +64,8 @@ Notice that when calculating the variance of the test statistic when the null is
 
 $$
 \begin{align*}
-\text{Reject \\(H_0\\): }& \hspace{3mm} \hat{d} > \sqrt{\frac{2\hat\pi_0(1-\hat\pi_0)}{n}}t_\alpha, \hspace{7mm} t_\alpha = \Phi^{-1}_{1-\alpha/2} \\
-P(\text{Reject \\(H_0\\)} | H_A) &= 1 - \Phi\Bigg(  \frac{\sqrt{2 \pi_1(1-\pi_1)}t_\alpha - \sqrt{n}\pi_d }{\sqrt{\pi_d +\pi_1(2-\pi_1) - (\pi_1+\pi_d)^2}} \Bigg) \\
+\text{Reject }H_0:& \hspace{3mm} \hat{d} > \sqrt{\frac{2\hat\pi_0(1-\hat\pi_0)}{n}}t_\alpha, \hspace{7mm} t_\alpha = \Phi^{-1}_{1-\alpha/2} \\
+P(\text{Reject }H_0 | H_A) &= 1 - \Phi\Bigg(  \frac{\sqrt{2 \pi_1(1-\pi_1)}t_\alpha - \sqrt{n}\pi_d }{\sqrt{\pi_d +\pi_1(2-\pi_1) - (\pi_1+\pi_d)^2}} \Bigg) \\
 \text{Power} &= \Phi\Bigg( \frac{\sqrt{n}\pi_d - \sqrt{2 \pi_1(1-\pi_1)}t_\alpha }{\sqrt{\pi_1(1-\pi_1)+\pi_2(1-\pi_2)}} \Bigg) \tag{1}\label{eq:power} \\
 \end{align*}
 $$
@@ -73,7 +73,7 @@ $$
 The formula \eqref{eq:power} shows that increasing \\(\pi_d\\), \\(n\\), or \\(\alpha\\) all increase the power. Figure 1 below shows that formula to estimate power is a close approximation for reasonable sample sizes.
 
 <center><h3><b>Figure 1: Predicted vs Actual power </b></h3></center>
-<center><p><img src="/figures/gg_power.png" width="80%"></p></center>
+<center><p><img src="/figures/gg_power.png" width="99%"></p></center>
 
 Given that the null has been rejected, the roots of the equation can be solved to find the exact point of statistical insignificance using the quadratic formula.
 
@@ -99,7 +99,7 @@ $$
 As Figure 2 shows below, \eqref{eq:fi2} is very close to the \eqref{eq:fi1} for reasonably sized draws (\\(n=200\\)).
 
 <center><h3><b>Figure 2: BPFI and its approximation</b></h3></center>
-<center><p><img src="/figures/gg_fi_approx.png" width="70%"></p></center>
+<center><p><img src="/figures/gg_fi_approx.png" width="50%"></p></center>
 
 Next, we can show that the approximation of the BPFI from \eqref{eq:fi2} is equivalent to a truncated normal when conditioning on statistical significance. 
 
@@ -113,7 +113,7 @@ E[\text{pFI}_a] &= n\pi_d - t_\alpha\sqrt{2n \pi_1(1-\pi_1)} + \sqrt{n[\pi_1(1-\
 $$
 
 <center><h3><b>Figure 3: Mean of the pFI </b></h3></center>
-<center><p><img src="/figures/gg_fi_mu.png" width="90%"></p></center>
+<center><p><img src="/figures/gg_fi_mu.png" width="99%"></p></center>
 
 
 If the positive BPFI is divided by root-n and the variance under the alternative (a constant) we obtain something converging to a monotonic transformation of the fragility index:
@@ -125,14 +125,17 @@ E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)}
 \end{align*}
 $$
 
-Where \\(\beta\\) is the type-II error rate (i.e. one minus power).
+Where \\(\beta\\) is the type-II error rate (i.e. one minus power). Figure 4 below shows the range of power esetimates that are obtained when equation \eqref{eq:fi_power} is inverted and solved for \\(1-\beta\\).
 
+<center><h3><b>Figure 4: Estimating power from FI </b></h3></center>
+<center><p><img src="/figures/gg_posthoc.png" width="99%"></p></center>
 
-<center><h3><b>Figure 4: </b></h3></center>
-<center><p><img src="/figures/gg_posthoc.png" width="30%"></p></center>
+While the average power estimate is close to actual value, the empirical variation is tremendous. Why is there so much variation? The answer is simple: the distribution of FIs is similar for different effect sizes are figure 5 shows below.
 
-<center><h3><b>Figure 5: </b></h3></center>
-<center><p><img src="/figures/gg_pfi.png" width="30%"></p></center>
+<center><h3><b>Figure 5: Distribution of FIs </b></h3></center>
+<center><p><img src="/figures/gg_pfi.png" width="99%"></p></center>
+
+Even though a test may have a power of 75%, it will have a similarly distribution FI compared to one that has only 10% power. This naturally means that there will be significant uncertainty around the true effect size for any measured FI. 
 
 <br>
 
@@ -334,17 +337,17 @@ A second criticism of the FI is that encourages thinking in the framework of NHS
 
 ## (5) Conclusion
 
-While others papers have suggested or shown empirical evidence of the connection between the FI and power (see [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6536113/), [here](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0237879), or [here](https://academic.oup.com/eurheartj/article/38/5/346/2422087)), I believe this post is the first to show an an explicit analytic relationship between the expected value of the fragility index and the power of a binomial proportions test. The Potter paper is correct: the FI does not provide insight into the posterior probabilities between studies, rather it provides a (noisy) estimate of the power. As section (2) showed, unlike other types of post-hoc power, the FI is able to show low power, even for statistically significant results, because using the first moment of the truncated Gaussian explicitly conditions on this significance filter. However, inverting this formula to estimate the the power leads to results that are too noisy in practice to use with any confidence (see Figure X). 
+While others papers have suggested or shown empirical evidence of the connection between the FI and power (see [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6536113/), [here](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0237879), or [here](https://academic.oup.com/eurheartj/article/38/5/346/2422087)), I believe this post is the first to show an an explicit analytic relationship between the expected value of the fragility index and the power of a binomial proportions test. The Potter paper is correct: the FI does not provide insight into the posterior probabilities between studies, rather it provides a (noisy) estimate of the power. As section (2) showed, unlike other types of post-hoc power, the FI is able to show low power, even for statistically significant results, because using the first moment of the truncated Gaussian explicitly conditions on this significance filter. However, inverting this formula to estimate the the power leads to results that are too noisy in practice to use with any confidence (see Figure 4). 
 
 I agree with the criticisms of the FI highlighted in section (4), but the method can still be defended on several grounds. First, the FI can be made more comparable between studies by normalizing by the number of samples (known as the fragility quotient (FQ)). Second, smaller studies should be penalized in a frequentist paradigm, not because their alternative hypothesis is less likely to be true (which is what the Bayes factor tells us), but rather because the point estimate of the statistic conditional on significance is going to be exaggerated. Lastly, even though the FI does encourage dichotomous thinking, that's a problem of the NHST and not the FI *per se*. To expand on the analogy of the biased coin, if the world's scientists went around flipping every coin they found lying on the side walk 100 times and then submitting their "findings" to journals every time they got 60 or more heads, then the world would appear to be festooned with biased coins. The bigger problem is that it is a silly endeavour to look around the world for biased coins. And even though there may be many coins with a slight bias (say 50.1% chance of heads) the observed (i.e. published) biases would be at least 10% more extreme than what should be reported. This highlights the bigger problem of [scientific research](http://www.stat.columbia.edu/~gelman/research/published/pvalues3.pdf) and the file drawer problem. 
 
 I think the best argument in favour of the FI is that encourages researchers to carry out studies with larger sample sizes. The real reason this should be done is to increase power, but if researchers are motivated because they don't want a small FI, then so be it. Until now, researchers have developed all sorts of mental ju-jitsu techniques to defend their under-powered studies. Such techniques include the "whatever doesn't kill my p-value makes it stronger" [argument](http://andrewgelman.com/2017/02/06/not-kill-statistical-significance-makes-stronger-fallacy/).[[^7]] Not to pick on [Justin Wolfers](https://www.econtalk.org/stevenson-and-wolfers-on-happiness-growth-and-the-reinhart-rogoff-controversy/#audio-highlights), but here is one example of such a sentiment:
 
-> [[Y]]ou are suggesting both GDP and happiness are terribly mismeasured. And the worse the measurement is the more that biases the estimated correlation towards zero. So it's amazing that the estimated correlation is as high as 0.8, given that I'm finding that's a correlation between two noisy measures. 
+> You are suggesting both GDP and happiness are terribly mismeasured. And the worse the measurement is the more that biases the estimated correlation towards zero. So it's amazing that the estimated correlation is as high as 0.8, given that I'm finding that's a correlation between two noisy measures. 
 
 Noise makes my claim stronger! Making such a statement against a more intuitive measure like the FI would be harder. As the authors of the original Welsh paper put it:
 
-> [[T]]he Fragility Index has the merit that it is very simple and may help integrate concerns over smaller samples sizes and smaller numbers of events that are not intuitive. We conclude that the significant results of many RCTs hinge on very few events. Reporting the number of events required to make a statistically significant result nonsignificant (ie, the Fragility Index) in RCTs may help readers make more informed decisions about the confidence warranted by RCT results.
+> The Fragility Index has the merit that it is very simple and may help integrate concerns over smaller samples sizes and smaller numbers of events that are not intuitive. We conclude that the significant results of many RCTs hinge on very few events. Reporting the number of events required to make a statistically significant result nonsignificant (ie, the Fragility Index) in RCTs may help readers make more informed decisions about the confidence warranted by RCT results.
 
 
 ## Footnotes
@@ -361,5 +364,5 @@ Noise makes my claim stronger! Making such a statement against a more intuitive 
 
 [^6]: For full disclosure, I am a co-author on two recently published FI papers applied to the pediatric urology literature (see [here](https://www.sciencedirect.com/science/article/abs/pii/S1477513120303910)). 
 
-[^7]: As Gelman [puts it](http://www.stat.columbia.edu/~gelman/research/published/measurement.pdf): "[[I]]n noisy research settings, statistical significance provides very weak evidence for either the sign or the magnitude of any underlying effect".
+[^7]: As Gelman [puts it](http://www.stat.columbia.edu/~gelman/research/published/measurement.pdf): "In noisy research settings, statistical significance provides very weak evidence for either the sign or the magnitude of any underlying effect".
 
