@@ -72,8 +72,8 @@ $$
 
 The formula \eqref{eq:power} shows that increasing \\(\pi_d\\), \\(n\\), or \\(\alpha\\) all increase the power. Figure 1 below shows that formula to estimate power is a close approximation for reasonable sample sizes.
 
-<center><h3><b>Figure 1: </b></h3></center>
-<center><p><img src="/figures/gg_power.png" width="50%"></p></center>
+<center><h3><b>Figure 1: Predicted vs Actual power </b></h3></center>
+<center><p><img src="/figures/gg_power.png" width="80%"></p></center>
 
 Given that the null has been rejected, the roots of the equation can be solved to find the exact point of statistical insignificance using the quadratic formula.
 
@@ -99,9 +99,9 @@ $$
 As Figure 2 shows below, \eqref{eq:fi2} is very close to the \eqref{eq:fi1} for reasonably sized draws (\\(n=200\\)).
 
 <center><h3><b>Figure 2: BPFI and its approximation</b></h3></center>
-<center><p><img src="/figures/gg_fi_approx.png" width="30%"></p></center>
+<center><p><img src="/figures/gg_fi_approx.png" width="70%"></p></center>
 
-Next, we can show that the approximation of the BPFI from \tag{4}\label{eq:fi2} is equivalent to a truncated normal when conditioning on statistical significance. 
+Next, we can show that the approximation of the BPFI from \eqref{eq:fi2} is equivalent to a truncated normal when conditioning on statistical significance. 
 
 $$
 \begin{align*}
@@ -112,8 +112,8 @@ E[\text{pFI}_a] &= n\pi_d - t_\alpha\sqrt{2n \pi_1(1-\pi_1)} + \sqrt{n[\pi_1(1-\
 \end{align*}
 $$
 
-<center><h3><b>Figure 3: </b></h3></center>
-<center><p><img src="/figures/gg_fi_mu.png" width="30%"></p></center>
+<center><h3><b>Figure 3: Mean of the pFI </b></h3></center>
+<center><p><img src="/figures/gg_fi_mu.png" width="90%"></p></center>
 
 
 If the positive BPFI is divided by root-n and the variance under the alternative (a constant) we obtain something converging to a monotonic transformation of the fragility index:
@@ -121,7 +121,7 @@ If the positive BPFI is divided by root-n and the variance under the alternative
 $$
 \begin{align*}
 E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)} }\Bigg] &= \Phi^{-1}(1-\beta) + \frac{\phi\big(-O\big(\sqrt{n}\big)\big)}{\Phi\big(O\big(\sqrt{n}\big)\big)} \\
-&= \Phi^{-1}(\underbrace{1-\beta}_{\text{power}}) + O\Big(e^{-\sqrt{n}}\Big) \tag{5}\label{eq:fi_power}
+&= \Phi^{-1}(\underbrace{1-\beta}_{\text{power}}) + O\Big(e^{-\sqrt{n}}\Big) \tag{4}\label{eq:fi_power}
 \end{align*}
 $$
 
