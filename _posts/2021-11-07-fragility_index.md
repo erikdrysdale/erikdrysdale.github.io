@@ -25,6 +25,7 @@ Since the original Walsh paper, the FI has been applied hundreds of times to oth
 
 The rest of this post is organized as follows: section (2) provides an explicit relationship between the fragility index and the power of the test, section (3) provides an algorithm to calculate the FI using `python` code, section (4) reviews the criticisms against FI, and section (5) concludes.
 
+<br>
 
 ## (2) Binomial proportion fragility index (BPFI)
 
@@ -132,6 +133,8 @@ Where \\(\beta\\) is the type-II error rate (i.e. one minus power).
 
 <center><h3><b>Figure 5: </b></h3></center>
 <center><p><img src="/figures/gg_pfi.png" width="30%"></p></center>
+
+<br>
 
 ## (3) Calculating the fragility index
 
@@ -326,6 +329,8 @@ For example, a study with 100 patients might have a p-value of 1e-6 and a FI of 
 > By calculating the posterior probability of a treatment effect, we show that when the probability model is correct, the FI inappropriately penalizes small trials for using fewer events than larger trials to achieve the same significance level... Altogether, the FI creates more confusion than it resolves and does not promote statistical thinking. We recommend against its use. Instead, sensitivity analyses are recommended to quantify and communicate robustness of trial results.
 
 A second criticism of the FI is that encourages thinking in the framework of NHST and its associated problems. As [Perry Wilson](https://www.methodsman.com/blog/fragility-index) pointed out, the FI further entrenches dichotomous thinking when doing statistical inference. For example, if a coin is flipped 100 times, and 60 of them are heads, using a 5% p-value cut-off, the null of an unbiased coin (p-value=0.045) will be rejected. But such a result has a FI of one, since 59 heads would have a p-value of 0.07. However, both results are "unlikely" under the null, so it seems strange to conclude the the initial finding should be discredited because of a FI of one.
+
+<br>
 
 ## (5) Conclusion
 
