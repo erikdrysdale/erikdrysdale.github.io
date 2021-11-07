@@ -72,7 +72,7 @@ $$
 The formula \eqref{eq:power} shows that increasing \\(\pi_d\\), \\(n\\), or \\(\alpha\\) all increase the power. Figure 1 below shows that formula to estimate power is a close approximation for reasonable sample sizes.
 
 <center><h3><b>Figure 1: </b></h3></center>
-<center><p><img src="figures/gg_power.png" width="50%"></p></center>
+<center><p><img src="/figures/gg_power.png" width="50%"></p></center>
 
 Given that the null has been rejected, the roots of the equation can be solved to find the exact point of statistical insignificance using the quadratic formula.
 
@@ -98,7 +98,7 @@ $$
 As Figure 2 shows below, \eqref{eq:fi2} is very close to the \eqref{eq:fi1} for reasonably sized draws (\\(n=200\\)).
 
 <center><h3><b>Figure 2: BPFI and its approximation</b></h3></center>
-<center><p><img src="figures/gg_fi_approx.png" width="30%"></p></center>
+<center><p><img src="/figures/gg_fi_approx.png" width="30%"></p></center>
 
 Next, we can show that the approximation of the BPFI from \tag{4}\label{eq:fi2} is equivalent to a truncated normal when conditioning on statistical significance. 
 
@@ -112,7 +112,7 @@ E[\text{pFI}_a] &= n\pi_d - t_\alpha\sqrt{2n \pi_1(1-\pi_1)} + \sqrt{n[\pi_1(1-\
 $$
 
 <center><h3><b>Figure 3: </b></h3></center>
-<center><p><img src="figures/gg_fi_mu.png" width="30%"></p></center>
+<center><p><img src="/figures/gg_fi_mu.png" width="30%"></p></center>
 
 
 If the positive BPFI is divided by root-n and the variance under the alternative (a constant) we obtain something converging to a monotonic transformation of the fragility index:
@@ -128,10 +128,10 @@ Where \\(\beta\\) is the type-II error rate (i.e. one minus power).
 
 
 <center><h3><b>Figure 4: </b></h3></center>
-<center><p><img src="figures/gg_posthoc.png" width="30%"></p></center>
+<center><p><img src="/figures/gg_posthoc.png" width="30%"></p></center>
 
 <center><h3><b>Figure 5: </b></h3></center>
-<center><p><img src="figures/gg_pfi.png" width="30%"></p></center>
+<center><p><img src="/figures/gg_pfi.png" width="30%"></p></center>
 
 ## (3) Calculating the fragility index
 
@@ -139,7 +139,7 @@ Consider the classical statistical scenario of a 2x2 table of outcomes, correspo
 
 $$
 \begin{align*}
-\text{FI} &= \inf_{k \in \mathbb{I}^{+}} \hspace{3mm} \text{P-val}\Bigg(\begin{bmatrix} n_{1A}+k & n_{1B}-k \\ n_{2A} & n_{2B}  \end{bmatrix} \Bigg) > \alpha
+\text{FI} &= \inf_{k \in \mathbb{I}^{+}} \hspace{3mm} \text{P-value}\Bigg(\begin{bmatrix} n_{1A}+k & n_{1B}-k \\ n_{2A} & n_{2B}  \end{bmatrix} \Bigg) > \alpha
 \end{align*}
 $$
 
@@ -335,11 +335,11 @@ I agree with the criticisms of the FI highlighted in section (4), but the method
 
 I think the best argument in favour of the FI is that encourages researchers to carry out studies with larger sample sizes. The real reason this should be done is to increase power, but if researchers are motivated because they don't want a small FI, then so be it. Until now, researchers have developed all sorts of mental ju-jitsu techniques to defend their under-powered studies. Such techniques include the "whatever doesn't kill my p-value makes it stronger" [argument](http://andrewgelman.com/2017/02/06/not-kill-statistical-significance-makes-stronger-fallacy/).[[^7]] Not to pick on [Justin Wolfers](https://www.econtalk.org/stevenson-and-wolfers-on-happiness-growth-and-the-reinhart-rogoff-controversy/#audio-highlights), but here is one example of such a sentiment:
 
-> \[Y\]ou are suggesting both GDP and happiness are terribly mismeasured. And the worse the measurement is the more that biases the estimated correlation towards zero. So it's amazing that the estimated correlation is as high as 0.8, given that I'm finding that's a correlation between two noisy measures. 
+> [[Y]]ou are suggesting both GDP and happiness are terribly mismeasured. And the worse the measurement is the more that biases the estimated correlation towards zero. So it's amazing that the estimated correlation is as high as 0.8, given that I'm finding that's a correlation between two noisy measures. 
 
 Noise makes my claim stronger! Making such a statement against a more intuitive measure like the FI would be harder. As the authors of the original Welsh paper put it:
 
-> \[T\]he Fragility Index has the merit that it is very simple and may help integrate concerns over smaller samples sizes and smaller numbers of events that are not intuitive. We conclude that the significant results of many RCTs hinge on very few events. Reporting the number of events required to make a statistically significant result nonsignificant (ie, the Fragility Index) in RCTs may help readers make more informed decisions about the confidence warranted by RCT results.
+> [[T]]he Fragility Index has the merit that it is very simple and may help integrate concerns over smaller samples sizes and smaller numbers of events that are not intuitive. We conclude that the significant results of many RCTs hinge on very few events. Reporting the number of events required to make a statistically significant result nonsignificant (ie, the Fragility Index) in RCTs may help readers make more informed decisions about the confidence warranted by RCT results.
 
 
 ## Footnotes
@@ -356,5 +356,5 @@ Noise makes my claim stronger! Making such a statement against a more intuitive 
 
 [^6]: For full disclosure, I am a co-author on two recently published FI papers applied to the pediatric urology literature (see [here](https://www.sciencedirect.com/science/article/abs/pii/S1477513120303910)). 
 
-[^7]: As Gelman [puts it](http://www.stat.columbia.edu/~gelman/research/published/measurement.pdf): "\[I\]n noisy research settings, statistical significance provides very weak evidence for either the sign or the magnitude of any underlying effect".
+[^7]: As Gelman [puts it](http://www.stat.columbia.edu/~gelman/research/published/measurement.pdf): "[[I]]n noisy research settings, statistical significance provides very weak evidence for either the sign or the magnitude of any underlying effect".
 
