@@ -87,7 +87,7 @@ for n in n_seq:
             # Save
             holder_power.append(tmp_power)
             holder_fi.append(tmp_fi)
-            # holder_invert.append(tmp_invert)
+            holder_invert.append(tmp_invert)
             holder_dist.append(tmp_pfi)
 
 # Merge and plot            

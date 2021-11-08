@@ -62,10 +62,9 @@ class BPFI():
         self.power = 1 - norm.cdf(num / den)
 
         # Calculate the expected value of the FI
-        se_f = np.sqrt(2*self.n*self.pi0*(1-self.pi0))
-        self.mu_f = self.n*self.pid - self.t_a*se_f
-        self.mu_f += se_f*norm.pdf(-norm.ppf(self.power))/norm.cdf(norm.ppf(self.power))
-
+        ipower = norm.ppf(self.power)
+        sig_a = np.sqrt(self.n*(self.pi1*(1-self.pi1)+self.pi2*(1-self.pi2)))
+        self.mu_f = sig_a*(ipower+norm.pdf(-ipower)/norm.cdf(ipower))
 
     @staticmethod
     def pval_bp(s1, s2, n):

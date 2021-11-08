@@ -9,7 +9,7 @@ mathjax: true
 
 ## Summary
 
-This post reviews the fragility index, a statistical technique proposed by [Walsh et. al (2014)](http://statmodeling.stat.columbia.edu/wp-content/uploads/2016/07/fragility-index-2014.pdf) to provide an intuitive measure of the robustness of study findings. I show that the distribution of the fragility index can be approximated by a truncated Gaussian whose expectation is directly related to the power of the test (see equation \eqref{eq:fi_power}). This evidence will hopefully clarify the debate around what statistical quantity the fragility index actually represents. However, even though the fragility index can, on average, estimate the power of a test, it is a noisy indicator. In the final sections of this post I provide arguments both in favour and against the fragility index. To replicate all figures in this post, see [this script](https://github.com/erikdrysdale/erikdrysdale.github.io/blob/master/_rmd/extra_FI/explore_binom.py).
+This post reviews the fragility index, a statistical technique proposed by [Walsh et. al (2014)](http://statmodeling.stat.columbia.edu/wp-content/uploads/2016/07/fragility-index-2014.pdf) to provide an intuitive measure of the robustness of study findings. I show that the distribution of the fragility index can be approximated by a truncated Gaussian whose expectation is directly related to the power of the test (see equation \eqref{eq:fi_power}). This evidence will hopefully clarify the debate around what statistical quantity the fragility index actually represents. Even though the fragility index can provide a conservative estimate of the power of a study, on average, it is a very noisy indicator. In the final sections of this post I provide arguments both in favour and against the fragility index. To replicate all figures in this post, see [this script](https://github.com/erikdrysdale/erikdrysdale.github.io/blob/master/_rmd/extra_FI/explore_binom.py).
 
 <br>
 
@@ -124,7 +124,7 @@ Figure 3 below shows that the truncated Gaussian approximation does a good job a
 <center><p><img src="/figures/gg_fi_mu.png" width="99%"></p></center>
 <br>
 
-If the positive BPFI is divided by root-n and the variance under the alternative (a constant) we obtain something converging to a monotonic transformation of the fragility index:
+If the positive BPFI is divided by root-n and the variance under the alternative (a constant) we obtain a monotonic transformation of the fragility index:
 
 $$
 \begin{align*}
@@ -132,14 +132,14 @@ E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)}
 \end{align*}
 $$
 
-Where \\(\beta\\) is the type-II error rate (i.e. one minus power). Figure 4 below shows the range of power estimates using equation \eqref{eq:invert} which is obtained when equation \eqref{eq:fi_power} is inverted and solved for \\(1-\beta\\).
+Where \\(\beta\\) is the type-II error rate (i.e. one minus power). Figure 4 below shows the range of power estimates using equation \eqref{eq:fi_power} is solved for \\(1-\beta\\) using only the statistically significant results.
 
 <br>
 <center><h2><b>Figure 4: Estimating power from FI </b></h2></center>
 <center><p><img src="/figures/gg_posthoc.png" width="99%"></p></center>
 <br>
 
-While the median power estimate is close to actual value, the empirical variation is tremendous. Why is there so much variation? The answer is simple: the distribution of FIs is similar for different effect sizes as figure 5 shows below.
+While the median power estimate is a conservative estimate to actual value, the empirical variation is tremendous. Why is there so much variation? The answer is simple: the distribution of FIs is similar for different effect sizes as figure 5 shows below.
 
 <center><h2><b>Figure 5: Distribution of FIs </b></h2></center>
 <center><p><img src="/figures/gg_pfi.png" width="99%"></p></center>
@@ -150,7 +150,7 @@ Even though a test may have a power of 75%, it will have a similar distribution 
 
 ## (3) Calculating the fragility index
 
-Consider the classical statistical scenario of a 2x2 table of outcomes, corresponding to two different groups with a binary outcome recorded for each group. For example, a randomized control trial (RCT) for a medical intervention usually corresponds to this scenario where the two groups are the (randomized) treatment and control group and the study records some event indicator associated with a health outcome. Suppose in this trial that the event rate is greater in treatment than the control group, and that this positive difference is statistically significant. If a patient is swapped from event to non-event for the treatment group, then the proportions between the groups will narrow, and the result will become less statistically significant by definition. For any test statistic, the FI can be defined as follows:
+Consider the classical statistical scenario of a 2x2 table of outcomes, corresponding to two different groups with a binary outcome recorded for each group. For example, a randomized control trial (RCT) for a medical intervention usually corresponds to this scenario where the two groups are the (randomized) treatment and control group and the study records some event indicator associated with a health outcome. Suppose in this trial that the event rate is greater in treatment than the control group, and that this positive difference is statistically significant. If a patient who was recorded as having an event in the treatment group has their entry "swapped" to a non-event, then the proportions between the groups will narrow, and the result will become less statistically significant by definition. For any test statistic, the FI can be defined as follows:
 
 $$
 \begin{align*}
@@ -158,7 +158,7 @@ $$
 \end{align*}
 $$
 
-Where \\(n_i=n_{iA}+n_{iB}\\) is the total number of samples for group \\(i\\), and there are \\(n_{iA}\\) events. The code below provides the wrapper function `FI_func` needed to calculate the the fragility index using the methodology as [originally proposed](http://statmodeling.stat.columbia.edu/wp-content/uploads/2016/07/fragility-index-2014.pdf). The sample sizes for both groups fixed, with the event rate being modified for only group 1. The algorithm works by either iteratively flipping one patient from event to non-event (or vice-versa) until there is a change in statistical significance. While a naive approach is simply to initialize the contingency table with the original data, a significant speed-up can be accrued by estimating the FI with the BPFI as discussed in section 2. Conditional on any starting point, the algorithm converges by applying the following rule:
+Where \\(n_i=n_{iA}+n_{iB}\\) is the total number of samples for group \\(i\\), and there are \\(n_{iA}\\) events. The code below provides the wrapper function `FI_func` needed to calculate the the fragility index using the methodology as [originally proposed](http://statmodeling.stat.columbia.edu/wp-content/uploads/2016/07/fragility-index-2014.pdf). The sample sizes for both groups are fixed, with the event rate being modified for only group 1. The algorithm works by either iteratively flipping one patient from event to non-event (or vice-versa) until there is a change in statistical significance. While a naive approach is simply to initialize the contingency table with the original data, a significant speed-up can be accrued by estimating the FI with the BPFI as discussed in section 2. Conditional on any starting point, the algorithm converges by applying the following rule:
 
 
 1. Flip event to non-event in group 1 if event rate is larger in group 1 and current result is statistically significant
@@ -166,14 +166,14 @@ Where \\(n_i=n_{iA}+n_{iB}\\) is the total number of samples for group \\(i\\), 
 3. Flip non-event to event in group 1 if event rate is smaller in group 1 and current result is statistically significant
 4. Flip event to non-event in group 1 if event rate is smaller in group 1 and current result is statistically insignificant
 
-Why would the direction be changed if the result is insignificant? The reason is because it means the BPFI has "over-shot" the estimate. For example, imagine the baseline event rate is 50/1000 in group 1 and 100/1000 in group 2, and the BPFI estimates that insignificance occurs at 77/1000 for group 1. When we apply the Fisher's exact test, we find that insignificance actually occurs at 75/1000, and to discover this we need to subtract off events from group 1 until the significance sign changes. In contrast, if the BPFI estimates that insignificance occurs at 70/1000, then when we run Fisher's exact test, we'll find that the results are still significant and will need to add patients to the event category until the significance sign changes.
+Why would the direction be changed if the result is insignificant? This occurs when the BPFI initialization has overshot the estimate. For example, imagine the baseline event rate is 50/1000 in group 1 and 100/1000 in group 2, and the BPFI estimates that insignificance occurs at 77/1000 for group 1. When we apply the Fisher's exact test, we find that insignificance actually occurs at 75/1000, and to discover this we need to subtract off events from group 1 until the significance sign changes. In contrast, if the BPFI estimates that insignificance occurs at 70/1000, then when we run Fisher's exact test, we'll find that the results are still significant and will need to add patients to the event category until the significance sign changes.
 
 As a final note, there are two other ways to generate variation in the estimate of the FI for a given data point:
 
 1. Which group is considered "fixed"
 2. Which test statistical test to use
 
-To generate the first type of variation, the values of `n1A/n1` and `n2A/n2` can simply be swapped. Any function which takes in an 2x2 table and returns a p-value can be used for the second. I have included functions for Fisher's exact and the Chi-squared test.
+To generate the first type of variation, the values of `n1A/n1` and `n2A/n2` can simply be exchanged. Any function which takes in an 2x2 table and returns a p-value can be used for the second. I have included functions for Fisher's exact and the Chi-squared test.
 
 
 ```python
@@ -332,7 +332,7 @@ FI_func(n1A=71, n1=1000, n2A=50, n2=1000, stat=pval_fisher, alpha=0.05)
 
 ## (4) Criticisms of post-hoc fragility
 
-There two main criticisms levelled against the FI are first that it does not do what it claims to do on a technical level, and second that it encourages null hypothesis significance testing (NHST). The first argument can be seen in [Potter (2019)]((https://pubmed.ncbi.nlm.nih.gov/32781488/)), which shows that the FI is not comparable between studies because it does quantify how "fragile" the result of a study actually are. Specifically, the paper shows that the FI does not quantify how likely the null hypothesis is (i.e. that there is no effect). If there are two statistically significant trials that have the same p-value, but differ in sample size, then it must be the case the trial with a smaller sample size has a larger effect. By looking at the [Bayes factor](https://en.wikipedia.org/wiki/Bayes_factor), it can be shown that for any choice of prior, a small trial with a larger effect size is more indicative of an effect existing than a large trial with a small effect for a given power.
+There two main criticisms levelled against the FI are first that it does not do what it claims to do on a technical level, and second that it encourages null hypothesis significance testing (NHST). The first argument can be seen in [Potter (2019)]((https://pubmed.ncbi.nlm.nih.gov/32781488/)), which shows that the FI is not comparable between studies because it does not quantify how "fragile" the result of a study actually are. Specifically, the paper shows that the FI does not provide evidence as to how likely the null hypothesis is relative to the alternative (i.e. that there is some effect). If there are two identically powered trials with differences in sample sizes, then it must be the case that the trial with a smaller sample size has a larger effect. By looking at the [Bayes factor](https://en.wikipedia.org/wiki/Bayes_factor), Potter shows that for any choice of prior, a smaller trial with a larger effect size is more indicative of an effect existing than a larger trial with a smaller effect size for a given power.
 
 > Therefore, if the probability model is correct (as in the coin toss example), the small trial provides more evidence for the alternative hypothesis than the large one. It should not be penalized for using fewer events to demonstrate significance. When the probability model holds, the FI incorrectly concludes that the larger trial provides stronger evidence.
 
@@ -340,15 +340,15 @@ For example, a study with 100 patients might have a p-value of 1e-6 and a FI of 
 
 > By calculating the posterior probability of a treatment effect, we show that when the probability model is correct, the FI inappropriately penalizes small trials for using fewer events than larger trials to achieve the same significance level... Altogether, the FI creates more confusion than it resolves and does not promote statistical thinking. We recommend against its use. Instead, sensitivity analyses are recommended to quantify and communicate robustness of trial results.
 
-A second criticism of the FI is that encourages thinking in the framework of NHST and its associated problems. As [Perry Wilson](https://www.methodsman.com/blog/fragility-index) pointed out, the FI further entrenches dichotomous thinking when doing statistical inference. For example, if a coin is flipped 100 times, and 60 of them are heads, using a 5% p-value cut-off, the null of an unbiased coin (p-value=0.045) will be rejected. But such a result has a FI of one, since 59 heads would have a p-value of 0.07. However, both results are "unlikely" under the null, so it seems strange to conclude the the initial finding should be discredited because of a FI of one.
+A second criticism of the FI is that encourages thinking in the framework of NHST and its associated problems. As [Perry Wilson](https://www.methodsman.com/blog/fragility-index) articulates, the FI further entrenches dichotomous thinking when doing statistical inference. For example, if a coin is flipped 100 times, and 60 of them are heads, using a 5% p-value cut-off, the null of an unbiased coin (p-value=0.045) will be rejected. But such a result has a FI of one, since 59 heads would have a p-value of 0.07. However, both results are "unlikely" under the null, so it seems strange to conclude the the initial finding should be discredited because of a FI of one.
 
 <br>
 
 ## (5) Conclusion
 
-While others papers have suggested or shown empirical evidence of the connection between the FI and power (see [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6536113/), [here](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0237879), or [here](https://academic.oup.com/eurheartj/article/38/5/346/2422087)), I believe this post is the first to show an an explicit analytic relationship between the expected value of the fragility index and the power of a binomial proportions test. The Potter paper is correct: the FI does not provide insight into the posterior probabilities between studies, rather it provides a (noisy) estimate of the power. As section (2) showed, unlike other types of post-hoc power, the FI is able to show low power, even for statistically significant results, because using the first moment of the truncated Gaussian explicitly conditions on this significance filter. However, inverting this formula to estimate the the power leads to results that are too noisy in practice to use with any confidence (see Figure 4). 
+While others papers have suggested or shown empirical evidence of the connection between the FI and power (see [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6536113/), [here](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0237879), or [here](https://academic.oup.com/eurheartj/article/38/5/346/2422087)), I believe this post is the first to show an an explicit analytic relationship between the expected value of the fragility index and the power of a binomial proportions test. The Potter paper is correct: the FI does not provide insight into the posterior probabilities between studies, rather it provides a noisy and conservative estimate of the power. As section (2) showed, unlike other types of post-hoc power analyses, the FI is able to show low power, even for statistically significant results, because using the first moment of the truncated Gaussian explicitly conditions on this significance filter. However, inverting this formula to estimate the the power leads to results that are too noisy in practice to use with any confidence (see Figure 4). 
 
-I agree with the criticisms of the FI highlighted in section (4), but the method can still be defended on several grounds. First, the FI can be made more comparable between studies by normalizing by the number of samples (known as the fragility quotient (FQ)). Second, smaller studies should be penalized in a frequentist paradigm, not because their alternative hypothesis is less likely to be true (which is what the Bayes factor tells us), but rather because the point estimate of the statistic conditional on significance is going to be exaggerated. Lastly, even though the FI does encourage dichotomous thinking, that's a problem of the NHST and not the FI *per se*. To expand on the analogy of the biased coin, if the world's scientists went around flipping every coin they found lying on the side walk 100 times and then submitting their "findings" to journals every time they got 60 or more heads, then the world would appear to be festooned with biased coins. The bigger problem is that it is a silly endeavour to look around the world for biased coins. And even though there may be many coins with a slight bias (say 50.1% chance of heads) the observed (i.e. published) biases would be at least 10% more extreme than what should be reported. This highlights the bigger problem of [scientific research](http://www.stat.columbia.edu/~gelman/research/published/pvalues3.pdf) and the file drawer problem. 
+I agree with the criticisms of the FI highlighted in section (4), but the method can still be defended on several grounds. First, the FI can be made more comparable between studies by normalizing by the number of samples (known as the fragility quotient (FQ)). Second, smaller studies should be penalized in a frequentist paradigm, not because their alternative hypothesis is less likely to be true (which is what the Bayes factor tells us), but rather because the point estimate of the statistic conditional on significance is going to be exaggerated. Lastly, even though the FI does encourage dichotomous thinking, that's a problem of the NHST and not the FI *per se*. To expand on the analogy of the biased coin, if the world's scientists went around flipping every coin they found lying on the sidewalk 100 times and then submitting their "findings" to journals every time they got 60 or more heads, then the world would appear to be festooned with biased coins. The bigger problem is that it is a silly endeavour to look around the world for biased coins. And even though there may be many coins with a slight bias (say 50.1% chance of heads) the observed (i.e. published) biases would be at least 10% more extreme than what should be reported. This highlights the bigger problem of [scientific research](http://www.stat.columbia.edu/~gelman/research/published/pvalues3.pdf) and the file drawer problem. 
 
 I think the best argument in favour of the FI is that encourages researchers to carry out studies with larger sample sizes. The real reason this should be done is to increase power, but if researchers are motivated because they don't want a small FI, then so be it. Until now, researchers have developed all sorts of mental ju-jitsu techniques to defend their under-powered studies. Such techniques include the "whatever doesn't kill my p-value makes it stronger" [argument](http://andrewgelman.com/2017/02/06/not-kill-statistical-significance-makes-stronger-fallacy/).[[^7]] Not to pick on [Justin Wolfers](https://www.econtalk.org/stevenson-and-wolfers-on-happiness-growth-and-the-reinhart-rogoff-controversy/#audio-highlights), but here is one example of such a sentiment:
 
@@ -358,6 +358,11 @@ Noise makes my claim stronger! Making such a statement against a more intuitive 
 
 > The Fragility Index has the merit that it is very simple and may help integrate concerns over smaller samples sizes and smaller numbers of events that are not intuitive. We conclude that the significant results of many RCTs hinge on very few events. Reporting the number of events required to make a statistically significant result nonsignificant (ie, the Fragility Index) in RCTs may help readers make more informed decisions about the confidence warranted by RCT results.
 
+<br>
+
+* * *
+
+<br>
 
 ## Footnotes
 
