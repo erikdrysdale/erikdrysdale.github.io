@@ -9,19 +9,19 @@ mathjax: true
 
 ## Summary
 
-This post reviews the fragility index, a statistical technique proposed by [Walsh et. al (2014)](http://statmodeling.stat.columbia.edu/wp-content/uploads/2016/07/fragility-index-2014.pdf) to provide an "intuitive" measure of the robustness of study findings. I show that the distribution of the fragility index can be shown to approximate a truncated Gaussian whose expectation is directly related to the power of the test (see equation \eqref{eq:fi_power}). This evidence will hopefully clarify the debate around what statistical quantity the fragility index represents. However, even though the fragility index can, on average, estimate the power of a test, it is a  noisy indicator. I conclude with some arguments both in favour and against the fragility index. To replicate all figures in this post, see [this script](https://github.com/erikdrysdale/erikdrysdale.github.io/blob/master/_rmd/extra_FI/explore_binom.py).
+This post reviews the fragility index, a statistical technique proposed by [Walsh et. al (2014)](http://statmodeling.stat.columbia.edu/wp-content/uploads/2016/07/fragility-index-2014.pdf) to provide an intuitive measure of the robustness of study findings. I show that the distribution of the fragility index can be approximated by a truncated Gaussian whose expectation is directly related to the power of the test (see equation \eqref{eq:fi_power}). This evidence will hopefully clarify the debate around what statistical quantity the fragility index actually represents. However, even though the fragility index can, on average, estimate the power of a test, it is a noisy indicator. In the final sections of this post I provide arguments both in favour and against the fragility index. To replicate all figures in this post, see [this script](https://github.com/erikdrysdale/erikdrysdale.github.io/blob/master/_rmd/extra_FI/explore_binom.py).
 
 <br>
 
 ## (1) Background
 
-Most published studies have exaggerated effect sizes. There are two main reasons for this. First, academic studies are under-powered. This means they do not have enough samples to be able to detect small effects. Second, academic journals incentivize researchers to publish "novel" findings that are statistically significant. In other words, researchers are encouraged to try different variations of statistical tests until something "interesting" is found.[[^1]] As a reminder, the power of a statistical test defines the probability that an effect will be detected when it exists. Power is proportional to the sample size for [consistent](https://en.wikipedia.org/wiki/Consistency_(statistics)) tests because more samples leads to tighter inference around some effect size. Most researchers are aware of the idea of statistical power, but a much small share understand that it is [directly related](http://www.erikdrysdale.com/winners_curse) to effect size bias. Conditional on statistical significance, all measured effect are biased upwards, because there  is a minimum effect size needed for a test to be considered statistically significant.[[^2]] Evidence that most fields of science are under-powered in practice are numerous (see [here](https://www.nature.com/articles/nrn3475) or [here](https://en.wikipedia.org/wiki/Proteus_phenomenon)). Many disciplines do not even require studies to make power justifications before research begins.[[^3]] 
+Most published studies have exaggerated effect sizes. There are two main reasons for this. First, scientific research tends to be under-powered. This means that studies do not have enough samples to be able to detect small effects. Second, academic journals incentivize researchers to publish "novel" findings that are statistically significant. In other words, researchers are encouraged to try different variations of statistical tests until something "interesting" is found.[[^1]] As a reminder, the power of a statistical test defines the probability that an effect will be detected when it exists. Power is proportional to the sample size for [consistent](https://en.wikipedia.org/wiki/Consistency_(statistics)) tests because more samples leads to tighter inference around some effect size. Most researchers are aware of the idea of statistical power, but a much small share understand that it is [directly related](http://www.erikdrysdale.com/winners_curse) to effect size bias. Conditional on statistical significance, all measured effects are biased upwards because there  is a minimum effect size needed for a test to be considered statistically significant.[[^2]] Evidence that most fields of science are under-powered in practice are numerous (see [here](https://www.nature.com/articles/nrn3475) or [here](https://en.wikipedia.org/wiki/Proteus_phenomenon)). Many disciplines do not even require studies to make power justifications before research begins.[[^3]] 
 
-One unfortunate reaction to the problem of low power is for researchers to carry out *post-hoc* (after-the-fact) power calculations, using the estimated effect size as the basis of the power calculations. This approach is highly problematic for three reasons. First, *post-hoc* power is [mathematically redundant](https://stat.uiowa.edu/sites/stat.uiowa.edu/files/techrep/tr378.pdf) since it has a one-to-one mapping with the conventionally calculated p-value. Second, *post-hoc* power will always "show" high power for statistically significant results, and low power for statistically insignificant results (this [helpful post](https://blogs.worldbank.org/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not) explains why).[[^4]] Lastly, in underpowered designs, the estimated effect will be noisy, making *post-hoc* estimates of power [equally as noisy](http://www.stat.columbia.edu/~gelman/research/published/retropower_final.pdf)!
+Some researchers have attempted to justify the sample sizes of their studies by doing out *post-hoc* (after-the-fact) power calculations using the estimated effect size as the basis for their estimates. This approach is problematic for three reasons. First, *post-hoc* power using the measured effect size as the assumed effect size is [mathematically redundant](https://stat.uiowa.edu/sites/stat.uiowa.edu/files/techrep/tr378.pdf) since it has a one-to-one mapping with the conventionally calculated p-value. Second, this type of *post-hoc* power will always show high power for statistically significant results, and low power for statistically insignificant results (this [helpful post](https://blogs.worldbank.org/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not) explains why).[[^4]] Lastly, in underpowered designs, the estimated effect will be noisy, making *post-hoc* estimates of power [equally as noisy](http://www.stat.columbia.edu/~gelman/research/published/retropower_final.pdf)!
 
 The fragility index (FI) is relatively new statistical technique that uses an intuitive approach to quantify *post-hoc* robustness in studies with a binary outcomes framework with two groups. Qualitatively, the FI states how many patients in the treatment group would need to have their status swapped from event to no-event in order for the trial to be statistically insignificant.[[^5]] In the original Walsh paper, the FI was calculated for RCTs published in high impact medical journals. They found median FI of 8, and a 25% quantile of 3. 
 
-Since the original Walsh paper, the FI has been applied hundreds of times to other branches of the (mainly) medical literature.[[^6]] Most branches of medical literature show a median FI that is in the single digits. While the FI has its drawbacks (discussed below), this new approach appears to have captured the statistical imagination of researchers in a way that power calculations have not. While being told that a study has 20% power should cause immediate concern, it apparently does not cause the same level of concern as finding out an important cancer drug RCT was two coding errors away from being deemed ineffective.
+Since the original Walsh paper, the FI has been applied hundreds of times to other areas of medical literature.[[^6]] Most branches of medical literature show a median FI that is in the single digits. While the FI has its drawbacks (discussed below), this new approach appears to have captured the statistical imagination of researchers in a way that power calculations have not. While being told that a study has 20% power should cause immediate alarm, it apparently does not cause the same level of concern as finding out an important cancer drug RCT was two coding errors away from being deemed ineffective.
 
 The rest of this post is organized as follows: section (2) provides an explicit relationship between the fragility index and the power of the test, section (3) provides an algorithm to calculate the FI using `python` code, section (4) reviews the criticisms against FI, and section (5) concludes.
 
@@ -29,7 +29,7 @@ The rest of this post is organized as follows: section (2) provides an explicit 
 
 ## (2) Binomial proportion fragility index (BPFI)
 
-This section examines the distribution of the FI when the test statistic is the normal-approximation of a difference in a binomial proportion; hereafter referred to as the binomial proportion fragility index (BPFI). While the Fisher's exact test is normally used for estimating the FI, the BPFI is easier to study because it has an analytic solution. Two other simplifications will be used in this section for ease of analysis. First, the sample sizes will be the same between groups and second, a one-sided hypothesis test will be used. Even though the BPFI may not be standard, it is a consistent statistic that is [asymptotically normal](https://math.stackexchange.com/questions/2579383/proof-of-binomial-distribution-asymptotic-to-normal-distribution) and is just as valid as using asymptotic statistics like a chi-squared test. 
+This section examines the distribution of the FI when the test statistic is the normal-approximation of a difference in a binomial proportion; hereafter referred to as the binomial proportion fragility index (BPFI). While Fisher's exact test is normally used for estimating the FI, the BPFI is easier to study because it has an analytic solution. Two other simplifications will be used in this section for ease of analysis. First, the sample sizes will be the same between groups, and second, a one-sided hypothesis test will be used. Even though the BPFI may not be standard, it is a consistent statistic that is [asymptotically normal](https://math.stackexchange.com/questions/2579383/proof-of-binomial-distribution-asymptotic-to-normal-distribution) and is just as valid as using asymptotic statistics like a chi-squared test. 
 
 The notation used will be as follows: the statistic is the difference in proportions, \\(d\\), whose asymptotic distribution is a function of the number of samples and the respective binary probabilities (\\(\pi_1, \pi_2\\)): 
 
@@ -45,7 +45,7 @@ d &\overset{a}{\sim} N\Bigg( \pi_d, V_d(n)  \Bigg) \\
 \end{align*}
 $$
 
-Assume that \\(n_1 = n_2 = n\\) and the null-hypothesis is \\(\pi_2 \leq \pi_1\\). We want to test whether group 1 has a large event rate than group 2.
+Assume that \\(n_1 = n_2 = n\\) and the null-hypothesis is \\(\pi_2 \leq \pi_1\\). We want to test whether group 1 has a larger event rate than group 2.
 
 $$
 \begin{align*}
@@ -60,20 +60,23 @@ d_A &\overset{a}{\sim} N\Big( \pi_d, \big[\pi_d +\pi_2(2-\pi_2) - (\pi_2+\pi_d)^
 \end{align*}
 $$
 
-Notice that when calculating the variance of the test statistic when the null is false, the event rate is calculated by pooling by samples. For a given type-1 error rate target (\\(\alpha\\)), and corresponding rejection threshold, the power of the test when the null is false can be calculated:
+Notice that when calculating the variance of the test statistic when the null is false, the event rate pools the events across groups. For a given type-1 error rate target (\\(\alpha\\)), and corresponding rejection threshold, the power of the test when the null is false can be calculated:
 
 $$
 \begin{align*}
 \text{Reject }H_0:& \hspace{3mm} \hat{d} > \sqrt{\frac{2\hat\pi_0(1-\hat\pi_0)}{n}}t_\alpha, \hspace{7mm} t_\alpha = \Phi^{-1}_{1-\alpha/2} \\
-P(\text{Reject }H_0 | H_A) &= 1 - \Phi\Bigg(  \frac{\sqrt{2 \pi_1(1-\pi_1)}t_\alpha - \sqrt{n}\pi_d }{\sqrt{\pi_d +\pi_1(2-\pi_1) - (\pi_1+\pi_d)^2}} \Bigg) \\
-\text{Power} &= \Phi\Bigg( \frac{\sqrt{n}\pi_d - \sqrt{2 \pi_1(1-\pi_1)}t_\alpha }{\sqrt{\pi_1(1-\pi_1)+\pi_2(1-\pi_2)}} \Bigg) \tag{1}\label{eq:power} \\
+P(\text{Reject }H_0 | H_A) &= 1 - \Phi\Bigg(  \frac{\sqrt{2 \pi_0(1-\pi_0)}t_\alpha - \sqrt{n}\pi_d }{\sqrt{\pi_d +\pi_1(2-\pi_1) - (\pi_1+\pi_d)^2}} \Bigg) \\
+\text{Power} &= \Phi\Bigg( \frac{\sqrt{n}\pi_d - \sqrt{2 \pi_0(1-\pi_0)}t_\alpha }{\sqrt{\pi_1(1-\pi_1)+\pi_2(1-\pi_2)}} \Bigg) \tag{1}\label{eq:power} \\
 \end{align*}
 $$
 
 The formula \eqref{eq:power} shows that increasing \\(\pi_d\\), \\(n\\), or \\(\alpha\\) all increase the power. Figure 1 below shows that formula to estimate power is a close approximation for reasonable sample sizes.
 
-<center><h3><b>Figure 1: Predicted vs Actual power </b></h3></center>
+
+<br>
+<center><h2><b>Figure 1: Predicted vs Actual power </b></h3></center>
 <center><p><img src="/figures/gg_power.png" width="99%"></p></center>
+<br>
 
 Given that the null has been rejected, the roots of the equation can be solved to find the exact point of statistical insignificance using the quadratic formula.
 
@@ -90,52 +93,60 @@ While equation \eqref{eq:fi1} is exact, the FI can be approximated by assuming t
 $$
 \begin{align*}
 \hat{\text{FI}}_a &= \begin{cases} 
-\hat{s}_2 - \Big(\hat{s}_1 + t_\alpha\sqrt{2n \hat\pi_0(1-\hat\pi_0)}\Big) &\text{ if \\(n_1 = n_2\\)} \\
-\hat{s}_2 - n_2 \Big(\frac{\hat{s}_1}{n_1} + t_\alpha\sqrt{\frac{\hat\pi_0(1-\hat\pi_0)(n_1+n_2)}{n_1n_2}} \Big) &\text{ if \\(n_1\neq n_2\\)} \tag{3}\label{eq:fi2}
+\hat{s}_2 - \Big(\hat{s}_1 + t_\alpha\sqrt{2n \hat\pi_0(1-\hat\pi_0)}\Big) &\text{ if ) n_1 = n_2} \\
+\hat{s}_2 - n_2 \Big(\frac{\hat{s}_1}{n_1} + t_\alpha\sqrt{\frac{\hat\pi_0(1-\hat\pi_0)(n_1+n_2)}{n_1n_2}} \Big) &\text{ if } n_1\neq n_2 \tag{3}\label{eq:fi2}
 \end{cases}
 \end{align*}
 $$
 
 As Figure 2 shows below, \eqref{eq:fi2} is very close to the \eqref{eq:fi1} for reasonably sized draws (\\(n=200\\)).
 
-<center><h3><b>Figure 2: BPFI and its approximation</b></h3></center>
+<br>
+<center><h2><b>Figure 2: BPFI and its approximation</b></h3></center>
 <center><p><img src="/figures/gg_fi_approx.png" width="50%"></p></center>
+<br>
 
-Next, we can show that the approximation of the BPFI from \eqref{eq:fi2} is equivalent to a truncated normal when conditioning on statistical significance. 
+Next, we can show that the approximation of the BPFI from \eqref{eq:fi2} is equivalent to a truncated Gaussian when conditioning on statistical significance. 
 
+<!-- s_2 - (s_1 + t_\alpha\sqrt{2n \pi_1(1-\pi_1)}) \hspace{2mm} &\big| \hspace{2mm} s_2 - (s_1 + t_\alpha\sqrt{2n \pi_1(1-\pi_1)}) > 0\hspace{2mm} \longleftrightarrow \\ -->
 $$
 \begin{align*}
-s_2 - (s_1 + t_\alpha\sqrt{2n \pi_1(1-\pi_1)}) \hspace{2mm} &\big| \hspace{2mm} s_2 - (s_1 + t_\alpha\sqrt{2n \pi_1(1-\pi_1)}) > 0\hspace{2mm} \longleftrightarrow \\
 \text{pFI}_a &= \text{FI}_a \hspace{2mm} \big| \hspace{2mm} \text{FI}_a > 0 \hspace{2mm} \longleftrightarrow \\
-\text{FI}_a &\sim N \big( n\pi_d - t_\alpha\sqrt{2n \pi_1(1-\pi_1)}, n[\pi_1(1-\pi_1) + \pi_2(1-\pi_2)]   \big) \\
-E[\text{pFI}_a] &= n\pi_d - t_\alpha\sqrt{2n \pi_1(1-\pi_1)} + \sqrt{n[\pi_1(1-\pi_1) + \pi_2(1-\pi_2)]} \frac{\phi(-E[\text{FI}_a]/\text{Var}[\text{FI}_a]^{0.5})}{\Phi(E[\text{FI}_a/\text{Var}[\text{FI}_a]^{0.5}])}
+\text{FI}_a &\sim N \big( n\pi_d - t_\alpha\sqrt{2n \pi_0(1-\pi_0)}, n[\pi_1(1-\pi_1) + \pi_2(1-\pi_2)]   \big) \\
+E[\text{pFI}_a] &= n\pi_d - t_\alpha\sqrt{2n \pi_0(1-\pi_0)} + \sqrt{n[\pi_1(1-\pi_1) + \pi_2(1-\pi_2)]} \frac{\phi(-E[\text{FI}_a]/\text{Var}[\text{FI}_a]^{0.5})}{\Phi(E[\text{FI}_a/\text{Var}[\text{FI}_a]^{0.5}])}
 \end{align*}
 $$
 
-<center><h3><b>Figure 3: Mean of the pFI </b></h3></center>
-<center><p><img src="/figures/gg_fi_mu.png" width="99%"></p></center>
+Figure 3 below shows that the truncated Gaussian approximation does a good job at estimating the actual mean of BPFI. 
 
+<br>
+<center><h2><b>Figure 3: Mean of the pFI </b></h3></center>
+<center><p><img src="/figures/gg_fi_mu.png" width="99%"></p></center>
+<br>
 
 If the positive BPFI is divided by root-n and the variance under the alternative (a constant) we obtain something converging to a monotonic transformation of the fragility index:
 
 $$
 \begin{align*}
-E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)} }\Bigg] &= \Phi^{-1}(1-\beta) + \frac{\phi\big(-O\big(\sqrt{n}\big)\big)}{\Phi\big(O\big(\sqrt{n}\big)\big)} \\
-&= \Phi^{-1}(\underbrace{1-\beta}_{\text{power}}) + O\Big(e^{-\sqrt{n}}\Big) \tag{4}\label{eq:fi_power}
+E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)} }\Bigg] &= \Phi^{-1}(1-\beta) + \frac{\phi\big(c_2-c_1\sqrt{n})}{\Phi\big(c_1\sqrt{n}-c_2\big)} \\
+&= \Phi^{-1}(\underbrace{1-\beta}_{\text{power}}) + O\Big(e^{-\sqrt{n}}\Big) \tag{4}\label{eq:fi_power} \\
+1-\hat\beta &\approx \Bigg( \frac{\hat{\text{pFI}}_a \big/ \sqrt{n}}{\sqrt{\hat\pi_1(1-\hat\pi_1) + \hat\pi_2(1-\hat\pi_2)} } \Bigg) \tag{5}\label{eq:invert}
 \end{align*}
 $$
 
-Where \\(\beta\\) is the type-II error rate (i.e. one minus power). Figure 4 below shows the range of power esetimates that are obtained when equation \eqref{eq:fi_power} is inverted and solved for \\(1-\beta\\).
+Where \\(\beta\\) is the type-II error rate (i.e. one minus power). Figure 4 below shows the range of power estimates using equation \eqref{eq:invert} which is obtained when equation \eqref{eq:fi_power} is inverted and solved for \\(1-\beta\\).
 
-<center><h3><b>Figure 4: Estimating power from FI </b></h3></center>
+<br>
+<center><h2><b>Figure 4: Estimating power from FI </b></h3></center>
 <center><p><img src="/figures/gg_posthoc.png" width="99%"></p></center>
+<br>
 
-While the average power estimate is close to actual value, the empirical variation is tremendous. Why is there so much variation? The answer is simple: the distribution of FIs is similar for different effect sizes are figure 5 shows below.
+While the median power estimate is close to actual value, the empirical variation is tremendous. Why is there so much variation? The answer is simple: the distribution of FIs is similar for different effect sizes as figure 5 shows below.
 
-<center><h3><b>Figure 5: Distribution of FIs </b></h3></center>
+<center><h2><b>Figure 5: Distribution of FIs </b></h3></center>
 <center><p><img src="/figures/gg_pfi.png" width="99%"></p></center>
 
-Even though a test may have a power of 75%, it will have a similarly distribution FI compared to one that has only 10% power. This naturally means that there will be significant uncertainty around the true effect size for any measured FI. 
+Even though a test may have a power of 75%, it will have a similar distribution FIs to another test that has only 10% power. This naturally means that there will be significant uncertainty around the true effect size for any measured FI. 
 
 <br>
 

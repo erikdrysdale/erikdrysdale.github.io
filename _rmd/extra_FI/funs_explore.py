@@ -2,6 +2,22 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
+from scipy.optimize import minimize_scalar
+
+# Function to find power
+def power_func(power, target):
+    ipower = norm.ppf(power)
+    return (ipower + norm.pdf(-ipower)/norm.cdf(ipower) - target)**2
+
+def find_power(lhs, nprint):
+    N = len(lhs)
+    holder = np.zeros(N)
+    for i in range(N):
+        if (i+1) % nprint == 0:
+            print('Iteration %i of %i' % (i+1, N))
+        res = minimize_scalar(power_func,method='bounded',bounds=(0,1), args=(lhs[i])).x
+        holder[i] = res
+
 
 """
 s:          # of successes
@@ -34,19 +50,20 @@ class BPFI():
         if self.pi2 is None:
             self.pi2 = self.pi1
         self.pid = self.pi2 - self.pi1
+        self.pi0 = (self.pi1 + self.pi2) / 2
         self.null = True
         if self.pid > 0:
             self.null = False
         # Calculate the oracle power
         self.t_a = norm.ppf(1-alpha)
-        num = np.sqrt(2*self.pi1*(1-self.pi1))*self.t_a-np.sqrt(n)*self.pid
+        num = np.sqrt(2*self.pi0*(1-self.pi0))*self.t_a-np.sqrt(n)*self.pid
         den = np.sqrt(self.pid + self.pi1*(2-self.pi1) - (self.pi1 + self.pid)**2 )
         self.power = 1 - norm.cdf(num / den)
 
         # Calculate the expected value of the FI
-        se_f = np.sqrt(2*self.n*self.pi1*(1-self.pi1))
-        self.mu_f = self.n*(self.pi2-self.pi1) - self.t_a*se_f
-        self.mu_f += se_f*norm.pdf(-self.mu_f/se_f)/norm.cdf(self.mu_f/se_f)
+        se_f = np.sqrt(2*self.n*self.pi0*(1-self.pi0))
+        self.mu_f = self.n*self.pid - self.t_a*se_f
+        self.mu_f += se_f*norm.pdf(-norm.ppf(self.power))/norm.cdf(norm.ppf(self.power))
 
 
     @staticmethod
@@ -81,15 +98,14 @@ class BPFI():
         s2hat2 = (self.s1 + np.sqrt(2*self.n*self.pi0_hat*(1-self.pi0_hat))*self.t_a)
         fi2 = self.s2 - s2hat2
         
-        # Calculation of power
+        # Inverse calculation of power
         pi1hat = self.s1/self.n
         pi2hat = self.s2/self.n
-        se_alt = np.sqrt(pi1hat*(1-pi1hat) + pi2hat*(1-pi2hat))
-        power_mu = norm.cdf(fi2/(np.sqrt(self.n*se_alt)))
-        
+        sig_hat = np.sqrt(self.n*(pi1hat*(1-pi1hat) + pi2hat*(1-pi2hat)))
+        lhs = fi2/sig_hat
+        power_mu = find_power(lhs=lhs, nprint=100)
+
         # Store
-        self.df_fi = pd.DataFrame({'reject':self.reject,'power':power_mu,'fi':fi1, 'fia':fi2})
+        self.df_fi = pd.DataFrame({'reject':self.reject,'fi':fi1, 'fia':fi2})
+        # 'power':power_mu,
         
-        
-
-
