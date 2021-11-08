@@ -43,6 +43,7 @@ FI_func(n1A=50,n1=1000,n2A=100,n2=1000,stat=pval_fisher)
 
 alpha = 0.05
 nsim = 250000
+ncheck = 1000
 n_seq = [100, 250, 500, 1000]
 pi1_seq = [0.15, 0.30, 0.45]
 pid_seq = [0, 0.01, 0.03, 0.05]
@@ -59,7 +60,7 @@ for n in n_seq:
             pi2 = pi1 + pid
             sim_jj = BPFI(n=n, pi1=pi1, pi2=pi2, alpha=alpha)
             sim_jj.dgp(nsamp=nsim, seed=jj)
-            sim_jj.fi()
+            sim_jj.fi(ncheck=ncheck)
             # self = sim_jj
             # (i) Compare predicted to actual power
             emp_power = sim_jj.reject.mean()
@@ -73,11 +74,11 @@ for n in n_seq:
             est_fi = sim_jj.mu_f
             tmp_fi = pd.DataFrame({'msr':'FI','n':n, 'pi1':pi1, 'pid':pid, 'est':est_fi, 'emp':emp_fi}, index=[jj])
 
-            # # (iii) Estimate power from FI
-            # tmp_invert = tmp_rejected['power'].quantile([alpha/2,0.5,1-alpha/2]).reset_index()
-            # tmp_invert['index'] = tmp_invert['index'].map({alpha/2:'lb',0.5:'med',1-alpha/2:'ub'})
-            # tmp_invert = tmp_invert.assign(idx=jj).pivot('idx','index','power').reset_index(None,drop=True)
-            # tmp_invert = tmp_invert.assign(n=n,pi1=pi1,pid=pid)
+            # (iii) Estimate power from FI
+            tmp_invert = pd.Series(sim_jj.power_mu).quantile([alpha/2,0.5,1-alpha/2]).reset_index()
+            tmp_invert['index'] = tmp_invert['index'].map({alpha/2:'lb',0.5:'med',1-alpha/2:'ub'})
+            tmp_invert = tmp_invert.assign(idx=jj).pivot('idx','index',0).reset_index(None,drop=True)
+            tmp_invert = tmp_invert.assign(n=n,pi1=pi1,pid=pid)
             
             # (iv) Save representative sample of FI values
             pfi_jj_hat = pd.Series(pfi_jj).sample(n=2500,replace=True,random_state=jj).values
@@ -92,8 +93,8 @@ for n in n_seq:
 # Merge and plot            
 res_power = pd.concat(holder_power)
 res_fi_mu = pd.concat(holder_fi)
-# res_invert = pd.concat(holder_invert).reset_index(None,drop=True)
-# res_invert = res_invert.merge(res_power)
+res_invert = pd.concat(holder_invert).reset_index(None,drop=True)
+res_invert = res_invert.merge(res_power)
 res_pfi = pd.concat(holder_dist).reset_index(None, drop=True)
 
 #########################
@@ -121,18 +122,18 @@ gg_fi_mu = (pn.ggplot(res_fi_mu,pn.aes(x='emp',y='est',color='pid.astype(str)'))
     pn.scale_color_discrete(name='$\\pi_d$'))
 gg_save('gg_fi_mu.png',dir_figures,gg_fi_mu,8,6)
 
-# # (iii) Post-hoc power
-# gg_posthoc = (pn.ggplot(res_invert,pn.aes(x='emp',y='med',color='pid.astype(str)')) + 
-#     pn.theme_bw() + pn.geom_point(size=2) + 
-#     pn.geom_linerange(pn.aes(ymin='lb',ymax='ub')) + 
-#     pn.ggtitle('post-hoc pFI to estimate power\nLine range shows empirical 95% CI') +
-#     pn.labs(x='Actual',y='Esimated') + 
-#     pn.facet_grid('n~pi1',labeller=pn.label_both) + 
-#     pn.geom_abline(slope=1,intercept=0,linetype='--') + 
-#     pn.scale_y_continuous(limits=[0,1]) + 
-#     pn.scale_x_continuous(limits=[0,1]) + 
-#     pn.scale_color_discrete(name='$\\pi_d$'))
-# gg_save('gg_posthoc.png',dir_figures,gg_posthoc,8,6)
+# (iii) Post-hoc power
+gg_posthoc = (pn.ggplot(res_invert,pn.aes(x='emp',y='med',color='pid.astype(str)')) + 
+    pn.theme_bw() + pn.geom_point(size=2) + 
+    pn.geom_linerange(pn.aes(ymin='lb',ymax='ub')) + 
+    pn.ggtitle('post-hoc pFI to estimate power\nLine range shows empirical 95% CI') +
+    pn.labs(x='Actual',y='Esimated') + 
+    pn.facet_grid('n~pi1',labeller=pn.label_both) + 
+    pn.geom_abline(slope=1,intercept=0,linetype='--') + 
+    pn.scale_y_continuous(limits=[0,1]) + 
+    pn.scale_x_continuous(limits=[0,1]) + 
+    pn.scale_color_discrete(name='$\\pi_d$'))
+gg_save('gg_posthoc.png',dir_figures,gg_posthoc,8,6)
 
 # (iv) Post-hoc fragility index
 gg_pfi = (pn.ggplot(res_pfi,pn.aes(x='np.log(pfi+1)',fill='pid.astype(str)')) + 

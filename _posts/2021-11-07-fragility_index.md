@@ -74,7 +74,7 @@ The formula \eqref{eq:power} shows that increasing \\(\pi_d\\), \\(n\\), or \\(\
 
 
 <br>
-<center><h2><b>Figure 1: Predicted vs Actual power </b></h3></center>
+<center><h2><b>Figure 1: Predicted vs Actual power </b></h2></center>
 <center><p><img src="/figures/gg_power.png" width="99%"></p></center>
 <br>
 
@@ -102,7 +102,7 @@ $$
 As Figure 2 shows below, \eqref{eq:fi2} is very close to the \eqref{eq:fi1} for reasonably sized draws (\\(n=200\\)).
 
 <br>
-<center><h2><b>Figure 2: BPFI and its approximation</b></h3></center>
+<center><h2><b>Figure 2: BPFI and its approximation</b></h2></center>
 <center><p><img src="/figures/gg_fi_approx.png" width="50%"></p></center>
 <br>
 
@@ -120,7 +120,7 @@ $$
 Figure 3 below shows that the truncated Gaussian approximation does a good job at estimating the actual mean of BPFI. 
 
 <br>
-<center><h2><b>Figure 3: Mean of the pFI </b></h3></center>
+<center><h2><b>Figure 3: Mean of the pFI </b></h2></center>
 <center><p><img src="/figures/gg_fi_mu.png" width="99%"></p></center>
 <br>
 
@@ -128,22 +128,20 @@ If the positive BPFI is divided by root-n and the variance under the alternative
 
 $$
 \begin{align*}
-E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)} }\Bigg] &= \Phi^{-1}(1-\beta) + \frac{\phi\big(c_2-c_1\sqrt{n})}{\Phi\big(c_1\sqrt{n}-c_2\big)} \\
-&= \Phi^{-1}(\underbrace{1-\beta}_{\text{power}}) + O\Big(e^{-\sqrt{n}}\Big) \tag{4}\label{eq:fi_power} \\
-1-\hat\beta &\approx \Bigg( \frac{\hat{\text{pFI}}_a \big/ \sqrt{n}}{\sqrt{\hat\pi_1(1-\hat\pi_1) + \hat\pi_2(1-\hat\pi_2)} } \Bigg) \tag{5}\label{eq:invert}
+E\Bigg[\frac{\text{pFI}_a \big/ \sqrt{n}}{\sqrt{\pi_1(1-\pi_1) + \pi_2(1-\pi_2)} }\Bigg] &= \Phi^{-1}(1-\beta) + \frac{\phi\big(-\Phi^{-1}(1-\beta))}{\Phi\big(\Phi^{-1}(1-\beta)\big)}  \tag{4}\label{eq:fi_power} \\
 \end{align*}
 $$
 
 Where \\(\beta\\) is the type-II error rate (i.e. one minus power). Figure 4 below shows the range of power estimates using equation \eqref{eq:invert} which is obtained when equation \eqref{eq:fi_power} is inverted and solved for \\(1-\beta\\).
 
 <br>
-<center><h2><b>Figure 4: Estimating power from FI </b></h3></center>
+<center><h2><b>Figure 4: Estimating power from FI </b></h2></center>
 <center><p><img src="/figures/gg_posthoc.png" width="99%"></p></center>
 <br>
 
 While the median power estimate is close to actual value, the empirical variation is tremendous. Why is there so much variation? The answer is simple: the distribution of FIs is similar for different effect sizes as figure 5 shows below.
 
-<center><h2><b>Figure 5: Distribution of FIs </b></h3></center>
+<center><h2><b>Figure 5: Distribution of FIs </b></h2></center>
 <center><p><img src="/figures/gg_pfi.png" width="99%"></p></center>
 
 Even though a test may have a power of 75%, it will have a similar distribution FIs to another test that has only 10% power. This naturally means that there will be significant uncertainty around the true effect size for any measured FI. 

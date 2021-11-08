@@ -4,21 +4,6 @@ import pandas as pd
 from scipy.stats import norm
 from scipy.optimize import minimize_scalar
 
-# Function to find power
-def power_func(power, target):
-    ipower = norm.ppf(power)
-    return (ipower + norm.pdf(-ipower)/norm.cdf(ipower) - target)**2
-
-def find_power(lhs, nprint):
-    N = len(lhs)
-    holder = np.zeros(N)
-    for i in range(N):
-        if (i+1) % nprint == 0:
-            print('Iteration %i of %i' % (i+1, N))
-        res = minimize_scalar(power_func,method='bounded',bounds=(0,1), args=(lhs[i])).x
-        holder[i] = res
-
-
 """
 s:          # of successes
 n:          # of trials
@@ -39,6 +24,22 @@ def gg_save(fn,fold,gg,width,height):
         os.remove(path)
     gg.save(path, width=width, height=height, limitsize=False)
 
+
+
+# Function to find power
+def power_func(power, target):
+    ipower = norm.ppf(power)
+    return (ipower + norm.pdf(-ipower)/norm.cdf(ipower) - target)**2
+
+def find_power(lhs, nprint):
+    N = len(lhs)
+    holder = np.zeros(N)
+    for i in range(N):
+        if (i+1) % nprint == 0:
+            print('Iteration %i of %i' % (i+1, N))
+        res = minimize_scalar(power_func,method='bounded',bounds=(0,1), args=(lhs[i])).x
+        holder[i] = res
+    return holder
 
 #  Define a binomial experiment class for equal sample sizes
 class BPFI():
@@ -86,7 +87,7 @@ class BPFI():
         self.pval = BPFI.pval_bp(self.s1, self.s2, self.n)
         self.reject = self.pval < self.alpha
 
-    def fi(self):
+    def fi(self, ncheck=1000):
         # Calculate the FI
         a = (2*self.n+self.t_a**2)
         b = 2*(self.t_a**2*(self.s1-self.n)-2*self.n*self.s1)
@@ -103,9 +104,13 @@ class BPFI():
         pi2hat = self.s2/self.n
         sig_hat = np.sqrt(self.n*(pi1hat*(1-pi1hat) + pi2hat*(1-pi2hat)))
         lhs = fi2/sig_hat
-        power_mu = find_power(lhs=lhs, nprint=100)
+        lhs_pos = lhs[self.reject]
+        n_pos = len(lhs_pos)
+        if n_pos > ncheck:
+            n_samp = min(n_pos, ncheck)
+            lhs_pos = pd.Series(lhs_pos).sample(n=n_samp,replace=False,random_state=n_samp).values
+            self.power_mu = find_power(lhs=lhs_pos, nprint=int(n_samp/5))
 
         # Store
         self.df_fi = pd.DataFrame({'reject':self.reject,'fi':fi1, 'fia':fi2})
-        # 'power':power_mu,
         
