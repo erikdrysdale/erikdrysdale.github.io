@@ -1092,21 +1092,22 @@ The number of words which ranges from 6 to 132 as can be seen in the figure abov
 <!--- --------------------------------SECTION (4)---------------------------------- ---> 
 <!--- ----------------------------------------------------------------------------- ---> 
 
+<br>
 
 ## (4) Interactive app
 
-To be able write enciphered poems effectively, it will be necessary to display the enciphered dictionary in a  readable and interactive way. The easiest to do this in `python` is to build a [Dash app](https://plotly.com/dash), and then deploy it on the web using [Heroku](https://www.heroku.com/). There is helpful official documentation on how to this [here](https://dash.plotly.com/deployment) and [here](https://devcenter.heroku.com/articles/getting-started-with-python). After you have configured `git` and `heroku` for the command line, you can host your own app by running the following two commands:
+To be able write enciphered poems effectively, it is helpful to be able to display the enciphered dictionary in a  readable and interactive way. The easiest to do this in `python` is to build a [Dash app](https://plotly.com/dash), and then deploy it on the web using [Heroku](https://www.heroku.com/). The official documentation from both sources provides a useful backgrouner on this (see [here](https://dash.plotly.com/deployment) and [here](https://devcenter.heroku.com/articles/getting-started-with-python)). Assuming you have configured `git` and `heroku` for the command line, I have written a helpful script to allow you to host your own app:
 
 ```shell
 git clone https://github.com/ErikinBC/bok12_heroku.git
 bash gen_dash.sh -l [letters] -n [your-app's-name]
 ```
 
-The `gen_dash` bash file will build the necessary environment, create the `encipherer` class, score all the ciphers, and then push the needed code to Heroku to be compiled. I recommend first trying to build a very simple app that will take about a minute by running `bash gen_dash.sh -l abcd -n test-app`. You can always host the Dash app locally by running `python app.py` before hosting on Heroku. 
+The `gen_dash` bash file will build the necessary conda environment, create the `encipherer` class, score all the ciphers, and then push the needed code to Heroku to be compiled. I recommend first trying to build a very simple app that will take about a minute to build by running `bash gen_dash.sh -l abcd -n test-app`. You can always host the Dash app locally by running `python app.py` before hosting on Heroku too. 
 
-On my laptop it takes several hours to calculate and host [cipher-poem.herokuapp.com](https://cipher-poem.herokuapp.com/) with the command `bash gen_dash.sh -l etoaisnrlchdum -n cipher-poem`. 
+On my laptop it takes several hours to generate the `encipherer` class with 14 letters and host [cipher-poem.herokuapp.com](https://cipher-poem.herokuapp.com/) with the command `bash gen_dash.sh -l etoaisnrlchdum -n cipher-poem`. 
 
-The interactive table has seven columns. `num` shows the rank-order of the different words by their weighted 1-gram frequency. Notice that I used the minimum weight of the two words. This ensures that if a very common word like "the" gets matched with the acronym "RDA" it won't receive a high score. The columns `word_{xy}` show the plaintext and ciphertext with the substitution cipher. The parts-of-speech columns (`pos_{xy}`) are useful for sorting when trying to find verbs, adjectives, nouns, etc. The definition column `def_x` also contains the parts of speech, and since these were generated from a different source, it may not always line up with the other columns. 
+The interactive table has seven columns. The first, `num`, shows the rank-order of the different words by their weighted 1-gram frequency. Notice that I used the minimum weight of the two words. This ensures that if a very common word like "the" gets matched with the acronym "RDA" it won't receive a high score. The columns `word_{xy}` show the plaintext and ciphertext with the substitution cipher. The parts-of-speech columns (`pos_{xy}`) are useful for sorting when trying to find verbs, adjectives, nouns, etc. The definition column `def_x` also contains the parts of speech, and since these were generated from a different source, it may not always line up with the other columns. 
 
 For the app I hosted, there are 135,135 different combinations of the substitution cipher possible with 14 letters. Users can change the index by typing the number they want or by using the increment button. The indices are ranked so that 1 has the height sum of weights, and 135135 has the lowest. While the sum of weights is correlated with the number of words, one index may have a higher score with fewer words if those words have more empirical usage from the 1-gram data. Users are encouraged to encouraged to modify the `gen_data.py` script if they would like to use a different dictionary or word-frequency usage then the ones I used. 
 
