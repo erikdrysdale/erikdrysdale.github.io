@@ -9,7 +9,7 @@ mathjax: true
 
 ## Overview
 
-In cryptography, [substitution cyphers](https://en.wikipedia.org/wiki/Substitution_cipher) are considered a weak form of encryption because the [ciphertext](https://en.wikipedia.org/wiki/Ciphertext) shares the same empirical distribution of the plaintext language used to write the message. This allows the cipher to be easily cracked. Despite being a poor form of encryption, substitution ciphers present a useful opportunity to write constrained poems that can be read in two different ways. For example, with the following cipher key $\frac{\text{i}}{\text{w}}\frac{\text{n}}{\text{o}}\frac{\text{e}}{\text{l}}\frac{\text{r}}{\text{s}}\frac{\text{d}}{\text{t}}$, the expression below can be read interchangeably:
+In cryptography, [substitution ciphers](https://en.wikipedia.org/wiki/Substitution_cipher) are considered a weak form of encryption because the [ciphertext](https://en.wikipedia.org/wiki/Ciphertext) shares the same empirical distribution of the plaintext language used to write the message. This allows the cipher to be easily cracked. Despite being a poor form of encryption, substitution ciphers present an interesting opportunity to write constrained poems that can be read in two different ways. For example, with the following cipher key $\frac{\text{i}}{\text{w}}\frac{\text{n}}{\text{o}}\frac{\text{e}}{\text{l}}\frac{\text{r}}{\text{s}}\frac{\text{d}}{\text{t}}$, the expression below can be read interchangeably:
 
 > inner world
 > 
@@ -21,26 +21,28 @@ To be able to write poems effectively with a substitution cipher, it is desirabl
 <center><p><a href="https://cipher-poem.herokuapp.com"><img src="/figures/heroku_example.png" width="90%"></a></p></center>
 <br>
 
-The number of enciphered dictionaries that exists depends on a combinatorial process. When using all 26 letters of the Latin alphabet, there are almost 8 trillion combinations of letter pairings. In contrast, when using 12 letters there are only 15 thousand combinations. The goal of this post is three-fold:
+The number of enciphered dictionaries that exists depends on a combinatorial process. When using all 26 letters of the Latin alphabet, there are almost 8 trillion combinations of letter pairings. In contrast, when using 12 letters there are only 15 thousand combinations. 
+
+The goal of this post is three-fold:
 
 1. Provide an overview of constrained poetry and enciphered poems
-2. Develop python classes to be able to find enciphered dictionaries
+2. Develop `python` classes to be able to find enciphered dictionaries
 3. Deploy a web-based application that allows a poet to easily navigate the enciphered dictionary.
 
-While the code in this post can be run in a self-contained jupyter notebook, the full code and conda environment for this post can be found [here](github.com:ErikinBC/mirror_alphabet). The rest of this post is outlined as follows.
+While the code in this post can be run in a self-contained jupyter notebook, the full code and conda environment for this post can be found [here](github.com/ErikinBC/mirror_alphabet). The rest of this post is outlined as follows.
 
 * Section (1) gives a background of the use of constraints in poetry
-* Section (2) discusses provides a background of enciphered poetry
-* Section (3) provides the `python` code needed to find an enciphered dictionary
-* Section (4) provides a template to create an interactive tool hosted on `dash` and `heroku`
+* Section (2) provides a background on enciphered poetry
+* Section (3) gives the `python` code needed to find an enciphered dictionary
+* Section (4) links to a template that creates an interactive tool hosted on `dash` and `heroku`
 
-After I finished this post I realized that the [Peterson and Fyshe (2016)](http://www.langlearnlab.cs.uvic.ca/beamverse) had already undertaken a similar exercise. Their work is much more academic and uses a [beam search](https://en.wikipedia.org/wiki/Beam_search) approach to explore the combinatorial space of substitution ciphers in a way that is linked to n-gram word frequencies. This is a clever way to avoid having to do a brute-force search over the space. This post can be thought of a slightly less technical analysis with code that can be run within a single jupyter notebook environment. It also provides a way to create an interactive app. Our two projects are therefore complementary of each other. 
+After I finished this post I realized that [Peterson and Fyshe (2016)](http://www.langlearnlab.cs.uvic.ca/beamverse) had already undertaken a similar exercise. Their work is much more academic and uses a [beam search](https://en.wikipedia.org/wiki/Beam_search) approach to explore the combinatorial space of substitution ciphers in a way that is linked to n-gram word frequencies. This is a clever way to avoid having to do a brute-force search over the space. This post can be thought of as slightly less technical analysis with code that can be run within a single jupyter notebook environment. It also provides a way to create an interactive app. Our two projects are therefore complementary of each other. 
 
 <br>
 
 # (1) The use of constraints in poetry
 
-Constraints in poetry are as old as the artform itself. Rhyme schemes, meter, and poetic forms (e.g. sonnets) all impose constraints on what words can be used in what order. Yet far from limiting the expressive capacity of poetry, constraints often help to bring out what is most beautiful in human language. The constraint most associated with poetry is rhyming. In the late Victorian era poets [Tennyson](https://en.wikipedia.org/wiki/Alfred,_Lord_Tennyson) had perfected this technique:
+Constraints in poetry are as old as the artform itself. Rhyme schemes, meter, and poetic forms (e.g. sonnets) all impose constraints on what words can be used in what order. Yet far from limiting the expressive capacity of poetry, constraints often help to bring out what is most beautiful in human language. The constraint most associated with poetry is rhyming. In the late Victorian era poets like [Tennyson](https://en.wikipedia.org/wiki/Alfred,_Lord_Tennyson) had perfected this technique:
 
 > By the margin, willow-veil'd,
 >
@@ -56,11 +58,11 @@ Constraints in poetry are as old as the artform itself. Rhyme schemes, meter, an
 > 
 > [The Lady of Shallot](https://www.poetryfoundation.org/poems/45360/the-lady-of-shalott-1842)
 
-Though the mellifluous feel of Victorian-era poetry could sometime be overwrought, it demonstrates that the rhyming constraint can be a necessary condition to achieving a certain feel in a poem. [Modernist](https://en.wikipedia.org/wiki/Modernist_poetry_in_English) poets like TS Eliot and Ezra Pound moved away from what Milton presciently referred to as the "the jingling sound of like endings" to a more fluid and unstructured type of poetry. The poetic world has rarely looked back. Consider the most popular book of poetry (by far) in the 21st century: Rupi Kaur's [*milk and honey*](https://en.wikipedia.org/wiki/Milk_and_Honey_(poetry_collection)). The book is full of beautiful and sparse poetry, yet it has very little rigid structure, and instead is shaped (literally) by the emotional cadence of the sexual trauma the book is based on. 
+Though the mellifluous feel of Victorian-era poetry could sometimes be overwrought, it demonstrates that the rhyming constraint can be a necessary condition to achieving a certain feel in a poem. [Modernist](https://en.wikipedia.org/wiki/Modernist_poetry_in_English) poets like TS Eliot and Ezra Pound moved away from what Milton presciently referred to as the "the jingling sound of like endings" to a more fluid and unstructured type of poetry. The poetic world has rarely looked back. Consider the most popular book of poetry (by far) in the 21st century: Rupi Kaur's [*milk and honey*](https://en.wikipedia.org/wiki/Milk_and_Honey_(poetry_collection)). The book is full of beautiful and sparse poetry, yet it has very little rigid structure, and instead is shaped (literally) by the emotional cadence of the sexual trauma the book is based on. 
 
-Like Newton's third law, all changes in artistic direction are met with a counter-reaction. The [Oulipo movement](https://en.wikipedia.org/wiki/Oulipo) which began in the 1960s attempted to explore the limits of what art could be produced under increasingly rigorous restrictions. Made up of mainly French-speaking writers and mathematicians, Oulipo were described as "rats who construct the labyrinth from which they plan to escape." For example, [Perec's](https://en.wikipedia.org/wiki/Georges_Perec) *La Disparition* was a novel written without the letter *e* (i.e. a lipogram). 
+Like Newton's third law, all changes in artistic direction are met with a counter-reaction. The [Oulipo movement](https://en.wikipedia.org/wiki/Oulipo), which began in the 1960s, attempted to explore the limits of what could be produced under increasingly rigorous restrictions. Made up of mainly French-speaking writers and mathematicians, Oulipo were described as "rats who construct the labyrinth from which they plan to escape." For example, [Perec's](https://en.wikipedia.org/wiki/Georges_Perec) *La Disparition* was a novel written without the letter *e* (i.e. a lipogram). 
 
-Today, there are a small number of contemporary poets whose artistic *oeuvre* is centred around constraint-based poetry. This includes the likes of [Christian Bök](https://www.umlautmachine.net/), [Anthony Etherin](https://anthonyetherin.wordpress.com/), and [Luke Bradford](http://lukebradford.xyz/). These poets are also interested in science and how computational tools can help explore the edge cases of poetic expression.[[^1]] Below are some poetic examples from each poet using three different constraint-based techniques: tetragrams, [univocalics](https://en.wikipedia.org/wiki/Univocalic), and [anagrams](https://en.wikipedia.org/wiki/Anagram).
+Today, there are a small number of contemporary poets whose artistic *oeuvre* is centred around constraint-based poetry. This includes [Christian Bök](https://www.umlautmachine.net/), [Anthony Etherin](https://anthonyetherin.wordpress.com/), and [Luke Bradford](http://lukebradford.xyz/). These poets are also interested in science and how computational tools can help explore the edge cases of poetic expression.[[^1]] Below are some poetic examples from each poet using three different constraint-based techniques: tetragrams, [univocalics](https://en.wikipedia.org/wiki/Univocalic), and [anagrams](https://en.wikipedia.org/wiki/Anagram).
 
 <br>
 
@@ -78,7 +80,7 @@ Today, there are a small number of contemporary poets whose artistic *oeuvre* is
 > [Mona Lisa](http://lukebradford.xyz/Mona%20Lisa.pdf) (Tetragrams)
 
 **Christian Bök**
-> Enfettered, these sentences rpress free speech. The text deletes selected letters. We see the revered exegete reject metred verse: the sestet, the tercet...
+> Enfettered, these sentences repress free speech. The text deletes selected letters. We see the revered exegete reject metred verse: the sestet, the tercet...
 >
 > ...
 > 
@@ -96,13 +98,13 @@ Today, there are a small number of contemporary poets whose artistic *oeuvre* is
 > [For Wordsworth](https://derekbeaulieu.files.wordpress.com/2017/08/five_romantics_in_firm_octaves.pdf) (Anagram)
 
 
-Though the constraint-based poets today know they are a niche group within a niche art form, their artistic stance actually represents an ongoing debate in poetry for the last 200 years between the [egotistical sublime](https://www.tandfonline.com/doi/abs/10.1080/00138386808597305?journalCode=nest20) and [negative capability](https://en.wikipedia.org/wiki/Negative_capability).[[^2]] The former views the job of the poet to provide a confessional outpouring of feeling; an inner monologue of thoughts and experiences. The latter believes that the poet is merely an instrument which channels other forces to speak through them; treating language as an alien form to engineer it for human purposes. Most contemporary poets subscribe to the philosophy of the egotistical sublime.
+Though the constraint-based poets today know they are a niche group within a niche art form, their artistic stance actually represents an ongoing debate in poetry for the last 200 years between the [egotistical sublime](https://www.tandfonline.com/doi/abs/10.1080/00138386808597305?journalCode=nest20) and [negative capability](https://en.wikipedia.org/wiki/Negative_capability).[[^2]] The former views the job of the poet as providing a confessional outpouring of feeling; an inner monologue of thoughts and experiences. The latter believes that the poet is merely an instrument which channels other forces which speak through them; treating language as an alien form to engineer for human purposes. Most contemporary poets subscribe to the philosophy of the egotistical sublime.
 
 For poets like Bök, this obsession of internal reflection and expression, while appropriate in some measure, has consumed contemporary poetic culture to an [unhealthy degree](https://arts.mit.edu/poetry-survive-end-civilization/).
 
 > I think the greatest way to impugn poetry is simply to note that even though humans have set foot on the moon, there is no canonical poem about that moment. And you can bet that if the ancient Greeks had ridden a trireme to the moon, there would be a 12-volume epic poem about that grandiose adventure.
 
-To a casual reader of poetry, the first encounter with a constraint-based poem will often produce a satisfying feel generated from the felicitous effect of the structure. Until one has read Bök's *Eunoia*, no English speaker can truly appreciate the personality of each vowel. Only be constraining ourselves do we learn that *e* is regal and languid, *i* is shrill and staccato, *u* is guttural and dirty, etc.
+To a casual reader of poetry, the first encounter with a constraint-based poem will often produce a satisfying feel generated from the felicitous effect of the structure. Until one has read Bök's *Eunoia*, no English speaker can truly appreciate the personality of each vowel. Only by constraining ourselves do we learn that *e* is regal and languid, *i* is shrill and staccato, *u* is guttural and dirty, etc.
 
 One of the most ancient forms of constrained poetry is the [lipogram](https://en.wikipedia.org/wiki/Lipogram) in which certain letter(s) are avoided (which dates to the [6th century BC](https://en.wikipedia.org/wiki/Lasus_of_Hermione)). Lipograms are a beautiful demonstration of how subtracting elements can actually serve to enhance a poem in the right context. An interesting analogy from music world is the [Köln Concert](https://en.wikipedia.org/wiki/The_K%C3%B6ln_Concert) where Keith Jarrett had to play on an old piano where some of the keys were broken. This sounds produced by this "lipogrammatic piano" have a *sui generis* feel due to its uniquely limited range.
 
@@ -112,13 +114,13 @@ One of the most ancient forms of constrained poetry is the [lipogram](https://en
 <!--- ----------------------------------------------------------------------------- ---> 
 # (2) Enciphered poems
 
-Substitution cyphers in cryptography are designed to hide the meaning of a message, with a critical distinction between the plaintext and the ciphertext for this reason. In contrast, an enciphered poem (usually) does not distinguish between what poem is encrypted and what is decrypted.[[^3]] Although, there may be a more obvious choice of which poem is meant to be read first (e.g. a call and response). Here is an example of a (rather abstract) poem I wrote using a total of 12 letters and the following cipher $\frac{\text{e}}{\text{o}}\frac{\text{t}}{\text{c}}\frac{\text{a}}{\text{i}}\frac{\text{s}}{\text{h}}\frac{\text{n}}{\text{d}}\frac{\text{r}}{\text{l}}$.
+Substitution ciphers in cryptography are designed to hide the meaning of a message, with a critical distinction between the plaintext and the ciphertext for this reason. In contrast, an enciphered poem (usually) does not distinguish between what poem is encrypted and what is decrypted.[[^3]] Although, there may be a more obvious choice of which poem is meant to be read first (e.g. a call and response). Here is an example of a (rather abstract) poem I wrote using a total of 12 letters and the following cipher $\frac{\text{e}}{\text{o}}\frac{\text{t}}{\text{c}}\frac{\text{a}}{\text{i}}\frac{\text{s}}{\text{h}}\frac{\text{n}}{\text{d}}\frac{\text{r}}{\text{l}}$.
 
 > An ID acts, he roots
 > 
 > Id, an itch so leech
 
-Even though the semantic sense of this poem is limited, there are some elements that make it interesting. "Id", "itch", and "leech" suggests something innate and animalistic. "ID", "acts", and "roots" hints at a heroic defence. While an element of [pareidolia](https://en.wikipedia.org/wiki/Pareidolia) exists when reading these sorts of poems (perceiving pattens in noise), a good constraint-based can encourage the imagination by structuring the poems in a grammatically correct way. This is why a poem like the [Jabberwocky](https://en.wikipedia.org/wiki/Jabberwocky) continues to be loved. "An ID acts, he roots" follows the proper structure of a sentence: "article noun verb, pronoun verb" like "A hero acts, he defies". For this toy poem, there is obvious order of which sentence should be read first. 
+Even though the semantic sense of this poem is limited, there are some elements that make it interesting. "Id", "itch", and "leech" suggests something innate and animalistic. "ID", "acts", and "roots" hints at a heroic defence. While an element of [pareidolia](https://en.wikipedia.org/wiki/Pareidolia) exists when reading these sorts of poems (perceiving patterns in noise), a good constraint-based poem can encourage the imagination by structuring itself in a grammatically correct way. This is why a poem like the [Jabberwocky](https://en.wikipedia.org/wiki/Jabberwocky) continues to be loved. "An ID acts, he roots" follows the proper structure of a sentence: "article noun verb, pronoun verb" like "A hero acts, he defies". For this toy poem, there is obvious order of which sentence should be read first. 
 
 A substitution cipher closely resembles how DNA works. The foundational structure of all biological organisms is made up of four nucleotides: adenine (A), cytosine (C), guanine (G), and thymine (T). Each nucleotide pairs with one other counterpart (A to T and C to G). For example a sequence of the nucleotides A-C-G-T-A-G will be "zipped up" with T-G-C-A-T-C and vice versa. This is why DNA is double-stranded. While natural languages and genetic languages both have "letters", they are used in slightly different ways. In human language, a certain combination of letters forms a word, and a certain order of words forms a sentence. In DNA, different triplets of nucleotides form a codon and associated amino acid, and a certain order of amino acids forms a protein.[[^4]] 
 
@@ -138,7 +140,7 @@ Before writing an enciphered poem one needs to decide the dictionary of eligible
 
 For a given choice of $k$ even-numbered letters there are a total of $\prod_{i=1}^{k/2} (2i-1)$ possible ciphers. If there were four letters a, b, c, d, then a total of 3 unique enciphers exist: (i) a:b, c:d, (ii) a:c, b:d, (iii) a:d, b:c. Because the cipher is complementary, a:b is the same as b:a (in this sense it is akin to combination rather than a permutation). 
 
-How did we get this specific formula you may ask? Imagine you are going to pick a cipher based on 4 letters. After picking an initial letter, there are three choices you can make. After these first two letters are paired, you pick another letter. There is only one way to pair it. Hence three times one equals three combinations. Why are we counting a choice only after a letter has been picked? The reason is the complementarity of the letter. If you have two letters, it doesn't matter if you pick the first one and then second one, or vice versa. Hence, the only real "choice" is after a letter has been selected.
+Imagine you are going to pick a cipher based on 4 letters. After picking an initial letter, there are three choices you can make. After these first two letters are paired, you pick another letter. There is only one way to pair it. Hence three times one equals three combinations. Why are we counting a choice only after a letter has been picked? The reason is the complementarity of the letter. If you have two letters, it doesn't matter if you pick the first one and then second one, or vice versa. Hence, the only real "choice" is after a letter has been selected.
 
 In addition to the number of ways $k$ letters can be paired, there are $26 \choose k$ possible sets of letters for a given lipogrammatic cipher. The first code block below will use a simple function to show how many possible encodings can exist for a given number of letters.
 
@@ -427,7 +429,7 @@ Unsurprisingly the articles "the", "of", "and" dominate word usage, whilst Scrab
 
 <br>
 
-Figure 1 below shows the empirical distribution of word usage over all 52K words. Notice that the distribution is heavily skewed to the right. Even the log-transformation of word usage is polynomial suggesting a doubly-exponential distribution. 
+Figure 3 below shows the empirical distribution of word usage over all 52K words. Notice that the distribution is heavily skewed to the right. Even the log-transformation of word usage is polynomial suggesting a doubly-exponential distribution. 
 
 Word usage frequencies help to weight the final quality of the enciphered dictionary. For example, one dictionary might have 50 words that are frequently used in English, whilst another might have 100 that are rarely used. By weighting the total number of words, we might come to a different conclusion about which is the "preferred" dictionary in terms of the quality of word choices to build poems from. If the weights are based on the log-transformed count of frequencies this will be more favourable to dictionaries with more words, while using the untransformed frequencies will favour any dictionary that has one or more top words. 
 
@@ -487,9 +489,9 @@ After the order of the lipogrammatic constraint is determined ($k$), there are t
 1. The $26 \choose k$ possible ways to select $k$ even-numbered letters
 2. The $\prod_{i=1}^{k/2} (2i-1)=1\cdot 3 \cdot \dots \cdot (k-1)$ possible ways to make an encipherment through the complementary letter pairing
 
-There are three practical computational questions that need to be answered. First, after choosing the number of letters ($k$), how do we iterate through all possible combinations in a deterministic way? Second, for a given set of actual letters (e.g. *etoaisnrlchd*), how to do we iterate through all possible pairings in a deterministic way? Lastly, after the alphabet and pairing has been decided (e.g. a:s, h:o), how can we determine which words are valid for encipherment? The `enciphered_dict` class below provides convenient wrappers for each of these three questions. 
+There are three practical computational questions that need to be answered. First, after choosing the number of letters ($k$), how do we iterate through all possible combinations in a deterministic way? Second, for a given set of actual letters (e.g. *etoaisnrlchd*), how to do we iterate through all possible pairings in a deterministic way? Lastly, after the alphabet and pairing has been decided (e.g. a:s, h:o), how can we determine which words are valid for encipherment? The `encipherer` class below provides convenient wrappers for each of these three questions. 
 
-A few notes about the methods of the class to better understand what it is doing. The class needs to be initialized with a DataFrame `df_english` and an index of which column has the words `cn_word`. Next, the choice of letters needs to be set with `set_letters`. This can either be manually specified (`letters='abcd...'`), or decided by the deterministic procedure (`idx_letters='5468'`). After the letters have been established (i.e. the lipogram), then `set_encipher` will determine the letter pairing by either manual specification (`letters='a:b,c:d,...'`) or deterministically with an index (`idx_pairing='4681'`). To actually determine the valid word overlap, the method `get_corpus()` can be run. To do a brute-force search over the best `idx_pairing`, the method `score_ciphers` can be called with a corresponding weight column (`cn_weight`) that was found in the original `df_english` DataFrame. Note that when setting `idx_letters` or `idx_pairing`, it is worthwhile to consult the `idx_max` attribute, as this shows that maximum value the index can range up to. 
+A few notes about the methods of the class to better understand what it is doing. The class needs to be initialized with a DataFrame `df_english` and an index of which column has the words `cn_word`. Next, the choice of letters needs to be set with `set_letters`. This can either be manually specified (`letters='abcd...'`), or decided by the deterministic procedure (`idx_letters=5468`). After the letters have been established (i.e. the lipogram), then `set_encipher` will determine the letter pairing by either manual specification (`letters='a:b,c:d,...'`) or deterministically with an index (`idx_pairing=4681`). To actually determine the valid word overlap, the method `get_corpus()` can be run. To do a brute-force search over the best `idx_pairing`, the method `score_ciphers` can be called with a corresponding weight column (`cn_weight`) that was found in the original `df_english` DataFrame. Note that when setting `idx_letters` or `idx_pairing`, it is worthwhile to consult the `idx_max` attribute, as this shows the maximum value the index can range up to. 
 
 ```python
 """
@@ -1100,7 +1102,7 @@ To be able write enciphered poems effectively, it is helpful to be able to displ
 
 ```shell
 git clone https://github.com/ErikinBC/bok12_heroku.git
-bash gen_dash.sh -l [letters] -n [your-app's-name]
+bash gen_dash.sh -l [letters] -n [your-apps-name]
 ```
 
 The `gen_dash` bash file will build the necessary conda environment, create the `encipherer` class, score all the ciphers, and then push the needed code to Heroku to be compiled. I recommend first trying to build a very simple app that will take about a minute to build by running `bash gen_dash.sh -l abcd -n test-app`. You can always host the Dash app locally by running `python app.py` before hosting on Heroku too. 
@@ -1109,7 +1111,7 @@ On my laptop it takes several hours to generate the `encipherer` class with 14 l
 
 The interactive table has seven columns. The first, `num`, shows the rank-order of the different words by their weighted 1-gram frequency. Notice that I used the minimum weight of the two words. This ensures that if a very common word like "the" gets matched with the acronym "RDA" it won't receive a high score. The columns `word_{xy}` show the plaintext and ciphertext with the substitution cipher. The parts-of-speech columns (`pos_{xy}`) are useful for sorting when trying to find verbs, adjectives, nouns, etc. The definition column `def_x` also contains the parts of speech, and since these were generated from a different source, it may not always line up with the other columns. 
 
-For the app I hosted, there are 135,135 different combinations of the substitution cipher possible with 14 letters. Users can change the index by typing the number they want or by using the increment button. The indices are ranked so that 1 has the height sum of weights, and 135135 has the lowest. While the sum of weights is correlated with the number of words, one index may have a higher score with fewer words if those words have more empirical usage from the 1-gram data. Users are encouraged to encouraged to modify the `gen_data.py` script if they would like to use a different dictionary or word-frequency usage then the ones I used. 
+For the app I hosted, there are 135135 different combinations of the substitution cipher possible with 14 letters. Users can change the index by typing the number they want or by using the increment button. The indices are ranked so that 1 has the height sum of weights, and 135135 has the lowest. While the sum of weights is correlated with the number of words, one index may have a higher score with fewer words if those words have more empirical usage from the 1-gram data. Users are encouraged to modify the `gen_data.py` script if they would like to use a different dictionary or word-frequency usage than the ones I chose. 
 
 
 <br>
@@ -1126,6 +1128,6 @@ For the app I hosted, there are 135,135 different combinations of the substituti
 
 [^3]: Although this is by no means always true, see Etherin's [Enigma (for Alan M Turing)](https://burninghousepress.com/2019/07/14/enigma-for-alan-m-turing-anthony-etherin/) for an example.
 
-[^4]: This is of course a simplification of both natural language and genetics, but I am trying to make the two sytems as simple as possible. 
+[^4]: This is of course a simplification of both natural language and genetics, but I am trying to make the two systems as simple as possible. 
 
 [^5]: See for example [The Passionate Shepherd to His Love](https://en.wikipedia.org/wiki/The_Passionate_Shepherd_to_His_Love) by Marlowe and Raleigh's response in [The Nymph's Reply to the Shepherd](https://en.wikipedia.org/wiki/The_Nymph%27s_Reply_to_the_Shepherd).
