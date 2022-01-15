@@ -15,7 +15,7 @@ A wide variety of estimates of the incubation time have been seen in the rapidly
 
 Several technical notes.
 1. The `df_txt.csv` load in the script below was generated with a similar method to xhlulu's [kernel](https://tinyurl.com/vdhlgl7).
-2. A utility script is being used to help with the parsing. This can be found on [githib](https://github.com/ErikinBC/cord19/blob/master/support_funs_incubation.py)
+2. A utility script is being used to help with the parsing. This can be found on [githib](https://github.com/ErikinBC/gists/blob/master/support_funs_incubation.py)
 3. After the relevant sentences are found, a function `record_vals` is used to allow the user to **<u>manually</u>** select the sentences with "y(es)/n(o)"
 4. I manually annotated the moments in the sentences
 
