@@ -1,5 +1,5 @@
 ---
-title: 'Calibrating a machine learning model for a statistical trial'
+title: 'Preparing a binary classifier for a statistical trial'
 output: html_document
 fontsize: 12pt
 published: true
