@@ -40,7 +40,7 @@ import pandas as pd
 <br>
 ## (1) Review of Type-I and Type-II errors
 
-Imagine a simple hypothesis test: to determine whether one Gaussian distribution, with a known variance, has a larger mean than another: \\(y_{i1} \sim N(\mu_A, \sigma^2/2)\\) and \\(y_{i2} \sim N(\mu_B, \sigma^2/2)\\), then \\(\bar y_i \sim N(\mu_i, \sigma^2/n)\\) and \\(\bar d = \bar y_1 - \bar y_2 \sim N(\mu_A, \sigma^2/n)\\). The sample mean (difference) will have a variance of \\(\sigma^2/n\\).[[^3]]
+Imagine a simple hypothesis test: to determine whether one Gaussian distribution, with a known variance, has a larger mean than another: \\(y_{i1} \sim N(\mu_A, \sigma^2/2)\\) and \\(y_{i2} \sim N(\mu_B, \sigma^2/2)\\), then \\(\bar y_i \sim N(\mu_i, \sigma^2/n)\\) and \\(\bar d = \bar y_1 - \bar y_2 \sim N(\mu_A - \mu_B, \sigma^2/n)\\). The sample mean (difference) will have a variance of \\(\sigma^2/n\\).[[^3]]
 
 $$
 \begin{align*}
