@@ -1,5 +1,5 @@
 ---
-title: "Fine tuning GPT3 to soud like podcast host"
+title: "(DRAFT) Fine tuning GPT3 to soud like podcast host"
 output: html_document
 fontsize: 12pt
 published: true
@@ -9,7 +9,7 @@ mathjax: true
 
 ## Executive summary
 
-I developed four fine-tuned versions of OpenAI's [GPT-3 models](https://beta.openai.com/docs/models/gpt-3) to sound like [Russ Roberts](https://russroberts.info/) who is the host of [EconTalk](https://www.econlib.org/econtalk/) using more than 10 years of episode transcripts. I calibrated my experiments for a $40 USD budget ($10 per model) and tested the fine-tuned model on 12 quintessential Russ/EconTalk questions.
+I developed four fine-tuned versions of OpenAI's [GPT-3 models](https://beta.openai.com/docs/models/gpt-3) to sound like [Russ Roberts](https://russroberts.info/) who is the host of [EconTalk](https://www.econlib.org/econtalk/) using more than 10 years of episode transcripts. I calibrated my experiments for a $40 USD budget ($10 per model) and tested the fine-tuned models on 12 quintessential Russ/EconTalk questions.
 
 This process led to four key insights:
 
@@ -40,7 +40,7 @@ ChatGPT has shown amazing performance in its ability to [write code](https://twi
 
 ## Introduction to fine-tuning
 
-Even with unprecedented scale, training, and RLHF fine-tuning, ChatGPT still shows a tendency to "[hallucinate](https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence))", giving nonsensical answers, made-up facts, and repeated sentences. One way to address this issue is to fine-tune a version of GPT-3 on a custom dataset that updates the models weights in a way that makes more likely to give answers consistent with the task you have in mind. For example, we may want the model to give medically specific and accurate answers to questions [questions related to depression](https://betterprogramming.pub/how-to-finetune-gpt-3-finetuning-our-virtual-mental-health-assistant-641c1f3b1ef3). This can be done with a new collection of prompt/completion data points:
+Even with unprecedented scale, training, and RLHF fine-tuning, ChatGPT still shows a tendency to "[hallucinate](https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence))", giving nonsensical answers, made-up facts, and repeated sentences. One way to address this issue is to fine-tune a version of GPT-3 on a custom dataset that updates the models weights in a way that makes more likely to give answers consistent with the task you have in mind. For example, we may want the model to give medically specific and accurate answers to [questions related to depression](https://betterprogramming.pub/how-to-finetune-gpt-3-finetuning-our-virtual-mental-health-assistant-641c1f3b1ef3) (although this might be quite legally/ethically risk!). This can be done with a new collection of prompt/completion data points:
 
 ```json
 {"prompt": "<prompt text #1>", "completion": "<ideal generated text #1>"}
@@ -85,28 +85,28 @@ As Table 1 shows below that out of the box ChatGPT does well for half of the que
 <p align="center"> Table 1: Completions to baseline prompts </p>
 <table align="center">
   <tr>
-    <td><img src="/figures/q1_econtalk.png" alt="q1" width=360px></td>
-    <td><img src="/figures/q2_econtalk.png" alt="q2" width=360px></td>
+    <td><img src="/figures/q1_econtalk.png" alt="q1" width=480px></td>
+    <td><img src="/figures/q2_econtalk.png" alt="q2" width=480px></td>
   </tr>
   <tr>
-    <td><img src="/figures/q3_econtalk.png" alt="q3" width=360px></td>
-    <td><img src="/figures/q4_econtalk.png" alt="q4" width=360px></td>
+    <td><img src="/figures/q3_econtalk.png" alt="q3" width=480px></td>
+    <td><img src="/figures/q4_econtalk.png" alt="q4" width=480px></td>
   </tr>
   <tr>
-    <td><img src="/figures/q5_econtalk.png" alt="q5" width=360px></td>
-    <td><img src="/figures/q6_econtalk.png" alt="q6" width=360px></td>
+    <td><img src="/figures/q5_econtalk.png" alt="q5" width=480px></td>
+    <td><img src="/figures/q6_econtalk.png" alt="q6" width=480px></td>
   </tr>
   <tr>
-    <td><img src="/figures/q7_econtalk.png" alt="q7" width=360px></td>
-    <td><img src="/figures/q8_econtalk.png" alt="q8" width=360px></td>
+    <td><img src="/figures/q7_econtalk.png" alt="q7" width=480px></td>
+    <td><img src="/figures/q8_econtalk.png" alt="q8" width=480px></td>
   </tr>
   <tr>
-    <td><img src="/figures/q9_econtalk.png" alt="q9" width=360px></td>
-    <td><img src="/figures/q10_econtalk.png" alt="q10" width=360px></td>
+    <td><img src="/figures/q9_econtalk.png" alt="q9" width=480px></td>
+    <td><img src="/figures/q10_econtalk.png" alt="q10" width=480px></td>
   </tr>
   <tr>
-    <td><img src="/figures/q11_econtalk.png" alt="q11" width=360px></td>
-    <td><img src="/figures/q12_econtalk.png" alt="q12" width=360px></td>
+    <td><img src="/figures/q11_econtalk.png" alt="q11" width=480px></td>
+    <td><img src="/figures/q12_econtalk.png" alt="q12" width=480px></td>
   </tr>
 </table>
 
@@ -122,7 +122,7 @@ The first step in any data science project is gather and clean a dataset and the
 <p align="center"><i>EconTalk episodes transcripts can be obtained from the episode page</i></p>
 <br>
 
-After the raw transcripts were downloaded, it become clear the earlier episodes were not verbatim transcripts and hence could not be used for the prompt/completion style formatting. The data was therefore subset to the oldest episode that had a full episode transcript which was from early 2022. A total of 573 episode transcripts remained which ranged from [Jan 11th 2012](https://www.econtalk.org/david-rose-on-the-moral-foundations-of-economic-behavior/) to [December 20th 2022](https://www.econtalk.org/hannah-ritchie-on-eating-local/) (as of January 4th 2023). 
+After the raw transcripts were downloaded, it become clear that the earlier episodes did not have verbatim transcripts and hence could not be used for the prompt/completion style formatting. The data was therefore subset to the oldest episode that had a full episode transcript which was from early 2012. A total of 573 episode transcripts remained which ranged from [Jan 11th 2012](https://www.econtalk.org/david-rose-on-the-moral-foundations-of-economic-behavior/) to [December 20th 2022](https://www.econtalk.org/hannah-ritchie-on-eating-local/) (as of January 4th 2023). 
 
 The second [step of the pipeline](https://github.com/ErikinBC/EconChattR/blob/main/2_process_transcripts.py) was to ensure that the dialogue was aggregated to alternate text segments between Russ and his guest (see example below), which would later form the basis of the prompt/completion.
 
@@ -211,7 +211,7 @@ After the four models were done training, prompts could be submitted the custom 
 2. Using a temperature of 0.6 and max tokens of 250, it was clear that there was substantial variation in the types of answers the model would provide. This suggests a value in generating dozens of responses, and selecting the one that most closely aligns with the EconTalk corpus (for example, see [this approach](https://github.com/openai/openai-cookbook/blob/main/examples/Question_answering_using_embeddings.ipynb) on using embeddings). 
 
 <br>
-<p align="center"> <img src="/figures/playground.png" width="10%"> </p>
+<p align="center"> <img src="/figures/playground.png" width="20%"> </p>
 <p align="center"> <i> After fine-tuning, your models will appear on the OpenAI playground </i> </p>
 <br>
 
@@ -227,7 +227,7 @@ For the third question, the model does a very good job at explaining Russ' skept
 
 I love Russ' answer to the sixth question about "skin in the game" where it gives both a "chatty" answer, but also calls out EconTalk's favorite cast of characters including investment bankers. Russ' answers to the seventh and eighth question about the "prairie" are also very good, although the latter answer runs on a bit at the end. Unfortunately Russ' answer to the tenth question about the Chesterton fence was quite poor. While it does mention "unintended consequences," it is quite far off the mark, and is the only question that is materially worse than the baseline ChatGPT.
 
-Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 2, given the model's completions a score of 9.5/12 (~80%). The model also deserves bonus points for giving a convincing "conversational" feel to the answers in a way that would be hard to distinguish between a real EconTalk transcript.  
+Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 2, giving the model a (subjective) score of 9.5/12 (~80%). The model also deserves bonus points for giving a convincing "conversational" feel to the answers in a way that would be hard to distinguish between a real EconTalk transcript.  
 
 
 <table class="table table-bordered table-hover table-condensed">
@@ -413,13 +413,16 @@ The two smallest models were trained on most/all of the corpus with laughably ba
 
 ## Conclusion 
 
-LLMs like OpenAI's `text-davinci-003` are remarkably capable at sounding like public personalities after training on a small number of samples.  One could image all sorts of fun, useful, or even malicious ways this could be done to create personality-specific sounding bots from the White House Press Secretary to [Joe Rogan](https://mobile.twitter.com/ashwingop/status/1610290425524539394). Keep in mind that my experiment used only 2% of the dataset I put together (i.e. 83K tokens and 204 conversation pairs). Training on the entire dataset (~10K conversation pairs) would not doubt produce even more impressive results. Furthermore, the way the prompt/completions were specified could likely be improved to provide more context, and a way of further refining the trained model output through embeddings could also be useful.
+LLMs like OpenAI's `text-davinci-003` are remarkably capable at sounding like public personalities after training on a small number of samples.  One could image all sorts of fun, useful, or even malicious ways this could be done to create personality-specific sounding bots from the White House Press Secretary to [Joe Rogan](https://mobile.twitter.com/ashwingop/status/1610290425524539394). Keep in mind that my experiment used only 2% of the dataset I put together (i.e. 83K tokens and 204 conversation pairs). Training on the entire dataset (~10K conversation pairs) would no doubt produce even more impressive results. Furthermore, the way the prompt/completions were specified could likely be improved to provide more context, and a way of further refining the trained model output through embeddings could also be useful.
 
-However, there are still many drawbacks. The smaller models (`ada`/`babbage`) do not appear to learn anything useful from fine-tuning, and the `curie` model is not fully able to understand the key idea found in the prompt. OpenAI has also been unable to provide seeding functionality, meaning these experiments are not reproducible by other researchers (or even the same researcher on a different day!). Overall, I was impressed by the ease of using the OpenAI API and interested readers can create their own versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
+However, there are still many drawbacks. The smaller models (`ada`/`babbage`) do not appear to learn anything useful from fine-tuning, and the `curie` model is not fully able to understand the key idea found in the prompt. This suggests a scaling law in favour of model size over dataset size, which aligns with OpenAI's [earlier paper](https://arxiv.org/pdf/2001.08361v1.pdf), rather than DeepMind's [*Chinchilla* experiments](https://arxiv.org/pdf/2203.15556.pdf). However, the aforementioned result is not exactly comparable since the "budget" I'm referring to is the training cost OpenAI charges, rather than the number of flops. 
+
+
+Overall, I was impressed by the ease of using the OpenAI API, and found myself often going between the command line and the GUI playground found on their website. My main critique of OpenAI's tools is that have not provided any seeding functionality, meaning these experiments are not reproducible by other researchers (or even the same researcher on a different day!). Interested readers can create their own versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
 
 
 <br>
-<p align="center"> <img src="/figures/openai_cost.png" width="25%"> </p>
+<p align="center"> <img src="/figures/openai_cost.png" width="40%"> </p>
 <p align="center"> <i> A set of fun experiments for $40 USD </i> </p>
 <br>
 
@@ -435,6 +438,6 @@ However, there are still many drawbacks. The smaller models (`ada`/`babbage`) do
 
 [^2]: The model has ~170B parameters and was trained on about 300 billion tokens (where 5 tokens averages about 4 words).
 
-[^3]: It would [likely take](https://twitter.com/tomgoldsteincs/status/1600196981955100694?lang=en) 8 high-end GPUs to run a model of this size on a local machine (each GPU would cost ~$15K). Furthermore, it has been [estimated](https://lambdalabs.com/blog/demystifying-gpt-3) that GPT-3 would have cost $5 million USD  to train and One [popular estimate](https://twitter.com/tomgoldsteincs/status/1600196995389366274) has pegged the cost of running ChatGPT at $3 million USD a month.
+[^3]: It would [likely take](https://twitter.com/tomgoldsteincs/status/1600196981955100694?lang=en) 8 high-end GPUs to run a model of this size on a local machine (each GPU would cost ~$15K). Furthermore, it has been [estimated](https://lambdalabs.com/blog/demystifying-gpt-3) that GPT-3 would have cost $5 million USD  to train and one [popular estimate](https://twitter.com/tomgoldsteincs/status/1600196995389366274) has pegged the cost of running ChatGPT at $3 million USD a month.
 
-[^4]: Note that these numbers are slightly different than what is seen above for the reason that the number of pairs (`n_pairs`) column is based on an estimate rather than an actual value, since some pairs will have more/fewer tokens than others. 
+[^4]: Note that these numbers are slightly different than what is seen above for the reason that the number of pairs (`n_pairs`) column is based on an estimate rather than an actual value, since some pairs will have more/fewer tokens than others. The final number quoted is based on the model-specific training set that gets generated by rank-ordering the 12 different string match types from the smallest to the largest number of tokens.
