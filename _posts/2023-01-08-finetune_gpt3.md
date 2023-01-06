@@ -13,11 +13,11 @@ I developed four fine-tuned versions of OpenAI's [GPT-3 models](https://beta.ope
 
 This process led to four key insights:
 
-1. The Davinci model (which powers [ChatGPT](https://chat.openai.com/)) provides decent zero-shot accuracy (see [baseline results](#baseline-results)), and even better results with fine tuning (see [results](#finetuning-results)).
+1. The Davinci model (which powers [ChatGPT](https://chat.openai.com/)) provides decent zero-shot accuracy (~50% accuracy see [baseline results](#baseline-results)), and even better results with fine tuning (~85% accuracy see [results](#finetuning-results)), including a qualitative improvement in Russ-like diction.
 2. All models require prompt engineering and repeated experimentation.
 3. The Curie model provides poor zero-shot accuracy but does okay after fine-tuning, specifically for "memorization".
-4. Even with fine-tuning the Ada and Babbage models give nonsensical answers to main prompts.
-5. Overall, it is clear that with my resources (i.e. money) a fine-tuned model of the Davinci model (it was only trained on <2% of the corpus) would be able to provide a good impersonation of the answers and "style" of public figures with a large corpus of conversational text.
+4. Even with fine-tuning the Ada and Babbage models give nonsensical answers to most prompts.
+5. Overall, a fine-tuned Davinci model with more resources (the one used in this experiment was trained on <2% of the corpus) would be able to provide a good impersonation of the answers and "style" of public figures with a large corpus of conversational text.
 
 The rest of this post provides more details on the development of this model and the experimental results. Interested readers can create their only versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
 
@@ -33,7 +33,7 @@ ChatGPT has shown amazing performance in its ability to [write code](https://twi
 
 
 <p align="center"><img src="/figures/tomato_poem.png" width="25%"></p>
-<p><i>ChatGPT's cherry tomato poem is pretty good!</i></p>
+<p align="center"><i>ChatGPT's cherry tomato poem is pretty good!</i></p>
 
 
 ## Introduction to fine-tuning
@@ -41,9 +41,9 @@ ChatGPT has shown amazing performance in its ability to [write code](https://twi
 Even with unprecedented scale, training, and RLHF fine-tuning, ChatGPT still shows a tendency to "[hallucinate](https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence))", giving nonsensical answers, made-up facts, and repeated sentences. One way to address this issue is to fine-tune a version of GPT-3 on a custom dataset that updates the models weights in a way that makes more likely to give answers consistent with the task you have in mind. For example, we may want the model to give medically specific and accurate answers to questions [questions related to depression](https://betterprogramming.pub/how-to-finetune-gpt-3-finetuning-our-virtual-mental-health-assistant-641c1f3b1ef3). This can be done with a new collection of prompt/completion data points:
 
 ```json
-{"prompt": "<prompt text>", "completion": "<ideal generated text>"}
-{"prompt": "<prompt text>", "completion": "<ideal generated text>"}
-{"prompt": "<prompt text>", "completion": "<ideal generated text>"}
+{"prompt": "<prompt text #1>", "completion": "<ideal generated text #1>"}
+{"prompt": "<prompt text #2>", "completion": "<ideal generated text #2>"}
+...
 ```
 
 This process can be generalized to having the model give answers which "sound" like a person if there are enough examples ("completion" points) of that person responding to different questions. My goal with [`EconChatR`](https://github.com/ErikinBC/EconChattR) was to use OpenAI's native [fine-tuning](https://beta.openai.com/docs/guides/fine-tuning) functionality to give answers that would sound more like Russ Roberts, the host of EconTalk. For example, below are two prompt-completion examples where the prompt is a (truncated) statement from an EconTalk guest (with "Russ Roberts responds:" added as the suffix) followed by Russ' subsequent comment as a completion. 
@@ -77,82 +77,152 @@ Before spending money fine-tuning model, let's evaluate how well ChatGPT does "o
 12. Who are some guests from EconTalk from the year 2014?
 
 
-As Table 1 shows below....
+As Table 1 shows below that out of the box ChatGPT does well for half of the questions 1, 2, 6, 7, 8, and 10. Questions 5 and 11 shows that the model is hesitant to answers to specific people, and surprisingly has a hard time remembering the famous quote by Adam Smith. The model also provides inaccurate answers for question 12, providing some real EconTalk guests, but not necessarily those who were there in 2014 (for example Ben Bernanke has not been a guest), and strangely adding that Russ was a guest on his own podcast. All this suggests that there is room for improvement with a fine-tuned model to give more accurate and Russ-like answers. 
+
+<br>
 
 <p align="center"> Table 1: Completions to baseline prompts </p>
-<table>
+<table align="center">
   <tr>
-    <td><img src="/figures/q1_econtalk.jpg" alt="q1" width="20%"></td>
-    <td><img src="/figures/q2_econtalk.jpg" alt="q2" width="20%"></td>
+    <td><img src="/figures/q1_econtalk.png" alt="q1" width="20%"></td>
+    <td><img src="/figures/q2_econtalk.png" alt="q2" width="20%"></td>
   </tr>
   <tr>
-    <td><img src="/figures/q3_econtalk.jpg" alt="q3" width="20%"></td>
-    <td><img src="/figures/q4_econtalk.jpg" alt="q4" width="20%"></td>
+    <td><img src="/figures/q3_econtalk.png" alt="q3" width="20%"></td>
+    <td><img src="/figures/q4_econtalk.png" alt="q4" width="20%"></td>
   </tr>
   <tr>
-    <td><img src="/figures/q5_econtalk.jpg" alt="q5" width="20%"></td>
-    <td><img src="/figures/q6_econtalk.jpg" alt="q6" width="20%"></td>
+    <td><img src="/figures/q5_econtalk.png" alt="q5" width="20%"></td>
+    <td><img src="/figures/q6_econtalk.png" alt="q6" width="20%"></td>
   </tr>
   <tr>
-    <td><img src="/figures/q7_econtalk.jpg" alt="q7" width="20%"></td>
-    <td><img src="/figures/q8_econtalk.jpg" alt="q8" width="20%"></td>
+    <td><img src="/figures/q7_econtalk.png" alt="q7" width="20%"></td>
+    <td><img src="/figures/q8_econtalk.png" alt="q8" width="20%"></td>
   </tr>
   <tr>
-    <td><img src="/figures/q9_econtalk.jpg" alt="q9" width="20%"></td>
-    <td><img src="/figures/q10_econtalk.jpg" alt="q10" width="20%"></td>
+    <td><img src="/figures/q9_econtalk.png" alt="q9" width="20%"></td>
+    <td><img src="/figures/q10_econtalk.png" alt="q10" width="20%"></td>
   </tr>
   <tr>
-    <td><img src="/figures/q11_econtalk.jpg" alt="q11" width="20%"></td>
-    <td><img src="/figures/q12_econtalk.jpg" alt="q12" width="20%"></td>
+    <td><img src="/figures/q11_econtalk.png" alt="q11" width="20%"></td>
+    <td><img src="/figures/q12_econtalk.png" alt="q12" width="20%"></td>
   </tr>
 </table>
 
 
+<br>
 
 ## Data and processing
 
+The first step in any data science project is gather and clean a dataset and then properly format it. A full list of EconTalk episodes was obtained from the [xml file](http://www.econlib.org/library/EconTalk.xml) hosted on EconLib. A [simple web-scraper](https://github.com/ErikinBC/EconChattR/blob/main/1_scrape.R) was then used to extract the XPath as identified by the [SelectorGadget](https://chrome.google.com/webstore/detail/selectorgadget/mhjhnkcfbdhnjickkkdbjoemdmbfginb?hl=en) tool available as a chrome plugin (see example below).
 
-As of January 4th, the episode transcripts range from: 2022-12-20 to 2012-01-11
+<br>
+<p align="center"><img src="/figures/selectorgadget.png" width="25%"></p>
+<br>
 
+After the raw transcripts were downloaded (~1 hour), it become clear the earlier episodes did not have the full conversational transcripts that I was expecting and what is needed for the "conversational" flow I was expecting to train the fine-tuned models on. The data was therefore subset to the oldest episode that had a full episode transcript which was from early 2022. A total of 573 episode transcripts remained which ranges from [Jan 11th 2012](https://www.econtalk.org/david-rose-on-the-moral-foundations-of-economic-behavior/) to [December 20th 2022](https://www.econtalk.org/hannah-ritchie-on-eating-local/) as of January 4th 2023. 
 
-      ntokens   nwords    nchars
-mean      122       98       548
-sum   7606445  6086970  34037331
+The second [step of the pipeline](https://github.com/ErikinBC/EconChattR/blob/main/2_process_transcripts.py) was to ensure that the dialogue was aggregated to alternate text segments between Russ and his guest (see example below), which would later form the basis of the prompt/completion.
 
+<br>
+<p align="center"><img src="/figures/russ_guest.png" width="50%"></p>
+<br>
 
-         Cost per epoch   Usage
-Model                          
-Ada                2.41    9.48
-Babbage            3.59   14.19
-Curie             17.72   70.71
-Davinci          176.68  706.55
+The [next step](https://github.com/ErikinBC/EconChattR/blob/main/3_prepare_training.py) of the pipeline carried out some basic string cleaning procedures including:
 
+1. Removing repeated words
+2. Making sure there was right number of spaces around punctuation
+3. Removed transcript artifacts like "\[? \]" and timestamps (e.g. "12:03")
+4. Removed excess white space
+5. Removed special characters
 
+At this point there was a total of 31046 unique Guest/Russ dialogue pairs. However not all ~31K prompt/completion values were informative. For example, many dialogue exchanges amounted to filler words that naturally get produced in a human conversation:
 
-Given the size of the corpus and wanting to run the model for at least 4 epochs for all for models to maximum cost of $10USD per model I had to...
+```json
+{"prompt":"Okay.","completion":"But, Mike might be untouchable. We'll see."}
+{"prompt":"Yeah, I always hated that.","completion":"Which part?"}
+```
+
+I imposed the following token requirements:
+
+1. Russ' statements have to have at least 20 tokens
+2. The guest's statements have to have at least 60 tokens
+3. The combined token length of Russ and the guest must be less than 2000 tokens
+
+This led to a reduced dataset of 10807 prompt/completions.
+
 
 <br>
 
-## (2) Model training
+## Model training and cost
 
-TBD
+### Training set to match budget 
+
+OpenAI has [model-specific costs](https://openai.com/api/pricing/) for both training and inference. For example the simplest model (`text-ada-001`) costs $0.0004 per 1000 tokens whilst the most sophisticated (`text-davinci-003`) costs 75x more at $0.03 per 1000 tokens. While this seems like a small price to pay, consider that the ~10K cleaned prompt/completions have a total of 4,818,101 tokens. This means that single epoch on all data prompt/completion pairs would cost $145 USD. While this would be a trivial amount for a commercial endeavor, `EconChatR` is a research project on a shoe string. 
+
+Instead, for each model I calculated the number of tokens that would support a $10 USD training cost for 4 epochs. This amounted to a data reduction of 15%, 83%, and 98% for the Babbage, Curie, and Davinci models (with the Ada model being cheap enough to train for <$10 without a data reduction). For example, as Table 2 shows below, the Davinci model could only be trained on 83K tokens.
+
+<p align="center"> <i> Table 2: Data reduction needed for $10 cost </i> </p>
+<p align="center"> <img src="/figures/data_reduction.png" width="25%"> </p>
+
+### Curated data choices
+
+Because I knew the prompts I would be giving in the experiment phase, I wanted to look for examples that had key words I thought would most closely align with Russ-like responses. I came up with 12 different string matches to find:
+
+1. bootlegger
+2. baptist
+3. empirical
+4. skeptical
+5. prairie
+6. deep
+7. Chesterton fence
+8. decimal point
+9. macroeconomist
+10. macroeconomic
+11. regression
+12. speak/data
+
+And then ordered each of them by the number of token from smallest largest. Then for each model, I selected the maximum number of prompt/completion pairings that had the largest number of each of the 12 string match types (see example below).
+
+<p align="center"> <i> Training samples were chosen to maximize coverage for 12 string match types </i> </p>
+<p align="center"> <img src="/figures/ordering_prompt_completions.png" width="25%"> </p>
+
+Overall, this left a total of 10807 (Ada), 9106 (Babbage), 1514 (Curie), and 204 (Davinci) prompt/completion pairs for each of the models to be trained on for 4 epochs.
+
+### Fine-tuning API
+
+Training the custom GPT-3 model was [fairly simple](https://github.com/ErikinBC/EconChattR/blob/main/4_tune_models.py):
+
+1. First, `openai.File.create`
+2. Second, `openai.FineTune.create`
 
 
 <br>
-
-## (3) Inference and testing
 
 <a id="finetuning-results"></a>
-### Fine-tuning results
+## Fine-tuning results
+
+After the four models were done training, we could submit questions to our custom models in the OpenAI playground by selecting the associated model. Two things quickly became clear:
+
+1. The prompt had to be re-engineered from the baseline format to the style in which we trained it. For example "*Why is "skin in the game" a deep insight?*" became "*Russ, what do you think Nassim Taleb's idea of skin in the game? Russ Roberts responds:*". Sometimes it took a while to get the exact wording right
+2. Using a temperature of 0.6 and max tokens of 250, it was clear that there was substantial 
+
+<p align="center"> <img src="/figures/playground.png" width="25%"> </p>
+
+For the remainder of this section I will review the model-specific answers to the questions. A csv-version of this can be [found here](https://github.com/ErikinBC/EconChattR/blob/main/output/results_finetune.csv).
 
 
-<img src="/figures/playground.png">
+### Davinci
+
+We start with the most powerful model
 
 
-
+<br>
 <br>
 
 ***
+
+<br>
 
 ### Footnotes
 
