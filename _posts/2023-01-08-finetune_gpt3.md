@@ -13,12 +13,13 @@ I developed four fine-tuned versions of OpenAI's [GPT-3 models](https://beta.ope
 
 This process led to four key insights:
 
-1. The `davinci` model, which powers [ChatGPT](https://chat.openai.com/), gives good answers to [50%](#baseline-results) of the questions, **and even better results with fine tuning ([80% score](#finetuning-results)), including a qualitative improvement in Russ-like diction**.
-2. All models require prompt engineering and repeated querying to get the "best" answer.
-3. The `curie` model provides poor zero-shot accuracy but does okay after fine-tuning, specifically for "memorization" (CHECK THIS).
-4. Even with fine-tuning the `ada` and `babbage` models give nonsensical answers to most prompts.
-5. Using OpenAI's models on a fixed budget, I do not find a linear scaling between `baggage` -> `curie` -> `davinci` when doing fine-tuning. In other words, having a model that's ~1/10th of the size but has 10x data does obtain identical performance, rather the more complex model with less data does better. (CITE DEEPMIND HERE)
-6. Overall, a fine-tuned `davinci` model with more resources (the one used in this experiment was trained on <2% of the corpus for cost reasons) would be able to provide a good impersonation of the answers and "style" of public figures who have a large corpus of conversational text.
+1. [ChatGPT](https://chat.openai.com/) gives decent answers to EconTalk questions without any fine-tuning ([~50% accuracy](#baseline-results)).
+2. A fine-tuned `text-davinci-003` model gives **even better results** (80% accuracy), and answers questions with impressive **Russ-like diction** when trained on only 83K tokens (see [examples](#davinci-examples)).
+3. However, all models require prompt engineering and repeated querying to get the "best" answer.
+4. The `curie` model has poor poor zero-shot accuracy, and doesn't do much better after fine-tuning, although its way of speaking has a podcast-like feel.
+5. The `ada` and `babbage` models give nonsensical answers to most prompts even with training on the entire corpus (4-5 million tokens).
+6. With OpenAI's pricing, the scaling laws clearly favor model size over data (e.g. the `curie` model fine-tuned on 10x data but with 1/10th of the parameter size does much worse).
+7. Overall, a fine-tuned `davinci` model with more resources (the one used in this experiment was trained on <2% of the corpus for cost reasons) would likely provide a good impersonation of the style and type of answers a podcast host would give. 
 
 The rest of this post provides more details on the development of this model and the experimental results. Interested readers can create their own versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
 
@@ -183,12 +184,12 @@ Because I knew the prompts I would be giving in the experiment phase, I wanted t
 11. regression
 12. speak/data
 
-Each string match was associated with list of conversation pairs, and these were then ordered by the number of token from smallest largest. For each model, I then iteratively selected the maximum number of prompt/completion pairings that had the largest number of each of the 12 string match types (see example below).
+Each string match was associated with list of conversation pairs, and these were then ordered by the number of token from smallest largest. For each model, I then iteratively selected the maximum number of prompt/completion pairings that had the largest number of each of the 12 string match types (see example below). This also ensured that larger models used a data subset of smaller models. In other words, all data points found in `davinci` are found in `curie`, and all data points found in `curie` were also in the training set of `babbage`, etc.
 
 <p align="center"> <img src="/figures/ordering_prompt_completions.png" width="25%"> </p>
 <p align="center"> <i> Training samples were chosen to maximize coverage for 12 string match types </i> </p>
 
-Overall, this left a total of 10807 (Ada), 9106 (Babbage), 1514 (Curie), and 204 (Davinci) prompt/completion pairs for each of the models to be trained on for 4 epochs.
+Overall, this left a total of 10807 (Ada), 9186 (Babbage), 1514 (Curie), and 204 (Davinci) prompt/completion pairs for each of the models to be trained on for 4 epochs.[[^4]]
 
 ### Fine-tuning API
 
@@ -217,16 +218,16 @@ After the four models were done training, prompts could be submitted the custom 
 For the remainder of this section I will review the model-specific answers to the questions. A csv-version of this can be [found here](https://github.com/ErikinBC/EconChattR/blob/main/output/results_finetune.csv).
 
 
-<a id="finetuning-results"></a>
+<a id="davinci-examples"></a>
 ### davinci
 
-Starting with the most powerful model, we see that the way to model answers the questions has a "transcript" like feel to it, with the incomplete words, double dashes, and starting sentences with conjunctions. The first two questions are about how often and why Russ brings up the [Bootlegger and Baptist](https://en.wikipedia.org/wiki/Bootleggers_and_Baptists) concept. While the fine-tuned model does a great job at explaining the concept in a way Russ does, it answers the questions indirectly. 
+Starting with the largest model, we see it answers questions with a "transcript" like feel to it; using incomplete words, double dashes, and starting sentences with conjunctions. The first two questions are about how often and why Russ brings up the [Bootlegger and Baptist](https://en.wikipedia.org/wiki/Bootleggers_and_Baptists) concept. While the fine-tuned model does a great job at explaining the concept in a way Russ might, it does not answer the question directly. 
 
-For the third question, the model gives an exception answer relating to Russ' skepticism of empirical research. However, the last few sentences after John Ioannidis are a little confused. Russ' answer to the "data can speak for itself" is also very good, although the last sentence is a bit confusing. On the fourth/fifth questions, the model is able to accurately remember the Adam Smith and FA Hayek quotes. Huzzah!
+For the third question, the model does a very good job at explaining Russ' skepticism of empirical research. However, the last few sentences after John Ioannidis (misspelled in answer) are a little confused. Russ' answer to the "data can speak for itself" is also very good, although the last sentence is a bit confusing. On the fourth/fifth questions, the model is able to accurately remember the Adam Smith and FA Hayek quotes. Huzzah!
 
-I love Russ' answer to the sixth question about "skin in the game" where it gives both a "chatty" answer, but also calls out EconTalk's favorite cast of characters including investment bankers. Russ' answers to the seventh and eighth question about the "prairie" are also very good, although the latter answer runs on a bit at the end. Unfortunately Russ' answer to the tenth question about the Chesterton fence was quite poor. While it does mention "unintended consequences" 
+I love Russ' answer to the sixth question about "skin in the game" where it gives both a "chatty" answer, but also calls out EconTalk's favorite cast of characters including investment bankers. Russ' answers to the seventh and eighth question about the "prairie" are also very good, although the latter answer runs on a bit at the end. Unfortunately Russ' answer to the tenth question about the Chesterton fence was quite poor. While it does mention "unintended consequences," it is quite far off the mark, and is the only question that is materially worse than the baseline ChatGPT.
 
-Overall, I'd give a zero marks to questions 10/12, and part marks to question 2, given the model's completions a score of 9.5/12 (~80%). The model also deserves bonus points for giving a convincing "conversational" feel to the answers in a way that would be hard to distinguish between a real EconTalk transcript.  
+Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 2, given the model's completions a score of 9.5/12 (~80%). The model also deserves bonus points for giving a convincing "conversational" feel to the answers in a way that would be hard to distinguish between a real EconTalk transcript.  
 
 
 <table class="table table-bordered table-hover table-condensed">
@@ -243,7 +244,7 @@ Overall, I'd give a zero marks to questions 10/12, and part marks to question 2,
 </tr>
 <tr>
 <td>davinci</td>
-<td>Russ, how skeptical are you of empirical research published in academic journals? Russ Roberts responds</td>
+<td>Russ, how skeptical are you of empirical research published in academic journals? Russ Roberts responds:</td>
 <td>Well, I&#39;m very skeptical. I think--I&#39;m going to get myself in trouble here. I think the incentives are all wrong. I think it&#39;s very difficult to do good empirical work. I think there are a lot of mistakes that are made over and over again. And I&#39;m very skeptical of a lot of what gets published in academic journals. I think there&#39;s a lot of--the incentives are toward getting published and getting tenure and promotion. And I think that leads to a lot of bad research. It&#39;s not necessarily fraudulent--although there&#39;s some of that--but it&#39;s--a lot of times it&#39;s just--it&#39;s the wrong answers to the wrong questions. It&#39;s--I&#39;m a fan of [John] Ioannou&#39;s work on this. It&#39;s--you know, the--if you want to make sure that someone is a good researcher, take them out of the university and put them on a desert island with nothing to do but research. And if they come back with a result, you&#39;ll know they&#39;re a fraud. You know, they&#39;ve had nothing to do but think about this one thing. The--I think a lot of the problems in economics are that people with tenure and promotion</td>
 </tr>
 <tr>
@@ -297,7 +298,7 @@ Overall, I'd give a zero marks to questions 10/12, and part marks to question 2,
 
 ### curie
 
-The `curie` model performed [very poorly](https://github.com/ErikinBC/EconChattR/blob/main/output/results_baseline.csv) in baseline experiments. However, because the model is about 1/10th of the cost of the `davinci`, it was given significantly more data during its training. 
+The `curie` model performed [poorly](https://github.com/ErikinBC/EconChattR/blob/main/output/results_baseline.csv) in baseline experiments. However, because the model is about 1/10th of the cost of the `davinci`, it was given significantly more data during its training (830K vs 83K tokens). Unfortunately this extra data did translate to better answers. As the table shows below, the fined-tuned version of the model does give convincing sounding sentences, but the content is itself quite poor. The only questions the model was able to do well at was completely the Adam Smith quote.
 
 <table class="table table-bordered table-hover table-condensed">
 <thead><tr><th title="Field #1">model</th>
@@ -372,7 +373,7 @@ The `curie` model performed [very poorly](https://github.com/ErikinBC/EconChattR
 
 ### Ada/Babbage
 
-This models were sufficiently bad that I'll only highlight a few examples of it performing poorly. 
+The two smallest models were trained on most/all of the corpus with laughably bad results. The models will latch on to one or two words from the prompt and then provide a bizarre riff that sounds nothing like Russ or a conversation on the podcast. I've included a handful of fun, but bad, examples below.
 
 <table class="table table-bordered table-hover table-condensed">
 <thead><tr><th title="Field #1">model</th>
@@ -409,8 +410,20 @@ This models were sufficiently bad that I'll only highlight a few examples of it 
 
 
 <br>
+
+## Conclusion 
+
+LLMs like OpenAI's `text-davinci-003` are remarkably capable at sounding like public personalities after training on a small number of samples.  One could image all sorts of fun, useful, or even malicious ways this could be done to create personality-specific sounding bots from the White House Press Secretary to [Joe Rogan](https://mobile.twitter.com/ashwingop/status/1610290425524539394). Keep in mind that my experiment used only 2% of the dataset I put together (i.e. 83K tokens and 204 conversation pairs). Training on the entire dataset (~10K conversation pairs) would not doubt produce even more impressive results. Furthermore, the way the prompt/completions were specified could likely be improved to provide more context, and a way of further refining the trained model output through embeddings could also be useful.
+
+However, there are still many drawbacks. The smaller models (`ada`/`babbage`) do not appear to learn anything useful from fine-tuning, and the `curie` model is not fully able to understand the key idea found in the prompt. OpenAI has also been unable to provide seeding functionality, meaning these experiments are not reproducible by other researchers (or even the same researcher on a different day!). Overall, I was impressed by the ease of using the OpenAI API and interested readers can create their own versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
+
+
+<br>
+<p align="center"> <img src="/figures/openai_cost.png" width="25%"> </p>
+<p align="center"> <i> A set of fun experiments for $40 USD </i> </p>
 <br>
 
+<br>
 
 ***
 
@@ -423,3 +436,5 @@ This models were sufficiently bad that I'll only highlight a few examples of it 
 [^2]: The model has ~170B parameters and was trained on about 300 billion tokens (where 5 tokens averages about 4 words).
 
 [^3]: It would [likely take](https://twitter.com/tomgoldsteincs/status/1600196981955100694?lang=en) 8 high-end GPUs to run a model of this size on a local machine (each GPU would cost ~$15K). Furthermore, it has been [estimated](https://lambdalabs.com/blog/demystifying-gpt-3) that GPT-3 would have cost $5 million USD  to train and One [popular estimate](https://twitter.com/tomgoldsteincs/status/1600196995389366274) has pegged the cost of running ChatGPT at $3 million USD a month.
+
+[^4]: Note that these numbers are slightly different than what is seen above for the reason that the number of pairs (`n_pairs`) column is based on an estimate rather than an actual value, since some pairs will have more/fewer tokens than others. 
