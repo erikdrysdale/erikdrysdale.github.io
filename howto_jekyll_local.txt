@@ -7,9 +7,15 @@ gem "webrick", "~> 1.7"
 gem "minima", "~> 2.5.1"
 gem "rouge", "~> 3.26.0"
 
-gem "github-pages", "~> 223", group: :jekyll_plugins
+gem "github-pages", group: :jekyll_plugins
 ———
 
 2) bundle install
 
-3) bundle exec jekyll serve
+3) bundle update
+
+4) bundle exec jekyll serve
+
+5) Issues I've noticed: there might be different versions of ruby. I had to set export 
+GEM_HOME=~/.local/share/gem/ruby/3.1.0 in the bash_profile, find and delete the other versions of ruby, add copy 
+the ruby/bin to the /usr/local/bin
