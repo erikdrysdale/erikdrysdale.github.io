@@ -18,7 +18,7 @@ This process led to four key insights:
 3. However, all models require prompt engineering and repeated querying to get the "best" answer.
 4. The `curie` model has poor zero-shot accuracy, and doesn't do much better after fine-tuning, although its way of speaking has a podcast-like feel.
 5. The `ada` and `babbage` models give nonsensical answers to most prompts even with training on the entire corpus (4-5 million tokens).
-6. With OpenAI's pricing, the scaling laws clearly favor model size over data (e.g. the `curie` model fine-tuned on 10x data but with 1/10th of the parameter size does much worse).
+6. With OpenAI's pricing, the scaling laws clearly favor model size over data (e.g. the `curie` model fine-tuned on ~10x data does much worse than the `davinci` model which is ~10x as large).
 7. Overall, a fine-tuned `davinci` model with more resources (the one used in this experiment was trained on <2% of the corpus for cost reasons) would likely provide a good impersonation of the style and type of answers a podcast host would give. 
 
 The rest of this post provides more details on the development of this model and the experimental results. Interested readers can create their own versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
@@ -40,7 +40,7 @@ ChatGPT has shown amazing performance in its ability to [write code](https://twi
 
 ## Introduction to fine-tuning
 
-Even with unprecedented scale, training, and RLHF fine-tuning, ChatGPT still shows a tendency to "[hallucinate](https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence))", giving nonsensical answers, made-up facts, and repeated sentences. One way to address this issue is to fine-tune a version of GPT-3 on a custom dataset that updates the models weights in a way that makes more likely to give answers consistent with the task you have in mind. For example, we may want the model to give medically specific and accurate answers to [questions related to depression](https://betterprogramming.pub/how-to-finetune-gpt-3-finetuning-our-virtual-mental-health-assistant-641c1f3b1ef3) (although this might be quite legally/ethically risk!). This can be done with a new collection of prompt/completion data points:
+Even with unprecedented scale, training, and RLHF fine-tuning, ChatGPT still shows a tendency to "[hallucinate](https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence))", giving nonsensical answers, made-up facts, and repeated sentences. One way to address this issue is to fine-tune a version of GPT-3 on a custom dataset that updates the models weights in a way that makes more likely to give answers consistent with the task you have in mind. For example, we may want the model to give medically specific and accurate answers to [questions related to depression](https://betterprogramming.pub/how-to-finetune-gpt-3-finetuning-our-virtual-mental-health-assistant-641c1f3b1ef3) (I feel compelled to mention this is ethically & legally risky!). This can be done with a new collection of prompt/completion data points:
 
 ```json
 {"prompt": "<prompt text #1>", "completion": "<ideal generated text #1>"}
@@ -78,7 +78,7 @@ Before spending money to fine-tuning models, I subjectively evaluated how well C
 12. Who are some guests from EconTalk from the year 2014?
 
 
-As Table 1 shows below that out of the box ChatGPT does well for half of the questions 1, 2, 6, 7, 8, and 10. I would give this model a score of 6/12 (50%). Questions 5 and 11 shows that the model is hesitant to give answers on behalf of specific people, and has a surprisingly hard time remembering the Adam Smith's quote. The model also provides inaccurate answers for question 12, providing some real EconTalk guests, but not necessarily those who were there in 2014 (for example Ben Bernanke has not been a guest, and Tyler Cowen was on EconTalk in 2013/2017 but not 2014), and strangely adding that Russ was a guest on his own podcast. All this suggests that there is room for improvement with a fine-tuned model to give more accurate and Russ-like answers. 
+As Table 1 shows below, the vanilla ChatGPT does well for half of the questions 1, 2, 6, 7, 8, and 10. I would give this model a score of 6/12 (50%). Questions 5 and 11 shows that the model is hesitant to give answers on behalf of specific people, and has a surprisingly hard time remembering the Adam Smith's quote. The model also provides inaccurate answers for question 12, providing some real EconTalk guests, but not necessarily those who were there in 2014 (for example Ben Bernanke has not been a guest, and Tyler Cowen was on EconTalk in 2013/2017 but not 2014), and strangely adding that Russ was a guest on his own podcast. All this suggests that there is room for improvement with a fine-tuned model to give more accurate and Russ-like answers. 
 
 <br>
 
@@ -115,7 +115,7 @@ As Table 1 shows below that out of the box ChatGPT does well for half of the que
 
 ## Data and processing
 
-The first step in any data science project is gather and clean a dataset and then properly format it. A full list of EconTalk episodes was obtained from the [xml file](http://www.econlib.org/library/EconTalk.xml) hosted on EconLib. A [simple web-scraper](https://github.com/ErikinBC/EconChattR/blob/main/1_scrape.R) was then used to extract the XPath as identified by the [SelectorGadget](https://chrome.google.com/webstore/detail/selectorgadget/mhjhnkcfbdhnjickkkdbjoemdmbfginb?hl=en) tool available as a chrome plugin (see example below).
+The first step in any data science project is to gather and clean a dataset and then properly format it. A full list of EconTalk episodes was obtained from the [xml file](http://www.econlib.org/library/EconTalk.xml) hosted on EconLib. A [simple web-scraper](https://github.com/ErikinBC/EconChattR/blob/main/1_scrape.R) was then used to extract the XPath as identified by the [SelectorGadget](https://chrome.google.com/webstore/detail/selectorgadget/mhjhnkcfbdhnjickkkdbjoemdmbfginb?hl=en) tool available as a chrome plugin (see example below).
 
 <br>
 <p align="center"><img src="/figures/selectorgadget.png" width="40%"></p>
@@ -128,17 +128,18 @@ The second [step of the pipeline](https://github.com/ErikinBC/EconChattR/blob/ma
 
 <br>
 <p align="center"><img src="/figures/russ_guest.png" width="50%"></p>
+<p align="center"><i>Data was structured to alternate between Russ & the guest</i></p>
 <br>
 
-The [next step](https://github.com/ErikinBC/EconChattR/blob/main/3_prepare_training.py) of the pipeline carried out some basic string cleaning procedures including:
+The [final processing step](https://github.com/ErikinBC/EconChattR/blob/main/3_prepare_training.py) of the pipeline carried out some basic string cleaning procedures including:
 
 1. Removing repeated words
 2. Making sure there was right number of spaces around punctuation
-3. Removing transcript artifacts like "\\[? \\]" and timestamps (e.g. "12:03")
+3. Removing transcript artifacts
 4. Removing excess white space
 5. Removing special characters
 
-At this point there was a total of 31046 unique Guest/Russ dialogue pairs. However not all ~31K prompt/completion values were informative. For example, many dialogue exchanges amounted to a handful of words which had no information without the broader context as the two examples show below.
+At this point there was a total of 31046 unique Guest/Russ dialogue pairs. However not all 31K prompt/completion values were informative. For example, many dialogue exchanges amounted to a handful of words which had no information without the broader context as the two examples show below.
 
 ```json
 {"prompt":"Okay.","completion":"But, Mike might be untouchable. We'll see."}
@@ -151,7 +152,7 @@ For a prompt/completion pair to be kept, I imposed the following token requireme
 2. The guest's statements had to have at least 60 tokens
 3. The combined token length of Russ and the guest must be less than 2000 tokens
 
-This led to a reduced dataset of 10807 prompt/completions.
+While this reduced by number of dialogue pairs by two-thirds to 10807, slightly less than 20% of tokens were removed. 
 
 
 <br>
@@ -164,7 +165,7 @@ OpenAI has [model-specific costs](https://openai.com/api/pricing/) for both trai
 
 Instead, for each model I calculated the number of tokens that would support a \\$10 USD training cost for 4 epochs. This amounted to a data reduction of 15%, 83%, and 98% for the `babbage`, `curie`, and `davinci` models (with the `ada` model being cheap enough to train for <\\$10 without a data reduction). For example, as Table 2 shows below, the `davinci` model could only be trained on 83K tokens.
 
-<p align="center"> <i> Table 2: Data reduction needed for \\$10 cost </i> </p>
+<p align="center"> <i> Table 2: Data reduction needed for 10 USD cost </i> </p>
 <p align="center"> <img src="/figures/data_reduction.png" width="25%"> </p>
 
 ### Curated data choices
@@ -184,7 +185,7 @@ Because I knew the prompts I would be giving in the experiment phase, I wanted t
 11. regression
 12. speak/data
 
-Each string match was associated with list of conversation pairs, and these were then ordered by the number of token from smallest largest. For each model, I then iteratively selected the maximum number of prompt/completion pairings that had the largest number of each of the 12 string match types (see example below). This also ensured that larger models used a data subset of smaller models. In other words, all data points found in `davinci` are found in `curie`, and all data points found in `curie` were also in the training set of `babbage`, etc.
+Each string match was associated with list of conversation pairs, and these were then ordered by the number of tokens from smallest largest. For each model, I then iteratively selected the maximum number of prompt/completion pairings that had the largest number of each of the 12 string match types (see example below). This also ensured that larger models used a data subset of smaller models. In other words, all data points found in `davinci` are found in `curie`, and all data points found in `curie` were also in the training set of `babbage`, etc.
 
 <p align="center"> <img src="/figures/ordering_prompt_completions.png" width="25%"> </p>
 <p align="center"> <i> Training samples were chosen to maximize coverage for 12 string match types </i> </p>
@@ -198,7 +199,7 @@ Training the custom GPT-3 model was [fairly simple](https://github.com/ErikinBC/
 1. First, the model-specific dataset was uploaded to OpenAI using the `openai.File.create` command.
 2. Second, a fine-tuning call was made for each of the models and their associated dataset using the `openai.FineTune.create` command.
 
-As expected the cost of each model was less than \\$10. Furthermore, the queue to train the `davinci` and `curie` models was very short and training was done in less than an hour for each of them. The `ada` and `babbabe` models took longer both because of a longer queue and a larger training set (although the total time was less than 2 hours for each).
+As expected, the cost of each model was less than \\$10. Furthermore, the queue to train the `davinci` and `curie` models was very short and training was done in less than an hour for each of them. The `ada` and `babbabe` models took longer both because of a longer queue and a larger training set (although the total time was less than 2 hours for each).
 
 
 <br>
@@ -230,6 +231,8 @@ I love Russ' answer to the sixth question about "skin in the game" where it give
 Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 2, giving the model a (subjective) score of 9.5/12 (~80%). The model also deserves bonus points for giving a convincing "conversational" feel to the answers in a way that would be hard to distinguish between a real EconTalk transcript.  
 
 
+<br>
+<p align="center"> Table 3A: Davinci's Q&A </p>
 <font size="2">
 <table class="table table-bordered table-hover table-condensed">
 <thead><tr><th title="Field #1">model</th><th title="Field #2">prompt</th><th title="Field #3">completion</th></tr></thead>
@@ -302,6 +305,9 @@ Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 
 
 The `curie` model performed [poorly](https://github.com/ErikinBC/EconChattR/blob/main/output/results_baseline.csv) in baseline experiments. However, because the model is about 1/10th of the cost of the `davinci`, it was given significantly more data during its training (830K vs 83K tokens). Unfortunately this extra data did translate to better answers. As the table shows below, the fined-tuned version of the model does give convincing sounding sentences, but the content is itself quite poor. The only questions the model was able to do well at was completely the Adam Smith quote.
 
+<br>
+<p align="center">Table 3B: Curie's Q&A</p>
+<font size="2">
 <table class="table table-bordered table-hover table-condensed">
 <thead><tr><th title="Field #1">model</th>
 <th title="Field #2">prompt</th>
@@ -368,7 +374,7 @@ The `curie` model performed [poorly](https://github.com/ErikinBC/EconChattR/blob
 <td>Well, I think my favorite guest of the year is probably Jim Otteson, who is a professor at the University of Georgia. And, he and I have had a number of conversations on the EconTalk site, and he&#39;s a very interesting person. And, I think the other person I&#39;d mention is my friend and co-host, Dave Feldman. Dave is a very interesting economist. We&#39;ve had some conversations over the years, and he&#39;s a great guest. I think my guests from the year 2014 are Jim Otteson and Dave Feldman. Russ Roberts responds: I&#39;m going to add one more. I&#39;m going to add one more guest, which is Michael Munger. Michael Munger is a very, very, very smart person. He&#39;s a philosopher, but he also has a deep understanding of economics. And, our conversation on his book, What&#39;s So Great About Christianity, is a classic.</td>
 </tr>
 </tbody></table>
-
+</font>
 
 <br>
 
@@ -377,6 +383,9 @@ The `curie` model performed [poorly](https://github.com/ErikinBC/EconChattR/blob
 
 The two smallest models were trained on most/all of the corpus with laughably bad results. The models will latch on to one or two words from the prompt and then provide a bizarre riff that sounds nothing like Russ or a conversation on the podcast. I've included a handful of fun, but bad, examples below.
 
+<br>
+<p align="center"> Table 3C: Ada/Babbage's Q&A </p>
+<font size="2">
 <table class="table table-bordered table-hover table-condensed">
 <thead><tr><th title="Field #1">model</th>
 <th title="Field #2">prompt</th>
@@ -409,6 +418,7 @@ The two smallest models were trained on most/all of the corpus with laughably ba
 </tr>
 <tr>
 </tbody></table>
+</font>
 
 <br>
 
@@ -430,11 +440,12 @@ Overall, I was impressed by the ease of using the OpenAI API, and found myself o
 
 <br>
 
-***
-
 <br>
 
+* * *
+
 ### Footnotes
+
 
 [^1]: Here are some fairly emblematic headlines that have come out on social and traditional media platforms: "[Google is done. Here’s why OpenAI’s ChatGPT Will Be a Game Changer](https://medium.com/@lucapetriconi/google-is-done-heres-why-openai-s-chatgpt-will-be-a-game-changer-98ae591ad747)", "[ChatGPT is a game changer for artificial intelligence](https://www.ctvnews.ca/video?clipId=2585069)", "[ChatGPT is a GAME CHANGER!](https://www.reddit.com/r/algotrading/comments/zkdi3e/chatgpt_is_a_game_changer/)".
 
