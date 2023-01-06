@@ -381,44 +381,7 @@ The `curie` model performed [poorly](https://github.com/ErikinBC/EconChattR/blob
 
 ### Ada/Babbage
 
-The two smallest models were trained on most/all of the corpus with laughably bad results. The models will latch on to one or two words from the prompt and then provide a bizarre riff that sounds nothing like Russ or a conversation on the podcast. I've included a handful of fun, but bad, examples below.
-
-<br>
-<p align="center"> Table 3C: Ada/Babbage's Q&A </p>
-<font size="2">
-<table class="table table-bordered table-hover table-condensed">
-<thead><tr><th title="Field #1">model</th>
-<th title="Field #2">prompt</th>
-<th title="Field #3">completion</th>
-</tr></thead>
-<tbody><tr>
-<td>ada</td>
-<td>Do you mention the &quot;Bootlegger and Baptist&quot; theory often? Russ Roberts responds:</td>
-<td>I do. And I think it&#39;s an interesting point. The Baptist view was that the invitation to the Baptist Church was to help the poor; to help the poor; to help the poor. And then when the Lord showed the way, they disappeared. The Bootleggers, who were the &quot;strong-minded sort, &quot; said: Well, no, it&#39;s okay. It&#39;s okay. It&#39;s okay. They can just go and help the poor. And they did. But then when the Lord showed the way, they didn&#39;t. And that&#39;s because they were not ready for it.</td>
-</tr>
-<tr>
-<td>babbage</td>
-<td>As a proponent of free markets, are you attracted to the &quot;Bootlegger and Baptist&quot; theory? Russ Roberts responds:</td>
-<td>Well, I think there are many people who are attracted to the Bootlegger and Baptist theory, for reasons that we&#39;ve talked about before. And I think that&#39;s a great explanation for why there&#39;s so much religious activity in the United States. And I think it&#39;s a beautiful theory. I think it&#39;s true. But when I look at the world in which we live, I think what&#39;s true is that there&#39;s a lot of religious activity in the world, but it&#39;s not all religious activity. And I think it&#39;s important to think about what&#39;s going on. I think the religious activity that&#39;s going on, which is so much of it, is not religious activity of the sort that you&#39;re talking about. It&#39;s not a religious revival. It&#39;s not the Pentecostal phenomenon. It&#39;s not the Buddhist phenomenon. It&#39;s not the Hare Krishna phenomenon. It&#39;s not the Scientology phenomenon. It&#39;s just a lot of people coming together who have a desire to be close to God, who have a desire to be close to other people, and to have a community of people that they can be close to. And that&#39;s a wonderful thing. It&#39;s not a bad thing. It&#39;s not a</td>
-</tr>
-<tr>
-<td>ada</td>
-<td>Is Russ Roberts skeptical of empirical research published in academic journals?</td>
-<td>Yes. I think it&#39;s important to be skeptical of the published results of empirical work, and not just accept them as the result of randomized control trials, where we choose a group and then we test it in a way that we know of, but it&#39;s an experimental trial. So, I think, empirical work, especially in economics, it&#39;s very difficult in economics to take a side. And, I think it&#39;s a little bit of a race. It&#39;s a little bit of a tug of war. And, I think it&#39;s a little bit of a tug of war because there&#39;s this intellectual tug of war between the empirical study that&#39;s published in the journal of economics or in the academic journals--we don&#39;t know the truth about how this works, the empirical study--and then the rational choice economists, who then publish that result in the journal or in the academic journal. And, it&#39;s not just a tug of battle. It&#39;s a tug of war. And, as a result, I think it&#39;s an incredibly difficult thing to know. So, I&#39;m not as skeptical as I might be of empirical work and I think it&#39;s a little bit of a tug of war. I think we have a very weak grasp of what&#39;s going</td>
-</tr>
-<tr>
-<td>babbage</td>
-<td>Do you believe that &quot;data can speak for itself&quot; as a general principle? Russ Roberts responds:</td>
-<td>My answer to that is: There&#39;s a lot of data in the world. And, I think there&#39;s a lot of things that--I think of it as a way to be skeptical about the data. I think the challenge is that, the data is complicated. It&#39;s not just, &#39;I saw a spike in unemployment and therefore the recession is over. It&#39;s not just, &#39;I saw a decline in inflation and therefore the economy has recovered. It&#39;s complicated. And, I think that&#39;s one of the things we&#39;re trying to understand. And, I think it&#39;s a very challenging thing to do. I&#39;m a big fan of the idea that, &#39;Well, we don&#39;t know everything that we need to know. And, &#39;We don&#39;t know everything that we can know. And, that&#39;s okay. And, I think that&#39;s not just a philosophical thing. I think it&#39;s very practical. I think it&#39;s very practical for a number of reasons. But, I think, even more than that, the way I think about it is, it&#39;s very likely that there are things we don&#39;t know, and things that we don&#39;t know are things that we don&#39;t know we don&#39;t know</td>
-</tr>
-<tr>
-<td>ada</td>
-<td>How would Russ Roberts finish the following sentence from Adam Smith: &quot;Man desires not only to be loved</td>
-<td>How would Russ Roberts finish the following sentence from Adam Smith: &quot;Man desires not only to be loved, but to be lovely. &quot;So, this is the point. Smith is suggesting that the reason we like to be loved is not because we&#39;ve got a flaw. It&#39;s not because we&#39;re ugly. It&#39;s because we&#39;re lovely. Smith is suggesting that loving is a bad thing, not a good thing. The reason we like to be loved is that it&#39;s a pleasure. Smith is suggesting that the reason we like to be loved is a bad thing. That is: It&#39;s not a good thing to be loved. It&#39;s a bad thing to be unloved. The reason we like to be unloved is because we&#39;re ugly. We&#39;re ugly because we do not like to be unloved. We&#39;re ugly because we like to be loved. The reason we like to be loved is not a bad thing. The reason we like to be unloved is a good thing. The reason we like to be loved is not a bad thing to be loved. The reason we like to be unloved is not a bad thing to be unloved. The reason we like to be unloved is not a bad thing to be unloved. </td>
-</tr>
-<tr>
-</tbody></table>
-</font>
+The two smallest models were trained on most/all of the corpus with laughably bad results. The models will latch on to one or two words from the prompt and then provide a bizarre riff that sounds nothing like Russ or a conversation on the podcast. I won't bother to include their output here, but readers can see their [responses here](https://github.com/ErikinBC/EconChattR/blob/main/output/results_finetune.csv).
 
 <br>
 
