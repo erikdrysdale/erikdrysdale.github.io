@@ -1,5 +1,5 @@
 ---
-title: "(DRAFT) Fine tuning GPT3 to soud like podcast host"
+title: "(DRAFT) Fine tuning GPT3 to sound like a podcast host"
 output: html_document
 fontsize: 12pt
 published: true
@@ -9,14 +9,14 @@ mathjax: true
 
 ## Executive summary
 
-I developed four fine-tuned versions of OpenAI's [GPT-3 models](https://beta.openai.com/docs/models/gpt-3) to sound like [Russ Roberts](https://russroberts.info/) who is the host of [EconTalk](https://www.econlib.org/econtalk/) using more than 10 years of episode transcripts. I calibrated my experiments for a $40 USD budget ($10 per model) and tested the fine-tuned models on 12 quintessential Russ/EconTalk questions.
+I developed four fine-tuned versions of OpenAI's [GPT-3 models](https://beta.openai.com/docs/models/gpt-3) to sound like [Russ Roberts](https://russroberts.info/) who is the host of [EconTalk](https://www.econlib.org/econtalk/) using more than 10 years of episode transcripts. I calibrated my experiments for a \\$40 USD budget (\\$10 per model) and tested the fine-tuned models on 12 quintessential Russ/EconTalk questions.
 
 This process led to four key insights:
 
 1. [ChatGPT](https://chat.openai.com/) gives decent answers to EconTalk questions without any fine-tuning ([~50% accuracy](#baseline-results)).
 2. A fine-tuned `text-davinci-003` model gives **even better results** (80% accuracy), and answers questions with impressive **Russ-like diction** when trained on only 83K tokens (see [examples](#davinci-examples)).
 3. However, all models require prompt engineering and repeated querying to get the "best" answer.
-4. The `curie` model has poor poor zero-shot accuracy, and doesn't do much better after fine-tuning, although its way of speaking has a podcast-like feel.
+4. The `curie` model has poor zero-shot accuracy, and doesn't do much better after fine-tuning, although its way of speaking has a podcast-like feel.
 5. The `ada` and `babbage` models give nonsensical answers to most prompts even with training on the entire corpus (4-5 million tokens).
 6. With OpenAI's pricing, the scaling laws clearly favor model size over data (e.g. the `curie` model fine-tuned on 10x data but with 1/10th of the parameter size does much worse).
 7. Overall, a fine-tuned `davinci` model with more resources (the one used in this experiment was trained on <2% of the corpus for cost reasons) would likely provide a good impersonation of the style and type of answers a podcast host would give. 
@@ -29,7 +29,7 @@ The rest of this post provides more details on the development of this model and
 
 People are [very excited](https://techmonitor.ai/technology/ai-and-automation/chatgpt-openai-chatbot) about [ChatGPT](https://chat.openai.com/chat).[[^1]] ChatGPT is the 3rd generation of large language models ([LLMs](https://en.wikipedia.org/wiki/Wikipedia:Large_language_models)) from [OpenAI](https://openai.com/), GPT 3.5, that has been able to produce human-like performance for a variety of natural language tasks. LLMs use many multi-headed attention layers (a type of architecture [first proposed](https://arxiv.org/abs/1706.03762) by Google researchers in 2017) which are more amenable to parallelization and hence GPU acceleration. The `davinci` version of GPT-3.5 (which powers ChatGPT) is very large,[[^2]] and would be prohibitive to run on a local machine.[[^3]] 
 
-From what OpenAI has [published](https://arxiv.org/abs/2005.14165), GPT-3 was trained on a large corpus of mainly English sources using a very simple training framework: predict the next token given a context. What's fascinating is how such a simple [self-supervised](https://en.wikipedia.org/wiki/Self-supervised_learning) training process yields such impressive results on a variety of tasks from language translation to summarization to logical reasoning. If you wanted to [re-create ChatGPT](https://github.com/lucidrains/PaLM-rlhf-pytorch) from scratch you would [likely need](https://lifearchitect.ai/chatgpt/) a supercomputer cluster with ~10,000 GPUs and ~285,000 CPU cores (~$1 billion USD to rent), spend months training the model, and then spend months/year labeling the output of the model to further hone its abilities. One of OpenAI's "secret ingredients" is an unspecified amount of resources spent doing Reinforcement Learning from Human Feedback ([RLHF]((https://openai.com/blog/instruction-following/))). Basically this means having humans interact with the ChatBot, and label output as either correct/incorrect or rank-order multiple generations from the same prompt. The model models are then further refined using this supervised learning framework.
+From what OpenAI has [published](https://arxiv.org/abs/2005.14165), GPT-3 was trained on a large corpus of mainly English sources using a very simple training framework: predict the next token given a context. What's fascinating is how such a simple [self-supervised](https://en.wikipedia.org/wiki/Self-supervised_learning) training process yields such impressive results on a variety of tasks from language translation to summarization to logical reasoning. If you wanted to [re-create ChatGPT](https://github.com/lucidrains/PaLM-rlhf-pytorch) from scratch you would [likely need](https://lifearchitect.ai/chatgpt/) a supercomputer cluster with ~10,000 GPUs and ~285,000 CPU cores (~\\$1 billion USD to rent), spend months training the model, and then spend months/year labeling the output of the model to further hone its abilities. One of OpenAI's "secret ingredients" is an unspecified amount of resources spent doing Reinforcement Learning from Human Feedback ([RLHF]((https://openai.com/blog/instruction-following/))). Basically this means having humans interact with the ChatBot, and label output as either correct/incorrect or rank-order multiple generations from the same prompt. The model models are then further refined using this supervised learning framework.
 
 ChatGPT has shown amazing performance in its ability to [write code](https://twitter.com/gabe_ragland/status/1598068207994429441), [write academic papers](https://icml.cc/Conferences/2023/llm-policy), [answer most homework questions](https://www.nbcnews.com/tech/tech-news/new-york-city-public-schools-ban-chatgpt-devices-networks-rcna64446), [write entire syllabi](https://oneusefulthing.substack.com/p/the-mechanical-professor), and [come up decent rhyming poems](https://lil.law.harvard.edu/blog/2022/12/20/chatgpt-poems-and-secrets/). 
 
@@ -134,7 +134,7 @@ The [next step](https://github.com/ErikinBC/EconChattR/blob/main/3_prepare_train
 
 1. Removing repeated words
 2. Making sure there was right number of spaces around punctuation
-3. Removing transcript artifacts like "\[? \]" and timestamps (e.g. "12:03")
+3. Removing transcript artifacts like "\\[? \\]" and timestamps (e.g. "12:03")
 4. Removing excess white space
 5. Removing special characters
 
@@ -160,11 +160,11 @@ This led to a reduced dataset of 10807 prompt/completions.
 
 ### Training set to match budget 
 
-OpenAI has [model-specific costs](https://openai.com/api/pricing/) for both training and inference. For example the simplest model (`text-ada-001`) costs $0.0004 per 1000 tokens whilst the most sophisticated (`text-davinci-003`) costs 75x more at $0.03 per 1000 tokens. While this seems like a small price to pay, consider that the ~10K cleaned prompt/completions have a total of 4,818,101 tokens. This means that single epoch on all data prompt/completion pairs would cost $145 USD for the most expensive option. While this would be a trivial amount for a commercial endeavor, `EconChatR` is a research project on a shoe string budget. 
+OpenAI has [model-specific costs](https://openai.com/api/pricing/) for both training and inference. For example the simplest model (`text-ada-001`) costs \\$0.0004 per 1000 tokens whilst the most sophisticated (`text-davinci-003`) costs 75x more at \\$0.03 per 1000 tokens. While this seems like a small price to pay, consider that the ~10K cleaned prompt/completions have a total of 4,818,101 tokens. This means that single epoch on all data prompt/completion pairs would cost \\$145 USD for the most expensive option. While this would be a trivial amount for a commercial endeavor, `EconChatR` is a research project on a shoe string budget. 
 
-Instead, for each model I calculated the number of tokens that would support a $10 USD training cost for 4 epochs. This amounted to a data reduction of 15%, 83%, and 98% for the `babbage`, `curie`, and `davinci` models (with the `ada` model being cheap enough to train for <$10 without a data reduction). For example, as Table 2 shows below, the `davinci` model could only be trained on 83K tokens.
+Instead, for each model I calculated the number of tokens that would support a \\$10 USD training cost for 4 epochs. This amounted to a data reduction of 15%, 83%, and 98% for the `babbage`, `curie`, and `davinci` models (with the `ada` model being cheap enough to train for <\\$10 without a data reduction). For example, as Table 2 shows below, the `davinci` model could only be trained on 83K tokens.
 
-<p align="center"> <i> Table 2: Data reduction needed for $10 cost </i> </p>
+<p align="center"> <i> Table 2: Data reduction needed for \\$10 cost </i> </p>
 <p align="center"> <img src="/figures/data_reduction.png" width="25%"> </p>
 
 ### Curated data choices
@@ -198,7 +198,7 @@ Training the custom GPT-3 model was [fairly simple](https://github.com/ErikinBC/
 1. First, the model-specific dataset was uploaded to OpenAI using the `openai.File.create` command.
 2. Second, a fine-tuning call was made for each of the models and their associated dataset using the `openai.FineTune.create` command.
 
-As expected the cost of each model was less than $10. Furthermore, the queue to train the `davinci` and `curie` models was very short and training was done in less than an hour for each of them. The `ada` and `babbabe` models took longer both because of a longer queue and a larger training set (although the total time was less than 2 hours for each).
+As expected the cost of each model was less than \\$10. Furthermore, the queue to train the `davinci` and `curie` models was very short and training was done in less than an hour for each of them. The `ada` and `babbabe` models took longer both because of a longer queue and a larger training set (although the total time was less than 2 hours for each).
 
 
 <br>
@@ -230,6 +230,7 @@ I love Russ' answer to the sixth question about "skin in the game" where it give
 Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 2, giving the model a (subjective) score of 9.5/12 (~80%). The model also deserves bonus points for giving a convincing "conversational" feel to the answers in a way that would be hard to distinguish between a real EconTalk transcript.  
 
 
+<font size="2">
 <table class="table table-bordered table-hover table-condensed">
 <thead><tr><th title="Field #1">model</th><th title="Field #2">prompt</th><th title="Field #3">completion</th></tr></thead>
 <tbody><tr>
@@ -245,7 +246,7 @@ Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 
 <tr>
 <td>davinci</td>
 <td>Russ, how skeptical are you of empirical research published in academic journals? Russ Roberts responds:</td>
-<td>Well, I&#39;m very skeptical. I think--I&#39;m going to get myself in trouble here. I think the incentives are all wrong. I think it&#39;s very difficult to do good empirical work. I think there are a lot of mistakes that are made over and over again. And I&#39;m very skeptical of a lot of what gets published in academic journals. I think there&#39;s a lot of--the incentives are toward getting published and getting tenure and promotion. And I think that leads to a lot of bad research. It&#39;s not necessarily fraudulent--although there&#39;s some of that--but it&#39;s--a lot of times it&#39;s just--it&#39;s the wrong answers to the wrong questions. It&#39;s--I&#39;m a fan of [John] Ioannou&#39;s work on this. It&#39;s--you know, the--if you want to make sure that someone is a good researcher, take them out of the university and put them on a desert island with nothing to do but research. And if they come back with a result, you&#39;ll know they&#39;re a fraud. You know, they&#39;ve had nothing to do but think about this one thing. The--I think a lot of the problems in economics are that people with tenure and promotion</td>
+<td>Well, I&#39;m very skeptical. I think--I&#39;m going to get myself in trouble here. I think the incentives are all wrong. I think it&#39;s very difficult to do good empirical work. I think there are a lot of mistakes that are made over and over again. And I&#39;m very skeptical of a lot of what gets published in academic journals. I think there&#39;s a lot of--the incentives are toward getting published and getting tenure and promotion. And I think that leads to a lot of bad research. It&#39;s not necessarily fraudulent--although there&#39;s some of that--but it&#39;s--a lot of times it&#39;s just--it&#39;s the wrong answers to the wrong questions. It&#39;s--I&#39;m a fan of \\[John\\] Ioannou&#39;s work on this. It&#39;s--you know, the--if you want to make sure that someone is a good researcher, take them out of the university and put them on a desert island with nothing to do but research. And if they come back with a result, you&#39;ll know they&#39;re a fraud. You know, they&#39;ve had nothing to do but think about this one thing. The--I think a lot of the problems in economics are that people with tenure and promotion</td>
 </tr>
 <tr>
 <td>davinci</td>
@@ -293,6 +294,7 @@ Overall, I'd give a zero marks to questions 10 & 12, and part marks to question 
 <td>Well, we interviewed Arnold Kling, who is a regular. He&#39;s a frequent commentator on the EconTalk podcast. We interviewed Laura Tyson, who is a very smart economist. She was the Chair of the Council of Economic Advisers in the Clinton Administration. We interviewed Gary Becker, who is an old friend of mine and a Nobel Prize winner in economics. We interviewed Barry Lynn, who is the head of the New America Foundation, which is a think tank here in Washington. And we interviewed David Henderson, who is a regular, and a very good economist.</td>
 </tr>
 </tbody></table>
+</font>
 
 <br>
 
@@ -408,14 +410,14 @@ The two smallest models were trained on most/all of the corpus with laughably ba
 <tr>
 </tbody></table>
 
-
 <br>
+
 
 ## Conclusion 
 
 LLMs like OpenAI's `text-davinci-003` are remarkably capable at sounding like public personalities after training on a small number of samples.  One could image all sorts of fun, useful, or even malicious ways this could be done to create personality-specific sounding bots from the White House Press Secretary to [Joe Rogan](https://mobile.twitter.com/ashwingop/status/1610290425524539394). Keep in mind that my experiment used only 2% of the dataset I put together (i.e. 83K tokens and 204 conversation pairs). Training on the entire dataset (~10K conversation pairs) would no doubt produce even more impressive results. Furthermore, the way the prompt/completions were specified could likely be improved to provide more context, and a way of further refining the trained model output through embeddings could also be useful.
 
-However, there are still many drawbacks. The smaller models (`ada`/`babbage`) do not appear to learn anything useful from fine-tuning, and the `curie` model is not fully able to understand the key idea found in the prompt. This suggests a scaling law in favour of model size over dataset size, which aligns with OpenAI's [earlier paper](https://arxiv.org/pdf/2001.08361v1.pdf), rather than DeepMind's [*Chinchilla* experiments](https://arxiv.org/pdf/2203.15556.pdf). However, the aforementioned result is not exactly comparable since the "budget" I'm referring to is the training cost OpenAI charges, rather than the number of flops. 
+However, there are still many drawbacks. The smaller models (`ada` & `babbage`) do not appear to learn anything useful from fine-tuning, and the `curie` model is not fully able to understand the key idea found in the prompt. This suggests a scaling law in favour of model size over dataset size, which aligns with OpenAI's [earlier paper](https://arxiv.org/pdf/2001.08361v1.pdf), rather than DeepMind's [*Chinchilla* experiments](https://arxiv.org/pdf/2203.15556.pdf). However, the aforementioned result is not exactly comparable since the "budget" I'm referring to is the training cost OpenAI charges, rather than the number of flops. 
 
 
 Overall, I was impressed by the ease of using the OpenAI API, and found myself often going between the command line and the GUI playground found on their website. My main critique of OpenAI's tools is that have not provided any seeding functionality, meaning these experiments are not reproducible by other researchers (or even the same researcher on a different day!). Interested readers can create their own versions of [`EconChatR`](https://github.com/ErikinBC/EconChattR) by cloning this repo and running the main pipeline. 
@@ -423,7 +425,7 @@ Overall, I was impressed by the ease of using the OpenAI API, and found myself o
 
 <br>
 <p align="center"> <img src="/figures/openai_cost.png" width="40%"> </p>
-<p align="center"> <i> A set of fun experiments for $40 USD </i> </p>
+<p align="center"> <i> A set of fun experiments for \\$40 USD </i> </p>
 <br>
 
 <br>
@@ -438,6 +440,6 @@ Overall, I was impressed by the ease of using the OpenAI API, and found myself o
 
 [^2]: The model has ~170B parameters and was trained on about 300 billion tokens (where 5 tokens averages about 4 words).
 
-[^3]: It would [likely take](https://twitter.com/tomgoldsteincs/status/1600196981955100694?lang=en) 8 high-end GPUs to run a model of this size on a local machine (each GPU would cost ~$15K). Furthermore, it has been [estimated](https://lambdalabs.com/blog/demystifying-gpt-3) that GPT-3 would have cost $5 million USD  to train and one [popular estimate](https://twitter.com/tomgoldsteincs/status/1600196995389366274) has pegged the cost of running ChatGPT at $3 million USD a month.
+[^3]: It would [likely take](https://twitter.com/tomgoldsteincs/status/1600196981955100694?lang=en) 8 high-end GPUs to run a model of this size on a local machine (each GPU would cost ~\\$15K). Furthermore, it has been [estimated](https://lambdalabs.com/blog/demystifying-gpt-3) that GPT-3 would have cost \\$5 million USD  to train and one [popular estimate](https://twitter.com/tomgoldsteincs/status/1600196995389366274) has pegged the cost of running ChatGPT at \\$3 million USD a month.
 
 [^4]: Note that these numbers are slightly different than what is seen above for the reason that the number of pairs (`n_pairs`) column is based on an estimate rather than an actual value, since some pairs will have more/fewer tokens than others. The final number quoted is based on the model-specific training set that gets generated by rank-ordering the 12 different string match types from the smallest to the largest number of tokens.
