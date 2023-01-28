@@ -1,5 +1,5 @@
 ---
-title: "Can a fine tuned GPT-3 univocalic poems (Eunoia-style)?"
+title: "Can a fine-tuned GPT-3 write univocalic poems (Eunoia-style)?"
 output: html_document
 fontsize: 12pt
 published: true
