@@ -7,6 +7,9 @@ status: publish
 mathjax: true
 ---
 
+ <p style="color:red">Please note that Heroku no longer provides free hosting of Dash apps and the links to the application in this post are currently not working. I am looking into alternative free hosting services.</p>
+
+
 ## Overview
 
 In cryptography, [substitution ciphers](https://en.wikipedia.org/wiki/Substitution_cipher) are considered a weak form of encryption because the [ciphertext](https://en.wikipedia.org/wiki/Ciphertext) shares the same empirical distribution of the plaintext language used to write the message. This allows the cipher to be easily cracked. Despite being a poor form of encryption, substitution ciphers present an interesting opportunity to write constrained poems that can be read in two different ways. For example, with the following cipher key $\frac{\text{i}}{\text{w}}\frac{\text{n}}{\text{o}}\frac{\text{e}}{\text{l}}\frac{\text{r}}{\text{s}}\frac{\text{d}}{\text{t}}$, the expression below can be read interchangeably:

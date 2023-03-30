@@ -6,7 +6,7 @@ permalink: /shinyapps/
 
 Below you can find some Shiny and Dash apps I have built (note they make take a few seconds to boot up).
 
-1. [Enciphered poetry tool](https://cipher-poem.herokuapp.com/)
+1. [Enciphered poetry tool](http://www.erikdrysdale.com/enciphered/)
 2. [Visualising the MLS price index](https://erikinwest.shinyapps.io/mls_hpi/)
 3. [Rental price estimator for Vancouver and Toronto](https://erikinwest.shinyapps.io/cl_shiny/)
 
