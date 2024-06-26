@@ -17,6 +17,7 @@ package.json
 *.ipynb_checkpoints
 *.csv
 !_rmd/extra_cancer/*.csv
+_rmd/*/*.png
 *.pdf
 .Rproj.user
 *.Rproj

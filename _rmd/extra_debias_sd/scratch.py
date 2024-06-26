@@ -1,52 +1,123 @@
 """
 python3 -m _rmd.extra_debias_sd.scratch
 """
-import plotnine as pn
-import pandas as pd
+
+import os
 import numpy as np
+import pandas as pd
+import plotnine as pn
+from scipy.stats import kurtosis
+from _rmd.extra_debias_sd.utils import sd_adj
 
 
-def sd_adj(x: np.ndarray, order:int, kappa: np.ndarray | None = None, ddof:int = 1, axis: int | None = None) -> np.ndarray:
+def efficient_loo_kurtosis(df):
     """
-    
+    See https://mathworld.wolfram.com/k-Statistic.html for how pandas calculates an "unbiased" kurtosis
     """
-    std = np.std(x, axis=axis, ddof = ddof)
-    nrow = x.shape[0]
-    if order == 1:
-        assert kappa is not None, 'if order == 1, you have to supply kappa'
-        adj = 1 / ( 1 - (kappa - 1 + 2/(nrow-1)) / (8*nrow) ) 
-        std = std * adj
-    return std
+    n, _ = df.shape
     
+    # Calculate sums of powers
+    S1 = df.sum(axis=0)
+    S2 = (df**2).sum(axis=0)
+    S3 = (df**3).sum(axis=0)
+    S4 = (df**4).sum(axis=0)
+    
+    # Calculate leave-one-out sums
+    loo_S1 = S1 - df
+    loo_S2 = S2 - df**2
+    loo_S3 = S3 - df**3
+    loo_S4 = S4 - df**4
+    
+    # Calculate k4 and k2 for leave-one-out samples
+    n_loo = n - 1
+    loo_k4 = (-6*loo_S1**4 + 12*n_loo*loo_S1**2*loo_S2 - 3*n_loo*(n_loo-1)*loo_S2**2 
+              - 4*n_loo*(n_loo+1)*loo_S1*loo_S3 + n_loo**2*(n_loo+1)*loo_S4) / (n_loo*(n_loo-1)*(n_loo-2)*(n_loo-3))
+    loo_k2 = (n_loo*loo_S2 - loo_S1**2) / (n_loo*(n_loo-1))
+    
+    # Calculate kurtosis
+    loo_kurt = loo_k4 / loo_k2**2 + 3
+    
+    return loo_kurt
 
-from scipy.stats import binom, kurtosis
+# load data
+dir_base = os.getcwd()
+dir_data = os.path.join(dir_base, '_rmd', 'extra_debias_sd')
+x = pd.read_csv(os.path.join(dir_data, 'data.csv'))['resid'].values
 
-seed = 2
-m = 20
-p_seq = [0.1, 0.3, 0.5]
-n_p = len(p_seq)
-dist_binom = binom(n=m, p=p_seq)
-nsim = 100000
-sample_sizes = np.arange(5, 50 + 1, 5)[:1]
-# Calculate the population SD
-dat_sd_binom = pd.DataFrame({'p':p_seq, 'sd':np.sqrt(dist_binom.stats('v'))})
+# full-sample kurtosis
+n = len(x)
+kappa_full = kurtosis(x, fisher=False, bias=False)
 
-# Loop over each sample size
-holder_binom = []
+# generate log-scale sample samples
+sample_sizes = np.exp(np.linspace(np.log(15), np.log(n), 20)).round().astype(int)
+
+# Comparse the different terms
+nsim = 111
+n_bs = 250
+holder_sd = []
+holder_kappa = []
+np.random.seed(nsim)
 for sample_size in sample_sizes:
-    # Draw data
-    X = dist_binom.rvs(size=[sample_size, nsim, n_p], random_state=seed)
-    # Calculate different kappa variants
-    p = X.mean(axis = 0) / m
-    p[p == 0] = 1 / (m + 1)
-    kappa_para =  3 - 6/m + 1/(m*p*(1-p)) 
-    kappa_np_unj = kurtosis(a=X, fisher=False, bias=True, axis=0)
-    kappa_np_adj = kurtosis(a=X, fisher=False, bias=False, axis=0)
-    # Estimate the SD
-    sigma_vanilla = sd_adj(x=X, order=0, axis=0)
-    sigma_para = sd_adj(x=X, order=1, axis=0, kappa=kappa_para)
-    sigma_unj = sd_adj(x=X, order=1, axis=0, kappa=kappa_np_unj)
-    sigma_adj = sd_adj(x=X, order=1, axis=0, kappa=kappa_np_adj)
+    # (i) Generate subsamples
+    if sample_size == n:
+        bs_len = 1
+        idx = np.arange(n)
+    else:
+        bs_len = nsim
+        idx = np.vstack([np.random.choice(a=n, size=sample_size, replace=False) for _ in range(nsim)]).T
+    x_idx = pd.DataFrame(x[idx])
+    # (ii) Generate kurtosis estimates
+    kappa_adj = x_idx.kurtosis(axis = 0) + 3
+    # Bias-adjusted bootstrap
+    kappa_bs = np.zeros(bs_len)
+    for j in range(n_bs):
+        kurt_j = x_idx.\
+            sample(frac=1, replace=True, axis=0, random_state=j+1).\
+            kurtosis(axis = 0) + 3
+        kappa_bs += kurt_j
+    kappa_bs /= n_bs
+    kappa_bs = 2*kappa_adj - kappa_bs
+    # Bias-adjusted LOO
+    kappa_loo = sample_size*kappa_adj - (sample_size - 1)*efficient_loo_kurtosis(x_idx).mean()
+    di_kappa = {'adj':kappa_adj.mean(),
+                'bs':kappa_bs.mean(),
+                'loo':kappa_loo.mean()}
+    tmp_df_kappa = pd.DataFrame.from_dict(di_kappa, orient='index').reset_index()
+    tmp_df_kappa.insert(0, 'n', sample_size)
+    holder_kappa.append(tmp_df_kappa)    
+    
+    # (iii) Generated SD estimates
+    mu_std_vanilla = x_idx.std(axis=0, ddof=1)
+    mu_std_kappa_adj = sd_adj(x_idx, axis=0, ddof=1, kappa=kappa_adj)
+    mu_std_kappa_full = sd_adj(x_idx, axis=0, ddof=1, kappa=kappa_full)
+    di_std = {'vanilla':mu_std_vanilla.mean(),
+            'kappa_adj':mu_std_kappa_adj.mean(),
+            'kappa_full':mu_std_kappa_full.mean()}
+    tmp_df_std = pd.DataFrame.from_dict(di_std, orient='index').reset_index()
+    tmp_df_std.insert(0, 'n', sample_size)
+    holder_sd.append(tmp_df_std)    
+# Merge
+res_sd = pd.concat(holder_sd).rename(columns={'index':'method', 0:'sd'}).reset_index(drop=True)
+res_kappa = pd.concat(holder_kappa).rename(columns={'index':'method', 0:'kappa'}).reset_index(drop=True)
+
+
+# Plot kappa results
+kappa_oracle = res_kappa.query('n == n.max()')['kappa'].mean()
+gg_kappa = (pn.ggplot(res_kappa, pn.aes(x='n', y='kappa', color='method')) + 
+                   pn.theme_bw() + pn.geom_line() + 
+                   pn.geom_hline(yintercept=kappa_oracle, linetype='--') + 
+                   pn.scale_x_log10(limits=[10, n]))
+gg_kappa.save(os.path.join(dir_data, 'kappa_comp.png'), width=5, height=3.5)
+
+
+# Plot SD results
+sd_oracle = res_sd.query('n == n.max()')['sd'].mean()
+gg_sd = (pn.ggplot(res_sd, pn.aes(x='n', y='sd', color='method')) + 
+                   pn.theme_bw() + pn.geom_line() + 
+                   pn.geom_hline(yintercept=sd_oracle, linetype='--') + 
+                   pn.scale_x_log10(limits=[10, n]))
+gg_sd.save(os.path.join(dir_data, 'sd_comp.png'), width=5, height=3.5)
+
 
 
 print('~~~ End of scratch ~~~')

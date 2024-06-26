@@ -5,6 +5,21 @@ Helpful functions for the Unbiased estimation of the standard deviation post
 import numpy as np
 import pandas as pd
 
+
+
+def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: int | None = None) -> np.ndarray:
+    """
+    Adjust the vanilla SD estimator 
+    """
+    std = np.std(x, axis=axis, ddof = ddof)
+    nrow = x.shape[0]
+    if kappa is not None:
+        adj = 1 / ( 1 - (kappa - 1 + 2/(nrow-1)) / (8*nrow) ) 
+        std = std * adj
+    return std
+    
+
+
 def calculate_summary_stats(x: np.ndarray, 
                             alpha:float = 0.25, 
                             colnames: list | None = None, 
