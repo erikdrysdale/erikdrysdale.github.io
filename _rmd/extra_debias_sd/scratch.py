@@ -7,37 +7,10 @@ import numpy as np
 import pandas as pd
 import plotnine as pn
 from scipy.stats import kurtosis
-from _rmd.extra_debias_sd.utils import sd_adj
+from _rmd.extra_debias_sd.utils import sd_adj, efficient_loo_kurtosis
 
-
-def efficient_loo_kurtosis(df):
-    """
-    See https://mathworld.wolfram.com/k-Statistic.html for how pandas calculates an "unbiased" kurtosis
-    """
-    n, _ = df.shape
-    
-    # Calculate sums of powers
-    S1 = df.sum(axis=0)
-    S2 = (df**2).sum(axis=0)
-    S3 = (df**3).sum(axis=0)
-    S4 = (df**4).sum(axis=0)
-    
-    # Calculate leave-one-out sums
-    loo_S1 = S1 - df
-    loo_S2 = S2 - df**2
-    loo_S3 = S3 - df**3
-    loo_S4 = S4 - df**4
-    
-    # Calculate k4 and k2 for leave-one-out samples
-    n_loo = n - 1
-    loo_k4 = (-6*loo_S1**4 + 12*n_loo*loo_S1**2*loo_S2 - 3*n_loo*(n_loo-1)*loo_S2**2 
-              - 4*n_loo*(n_loo+1)*loo_S1*loo_S3 + n_loo**2*(n_loo+1)*loo_S4) / (n_loo*(n_loo-1)*(n_loo-2)*(n_loo-3))
-    loo_k2 = (n_loo*loo_S2 - loo_S1**2) / (n_loo*(n_loo-1))
-    
-    # Calculate kurtosis
-    loo_kurt = loo_k4 / loo_k2**2 + 3
-    
-    return loo_kurt
+#########################
+# --- (1) LOAD DATA --- #
 
 # load data
 dir_base = os.getcwd()
@@ -51,14 +24,19 @@ kappa_full = kurtosis(x, fisher=False, bias=False)
 # generate log-scale sample samples
 sample_sizes = np.exp(np.linspace(np.log(15), np.log(n), 20)).round().astype(int)
 
+
+#######################################
+# --- (2) SIMULATE FOR SUBSAMPLES --- #
+
 # Comparse the different terms
 nsim = 111
 n_bs = 250
 holder_sd = []
 holder_kappa = []
+holder_components = []
 np.random.seed(nsim)
 for sample_size in sample_sizes:
-    # (i) Generate subsamples
+    # --- (i) Generate subsamples --- #
     if sample_size == n:
         bs_len = 1
         idx = np.arange(n)
@@ -66,8 +44,24 @@ for sample_size in sample_sizes:
         bs_len = nsim
         idx = np.vstack([np.random.choice(a=n, size=sample_size, replace=False) for _ in range(nsim)]).T
     x_idx = pd.DataFrame(x[idx])
-    # (ii) Generate kurtosis estimates
+    
+    # --- (ii) Generate kurtosis components --- #
+    xbar_idx = x_idx.mean(axis = 0)
+    mu4_idx = (x_idx - xbar_idx).pow(4).mean(axis=0)
+    sigma2_idx = x_idx.var(axis=0, ddof=1)
+    sigma4_idx = sigma2_idx**2
+
+    di_components = {'sigma4': sigma4_idx.mean(), 
+                     'mu4': mu4_idx.mean()}
+    tmp_df_components = pd.DataFrame.from_dict(di_components, orient='index').reset_index()
+    tmp_df_components.insert(0, 'n', sample_size)
+    holder_components.append(tmp_df_components)    
+
+    break
+
+    # --- (iii) Generate kurtosis estimates --- #
     kappa_adj = x_idx.kurtosis(axis = 0) + 3
+    
     # Bias-adjusted bootstrap
     kappa_bs = np.zeros(bs_len)
     for j in range(n_bs):
@@ -86,7 +80,7 @@ for sample_size in sample_sizes:
     tmp_df_kappa.insert(0, 'n', sample_size)
     holder_kappa.append(tmp_df_kappa)    
     
-    # (iii) Generated SD estimates
+    # --- (iv) Generated SD estimates --- #
     mu_std_vanilla = x_idx.std(axis=0, ddof=1)
     mu_std_kappa_adj = sd_adj(x_idx, axis=0, ddof=1, kappa=kappa_adj)
     mu_std_kappa_full = sd_adj(x_idx, axis=0, ddof=1, kappa=kappa_full)
@@ -99,6 +93,22 @@ for sample_size in sample_sizes:
 # Merge
 res_sd = pd.concat(holder_sd).rename(columns={'index':'method', 0:'sd'}).reset_index(drop=True)
 res_kappa = pd.concat(holder_kappa).rename(columns={'index':'method', 0:'kappa'}).reset_index(drop=True)
+res_components = pd.concat(holder_components).rename(columns={'index':'metric', 0:'val'}).reset_index(drop=True)
+
+
+###########################
+# --- (3) POT RESULTS --- #
+
+# Plot kappa components
+components_oracle = res_components.loc[res_components.groupby('metric')['n'].idxmax()].groupby('metric')['val'].mean().reset_index().rename(columns={'val':'oracle'})
+gg_components = (pn.ggplot(res_components, pn.aes(x='n', y='val', color='metric')) + 
+                   pn.theme_bw() + pn.geom_line() + 
+                   pn.facet_wrap('~metric',scales='free_y') + 
+                   pn.guides(color=False) + 
+                   pn.geom_hline(pn.aes(yintercept='oracle'), linetype='--',data=components_oracle) + 
+                   pn.scale_x_log10(limits=[10, n]))
+gg_components.save(os.path.join(dir_data, 'components_comp.png'), width=8, height=3.5)
+
 
 
 # Plot kappa results
@@ -108,7 +118,6 @@ gg_kappa = (pn.ggplot(res_kappa, pn.aes(x='n', y='kappa', color='method')) +
                    pn.geom_hline(yintercept=kappa_oracle, linetype='--') + 
                    pn.scale_x_log10(limits=[10, n]))
 gg_kappa.save(os.path.join(dir_data, 'kappa_comp.png'), width=5, height=3.5)
-
 
 # Plot SD results
 sd_oracle = res_sd.query('n == n.max()')['sd'].mean()

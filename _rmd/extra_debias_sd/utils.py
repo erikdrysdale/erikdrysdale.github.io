@@ -6,6 +6,35 @@ import numpy as np
 import pandas as pd
 
 
+def efficient_loo_kurtosis(df):
+    """
+    See https://mathworld.wolfram.com/k-Statistic.html for how pandas calculates an "unbiased" kurtosis
+    """
+    n, _ = df.shape
+    
+    # Calculate sums of powers
+    S1 = df.sum(axis=0)
+    S2 = (df**2).sum(axis=0)
+    S3 = (df**3).sum(axis=0)
+    S4 = (df**4).sum(axis=0)
+    
+    # Calculate leave-one-out sums
+    loo_S1 = S1 - df
+    loo_S2 = S2 - df**2
+    loo_S3 = S3 - df**3
+    loo_S4 = S4 - df**4
+    
+    # Calculate k4 and k2 for leave-one-out samples
+    n_loo = n - 1
+    loo_k4 = (-6*loo_S1**4 + 12*n_loo*loo_S1**2*loo_S2 - 3*n_loo*(n_loo-1)*loo_S2**2 
+              - 4*n_loo*(n_loo+1)*loo_S1*loo_S3 + n_loo**2*(n_loo+1)*loo_S4) / (n_loo*(n_loo-1)*(n_loo-2)*(n_loo-3))
+    loo_k2 = (n_loo*loo_S2 - loo_S1**2) / (n_loo*(n_loo-1))
+    
+    # Calculate kurtosis
+    loo_kurt = loo_k4 / loo_k2**2 + 3
+    
+    return loo_kurt
+
 
 def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: int | None = None) -> np.ndarray:
     """
