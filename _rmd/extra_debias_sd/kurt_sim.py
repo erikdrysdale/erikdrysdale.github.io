@@ -5,13 +5,24 @@ python3 -m _rmd.extra_debias_sd.kurt_sim
 """
 
 # Modules
+import os
 import numpy as np
 import pandas as pd
 from scipy.stats import moment, kurtosis, norm, expon
+from _rmd.extra_debias_sd.utils import draw_from_data
 from _rmd.extra_debias_sd.funs_kurt import kappa_from_moments
+
+# Folders
+dir_base = os.getcwd()
+dir_data = os.path.join(dir_base, '_rmd', 'extra_debias_sd')
+dir_figs = os.path.join(dir_data, 'figures')
 
 # Reproducabilty seed
 seed = 1234
+
+# empirical data
+data = pd.read_csv(os.path.join(dir_data, 'data.csv'))['resid'].values
+
 
 ##########################
 # --- (1) UNIT TESTS --- #
@@ -53,20 +64,30 @@ np.testing.assert_almost_equal(mu4_loo_manual, mdl_kurt.m4_loo)
 ########################################
 # --- (2) CHECK UNBIASED STABILITY --- #
 
+# Simulation parameters
+nsim = 5000
+sample_sizes = [10, 25, 100, 250, 1000]
+
+# Clean up the "describe" columns
+pcts = {0.1:'lb', 0.5:'med', 0.9:'ub'}
 di_cols_describe = {'mean':'mu', 'std':'sd', 
-                    '25%':'lb', '50%':'med', '75%':'ub', 
                     'min':'mi', 'max':'mx'}
+di_cols_describe = {**di_cols_describe,
+                    **{f'{100*k:.0f}%':v for k,v in pcts.items()}}
 
-dist_sim = expon(scale=2)
+# What distribution will be used?
+# dist_sim = expon(scale=2)
+dist_sim = draw_from_data(x = data)
 
-nsim = 50000
-sample_sizes = [5, 10, 25, 100, 250, 1000]
+# Run the for-loop simulation
 holder = []
 for sample_size in sample_sizes:
+    print(f'Sample size: {sample_size}')
     # Draw data
     x = dist_sim.rvs(size=(sample_size, nsim), random_state=seed)
     # Calculate kappa and de-biased moments
     mdl_kappa = kappa_from_moments(x, debias=True)
+    mdl_loo = kappa_from_moments(x, debias=True, jacknife=True)
     # Calculate raw moments
     xbar = np.mean(x, axis = 0)
     mu22_raw = np.var( x, axis=0) ** 2
@@ -83,7 +104,8 @@ for sample_size in sample_sizes:
                                tmp_df_raw.assign(debias=False)]).\
                     melt('debias', var_name='param').\
                         groupby(['debias','param'])['value'].\
-                describe().drop(columns='count').reset_index()
+                    describe(percentiles=list(pcts)).\
+                    drop(columns='count').reset_index()
     tmp_df.insert(0, 'n', sample_size)
     holder.append(tmp_df)
 # Merge and rename
@@ -103,13 +125,9 @@ res_components_pct = res_components.set_index(['param', 'n', 'debias']).\
 ########################
 # --- (3) PLOTTING --- #
 
-import os
+# Plotting functions
 import plotnine as pn
 from mizani.formatters import percent_format
-dir_base = os.getcwd()
-dir_data = os.path.join(dir_base, '_rmd', 'extra_debias_sd')
-dir_figs = os.path.join(dir_data, 'figures')
-
 
 gg_debiased_moments = (pn.ggplot(res_components_pct, pn.aes(x='n', y='mu')) + 
                  pn.theme_bw() + 
@@ -118,7 +136,8 @@ gg_debiased_moments = (pn.ggplot(res_components_pct, pn.aes(x='n', y='mu')) +
                  pn.facet_wrap('~param', scales='free_y') + 
                  pn.scale_x_log10() + 
                  pn.scale_y_continuous(labels=percent_format()) + 
-                 pn.ggtitle('Ribbon shows simulation IQR') + 
+                 pn.geom_hline(yintercept=1, linetype='--') + 
+                 pn.ggtitle('Ribbon shows simulation 80% CI') + 
                  pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
                  pn.scale_color_discrete(name='Debias used?') + 
                  pn.scale_fill_discrete(name='Debias used?'))

@@ -73,10 +73,9 @@ class kappa_from_moments:
         else:
             # Use the raw-unadjusted moments
             self.kappa = raw_m4 / raw_m2**2
-        
-        # Apply sample-adjustment, if requested
-        if normal_adj:
-            self.kappa = ((n**2 - 1) * self.kappa - 9*n + 15) / ((n-2)*(n-3))
+            # Apply sample-adjustment, if requested
+            if normal_adj:
+                self.kappa = ((n**2 - 1) * self.kappa - 9*n + 15) / ((n-2)*(n-3))
         
 
     @staticmethod

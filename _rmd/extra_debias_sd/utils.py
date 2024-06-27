@@ -4,6 +4,7 @@ Helpful functions for the Unbiased estimation of the standard deviation post
 
 import numpy as np
 import pandas as pd
+from typing import Tuple
 
 def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: int | None = None) -> np.ndarray:
     """
@@ -16,6 +17,51 @@ def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: i
         std = std * adj
     return std
 
+
+class draw_from_data:
+    def __init__(self, x: np.ndarray) -> None:
+        """
+        Utility function to draw data from some empirical data as though it were a scipy like class
+        """
+        self.x = x
+        self.n = x.shape[0]
+    
+    def rvs(self, 
+            m: int | None = None, 
+            size : Tuple | None = None, 
+            random_state: int | None = None
+            ) -> np.ndarray:
+        """
+        Draw size = (m, *size).... samples from x, were m < x.shape[0]
+        """
+        # Input checks
+        if size is None:
+            size = (1, )
+        else:
+            size = tuple(size)
+        if m is None:
+            # Assume size position of size is m
+            m = size[0]
+            size = size[1: ]
+        assert m <= self.n, f'cannot sample for than {self.n}'        
+        total_combs = np.prod(size)
+        # Loop over all combinations
+        np.random.seed(random_state)
+        res = np.zeros( [total_combs, m], dtype=self.x.dtype ) 
+        for i in range(total_combs):
+            res[i] = np.random.choice(a=self.x, size=m, replace=False)
+        # Reshape
+        res = res.reshape( size + (m, ))
+        res = np.moveaxis(res, source=-1, destination=0)
+        res = np.squeeze(res)
+        return res 
+    
+    def stats(self, moment:str):
+        if moment == 'v':
+            return self.x.var(ddof=1)
+        if moment == 'k':
+            return pd.Series(self.x).kurtosis()
+        
 
 def efficient_loo_kurtosis(df):
     """
