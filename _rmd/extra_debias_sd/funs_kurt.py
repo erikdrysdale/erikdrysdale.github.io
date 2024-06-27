@@ -44,9 +44,9 @@ class kappa_from_moments:
         
         if debias:
             # Calculate the full-sample kurtosis
-            mu4 = self._mu4_unbiased(raw_m2, raw_m4, n)
-            mu22 = self._mu22_unbiased(raw_m2, raw_m4, n)
-            self.kappa = mu4 / mu22
+            self.mu4 = self._mu4_unbiased(raw_m2, raw_m4, n)
+            self.mu22 = self._mu22_unbiased(raw_m2, raw_m4, n)
+            self.kappa = self.mu4 / self.mu22
 
             # Calculate kurtosis depending on whether LOO is being used
             if jacknife:

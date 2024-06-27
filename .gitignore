@@ -18,6 +18,7 @@ package.json
 *.csv
 !_rmd/extra_cancer/*.csv
 _rmd/*/*.png
+_rmd/*/*/*.png
 *.pdf
 .Rproj.user
 *.Rproj
