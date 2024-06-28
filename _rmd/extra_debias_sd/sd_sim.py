@@ -9,6 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
+from _rmd.extra_debias_sd.utils import generate_sd_curve
 
 # Folders
 dir_base = os.getcwd()
@@ -25,8 +26,79 @@ data = pd.read_csv(os.path.join(dir_data, 'data.csv'))['resid'].values
 sigma_pop = data.std(ddof=1)
 kappa_pop = pd.Series(data).kurtosis() + 3
 
-############################
-# --- (1) LOO JACKNIFE --- #
+# Simulation parameters
+seed = 1234
+nsim = 250
+num_boot = 5000
+num_perm = 25
+num_points = 10
+sample_sizes = [10, 25, 50, 100, 1000]
+
+
+#####################################
+# --- (1) ESTIMATE C_N DIRECTLY --- #
+
+# (i) Parametric curve fitting
+from scipy.optimize import curve_fit
+
+
+def stirling_approximation(x):
+    """
+    Calculate the Stirling approximation for the Gamma function.
+
+    Parameters:
+    x (float or np.ndarray): The input value(s) for which to calculate the approximation.
+
+    Returns:
+    float or np.ndarray: The Stirling approximation of the Gamma function for the input value(s).
+    """
+    return np.sqrt(2 * np.pi * x) * (x / np.e) ** x
+
+
+def C_n_parametric(n: int, 
+                   m1:float=1, s1:float=2, p1:float=0.5,
+                   m2:float=1, s2:float=2,
+                   m3:float=0, s3:float=2
+                   ):
+    """
+    A parametric form that tries to approximate C_n = np.sqrt((n - 1)/2) * GammaFunc((n-1)/2) / GammaFunc(n / 2), which debiases the standard error for the normal distribution
+    
+    # , alpha, beta, gamma
+    # return alpha + beta / n**gamma
+    """
+    term1 = ((n - m1)/s1)**p1
+    term2 = ((n - m2)/s2)
+    term3 = ((n - m3)/s3)
+    C_n = term1 * stirling_approximation(term2) / stirling_approximation(term3)
+    return C_n
+
+
+holder_parameter = []
+np.random.seed(seed)
+for sample_size in sample_sizes[:1]:
+    print(f'sample size: {sample_size}')
+    holder_parmas = np.zeros([nsim, 3])
+    for i in range(nsim):
+        np.random.seed(i+1)
+        x = np.random.choice(data, sample_size, replace=False)
+        xdata, ydata = generate_sd_curve(x, num_points=num_points, num_draw=num_perm, random_state=i+1)
+        # pd.DataFrame({'n':xdata, 'sd':ydata}).groupby('n')['sd'].mean()
+        holder_parmas[i] = curve_fit(C_n_parametric, xdata, ydata)[0]
+    
+
+
+
+# (ii) Vanilla vs BCA vs exp(sum(log(r)))/n 
+
+
+
+
+
+# curve_fit(f=C_n_parametric, xdata=, ydata=, )
+
+
+##################################
+# --- (2) SIMULATIONS: MIXED --- #
 
 def leave_one_out_std(X, ddof: int = 0):
     # Calculate the mean of the entire dataset
@@ -49,12 +121,6 @@ loo_fun_d1 = leave_one_out_std(X = x, ddof=1)
 loo_manual_d1 = np.array([np.delete(x, i, 0).std(ddof=1) for i in range(len(x))])
 np.testing.assert_almost_equal(loo_fun_d1, loo_manual_d1)
 
-
-# Simulation parameters
-seed = 1234
-nsim = 250
-num_boot = 5000
-sample_sizes = [10, 25, 50, 100, 1000]
 
 holder = []
 np.random.seed(seed)
@@ -80,7 +146,7 @@ for sample_size in sample_sizes:
         
         # Bootstrap C_n
         # C_n_bs = np.mean(sd_vanilla / bs_std)
-        C_n_bs = np.median(sd_vanilla / bs_std)
+        C_n_bs = np.exp(np.mean(np.log(sd_vanilla / bs_std)))
         sd_bs_Cn = C_n_bs * sd_vanilla
         
         # bootstrap (complicated)
@@ -97,7 +163,7 @@ for sample_size in sample_sizes:
         tmp_df = pd.DataFrame(list(di_res.items()), columns=['method', 'values'])
         tmp_df = tmp_df.assign(sim=i+1, n=sample_size)
         holder.append(tmp_df)
-        if (i + 1) % 25 == 0:
+        if (i + 1) % 50 == 0:
             print(i+1)
 
 # Merge results

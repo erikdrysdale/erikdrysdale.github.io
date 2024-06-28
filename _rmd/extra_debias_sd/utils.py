@@ -18,6 +18,73 @@ def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: i
     return std
 
 
+def generate_sd_curve(
+            x: np.ndarray, 
+            num_points: int | np.ndarray, 
+            num_draw: int,
+            random_state: int | None = None,
+            n_lb: int = 2,
+            ddof: int = 1
+        ) -> Tuple:
+    """
+    Function to generate a sequence of SD estimates for different subsets of x to approximate S*C_n where C_n is the finite sample adjustment needed to bias-correct S: E[S]*C_n ≈ sigma
+
+    Args
+    ====
+    x: np.ndarray
+        An (n, ) array of data to subsample fromt
+    num_points: int | np.ndarray
+        How many points between (2, n) to draw from? If array, then these points will be sampled
+    num_subsamp: int
+        For a given subsample size, how many random permutations to draw from?
+    random_state: int | None = None
+        Reproducability seed
+    n_lb: int = 2
+        The starting sample size (defaults to 2)
+    ddof: int = 1
+        The usual degrees of freedom adjustment
+    
+    Returns
+    =======
+    A tuple (xdata, ydata), where xdata[i] is the subsample size for that entry, and ydata[i] is the estimated standard deviation at xdata[i] random samples
+    """
+    # Input checks
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    assert num_draw > 0, f'num_samp needs to be >0, not {num_draw}'
+    assert n_lb >= 2, f'n_lb needs to be >=2, not {n_lb}'
+    assert ddof >= 0, f'ddof needs to be >= 0, not {ddof}'
+    n = x.shape[0]
+
+    # Point sampling
+    if sum(np.array(num_points).shape) == 0: 
+        # Implies num_points is an interger
+        subsample_sizes = np.unique(np.linspace(n_lb, n, num_points).round().astype(int))
+    else:
+        # Ensure sampling points are between acceptable bounds and unique
+        subsample_sizes = num_points[(num_points >= 2) & (num_points <= n)]
+        subsample_sizes = np.sort(np.unique(subsample_sizes))
+
+    # Generate {num_draw} permutated versions of x
+    np.random.seed(random_state)
+    x_perm = x[np.argsort(np.random.rand(n, num_draw), axis=0)]
+    
+    # How many data points will we generate
+    num_data_points = num_draw*np.sum(subsample_sizes != n)
+    num_data_points += np.sum(subsample_sizes == n)
+    xdata, ydata = np.zeros([2, num_data_points])
+    for i, subsample_size in enumerate(subsample_sizes):
+        il, ih = i*num_draw, (i+1)*num_draw
+        if subsample_size == n:  # Since all permutations amount to a single
+            sd_i = x.std(ddof=ddof,keepdims=True)
+            ih = il + 1  # Will only be one entry
+        else:
+            sd_i = x_perm[:subsample_size].std(ddof=ddof, axis=0)
+        ydata[il:ih] = sd_i
+        xdata[il:ih] = np.zeros(ih-il) + subsample_size
+    return xdata, ydata
+
+
 class draw_from_data:
     def __init__(self, x: np.ndarray) -> None:
         """
