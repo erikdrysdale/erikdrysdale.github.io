@@ -4,7 +4,10 @@ Helpful functions for the Unbiased estimation of the standard deviation post
 
 import numpy as np
 import pandas as pd
+from scipy.special import gamma as GammaFunc
+from scipy.special import gammaln as LogGammaFunc
 from typing import Tuple
+
 
 def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: int | None = None) -> np.ndarray:
     """
@@ -16,6 +19,18 @@ def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: i
         adj = 1 / ( 1 - (kappa - 1 + 2/(nrow-1)) / (8*nrow) ) 
         std = std * adj
     return std
+
+
+def C_n_gaussian(n: int, approx:bool = True) -> float:
+    """
+    Exact offset needed so that E[S_n] * C_n = sigma
+    """
+    if approx:
+        gamma_ratio = np.exp(LogGammaFunc((n-1)/2) - LogGammaFunc(n/2))
+    else:
+        gamma_ratio = GammaFunc((n-1)/2) / GammaFunc(n / 2)
+    c_n = np.sqrt((n - 1)/2) * gamma_ratio
+    return c_n
 
 
 def generate_sd_curve(
@@ -70,18 +85,15 @@ def generate_sd_curve(
     x_perm = x[np.argsort(np.random.rand(n, num_draw), axis=0)]
     
     # How many data points will we generate
-    num_data_points = num_draw*np.sum(subsample_sizes != n)
-    num_data_points += np.sum(subsample_sizes == n)
-    xdata, ydata = np.zeros([2, num_data_points])
+    
+    xdata, ydata = np.zeros([2, len(subsample_sizes)])
     for i, subsample_size in enumerate(subsample_sizes):
-        il, ih = i*num_draw, (i+1)*num_draw
         if subsample_size == n:  # Since all permutations amount to a single
-            sd_i = x.std(ddof=ddof,keepdims=True)
-            ih = il + 1  # Will only be one entry
+            sd_i = x.std(ddof=ddof)
         else:
-            sd_i = x_perm[:subsample_size].std(ddof=ddof, axis=0)
-        ydata[il:ih] = sd_i
-        xdata[il:ih] = np.zeros(ih-il) + subsample_size
+            sd_i = x_perm[:subsample_size].std(ddof=ddof, axis=0).mean()
+        ydata[i] = sd_i
+        xdata[i] = subsample_size
     return xdata, ydata
 
 

@@ -41,50 +41,38 @@ sample_sizes = [10, 25, 50, 100, 1000]
 # (i) Parametric curve fitting
 from scipy.optimize import curve_fit
 
-
-def stirling_approximation(x):
-    """
-    Calculate the Stirling approximation for the Gamma function.
-
-    Parameters:
-    x (float or np.ndarray): The input value(s) for which to calculate the approximation.
-
-    Returns:
-    float or np.ndarray: The Stirling approximation of the Gamma function for the input value(s).
-    """
-    return np.sqrt(2 * np.pi * x) * (x / np.e) ** x
-
-
 def C_n_parametric(n: int, 
-                   m1:float=1, s1:float=2, p1:float=0.5,
-                   m2:float=1, s2:float=2,
-                   m3:float=0, s3:float=2
+                   lsigma: float, 
+                   lbeta: float = np.log(1),
+                   lgamma: float=np.log(0.5),
+                   lalpha: float=np.log(1.0),
                    ):
     """
     A parametric form that tries to approximate C_n = np.sqrt((n - 1)/2) * GammaFunc((n-1)/2) / GammaFunc(n / 2), which debiases the standard error for the normal distribution
     
-    # , alpha, beta, gamma
-    # return alpha + beta / n**gamma
+    The goal is learn: E[S_n] = sigma / C_n, where only E[S_n] is known from simulations, sigma is unknown, and C_n has an inductive bias to estimate the functional form
     """
-    term1 = ((n - m1)/s1)**p1
-    term2 = ((n - m2)/s2)
-    term3 = ((n - m3)/s3)
-    C_n = term1 * stirling_approximation(term2) / stirling_approximation(term3)
-    return C_n
+    C_n = np.exp(lbeta) + np.exp(lalpha) / n**np.exp(lgamma)
+    S_n_para = np.exp(lsigma) / C_n
+    return S_n_para
 
 
 holder_parameter = []
 np.random.seed(seed)
-for sample_size in sample_sizes[:1]:
+for sample_size in sample_sizes[0:1]:
     print(f'sample size: {sample_size}')
-    holder_parmas = np.zeros([nsim, 3])
+    holder_parmas = np.zeros([nsim, 2])
     for i in range(nsim):
         np.random.seed(i+1)
         x = np.random.choice(data, sample_size, replace=False)
         xdata, ydata = generate_sd_curve(x, num_points=num_points, num_draw=num_perm, random_state=i+1)
-        # pd.DataFrame({'n':xdata, 'sd':ydata}).groupby('n')['sd'].mean()
-        holder_parmas[i] = curve_fit(C_n_parametric, xdata, ydata)[0]
-    
+        S_hat = ydata[-1]
+        # Run solution
+        sol_i = np.exp(curve_fit(C_n_parametric, xdata=xdata, ydata=ydata, p0 = np.log(S_hat))[0][0])
+        holder_parmas[i] = [sol_i, S_hat]
+    # Merge
+    qq = pd.DataFrame(holder_parmas, columns=['sigma_hat', 'S_hat'])
+    qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']]
 
 
 
