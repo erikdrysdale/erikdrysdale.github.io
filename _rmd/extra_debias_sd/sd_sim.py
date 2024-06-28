@@ -30,7 +30,7 @@ kappa_pop = pd.Series(data).kurtosis() + 3
 seed = 1234
 nsim = 250
 num_boot = 5000
-num_perm = 25
+num_perm = 250
 num_points = 10
 sample_sizes = [10, 25, 50, 100, 1000]
 
@@ -56,33 +56,79 @@ def C_n_parametric(n: int,
     S_n_para = np.exp(lsigma) / C_n
     return S_n_para
 
-
-holder_parameter = []
+# Learn from 1 + 1/n^0.5
 np.random.seed(seed)
-for sample_size in sample_sizes[0:1]:
-    print(f'sample size: {sample_size}')
-    holder_parmas = np.zeros([nsim, 2])
-    for i in range(nsim):
-        np.random.seed(i+1)
-        x = np.random.choice(data, sample_size, replace=False)
-        xdata, ydata = generate_sd_curve(x, num_points=num_points, num_draw=num_perm, random_state=i+1)
-        S_hat = ydata[-1]
-        # Run solution
-        sol_i = np.exp(curve_fit(C_n_parametric, xdata=xdata, ydata=ydata, p0 = np.log(S_hat))[0][0])
-        holder_parmas[i] = [sol_i, S_hat]
-    # Merge
-    qq = pd.DataFrame(holder_parmas, columns=['sigma_hat', 'S_hat'])
-    qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']]
+sample_size = sample_sizes[0]
+print(f'sample size: {sample_size}')
+holder_parmas = np.zeros([nsim, 2])
+for i in range(nsim):
+    np.random.seed(i+1)
+    x = np.random.choice(data, sample_size, replace=False)
+    xdata, ydata = generate_sd_curve(x, num_points=num_points, num_draw=num_perm, random_state=i+1)
+    S_hat = ydata[-1]
+    # Run solution
+    sol_i = np.exp(curve_fit(C_n_parametric, xdata=xdata, ydata=ydata, p0 = np.log(S_hat))[0][0])
+    holder_parmas[i] = [sol_i, S_hat]
+# Merge
+qq = pd.DataFrame(holder_parmas, columns=['sigma_hat', 'S_hat'])
+qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']]
 
+# Try pairwise...
+import itertools
+from sklearn.metrics import mean_squared_error as MSE
+from scipy.optimize import minimize
+
+def C_n_gen(n, lgamma, lbeta):
+    power = 0.5 + np.exp(lgamma)
+    return 1 + np.exp(lbeta)/n**power
+
+def log_S1_S2_approx(n12, lgamma:float = np.log(0.5), lbeta: float=np.log(1)):
+    n1, n2 = n12[:, 0], n12[:, 1]
+    power = 0.5 + np.exp(lgamma)
+    term1 = power * np.log(n2 / n1)
+    term2 = np.log(n1**power + np.exp(lbeta))
+    term3 = np.log(n2**power + np.exp(lbeta))
+    logR = term1 + term2 - term3
+    return logR
+
+idx = np.array(list(itertools.combinations(range(x.shape[0]-1), 2)))
+holder_parmas = np.zeros([nsim, 2])
+for i in range(nsim):
+    # (i) Generate data
+    np.random.seed(i+1)
+    x = np.random.choice(data, sample_size, replace=False)
+    xdata, ydata = generate_sd_curve(x, num_points=num_points, num_draw=num_perm, random_state=i+1)
+    # pd.DataFrame({'n':xdata, 'sd':ydata})
+    mat_pairwise = np.c_[xdata, ydata][idx]
+    n_pairwise = mat_pairwise[:,:,0]
+    S_pairwise = mat_pairwise[:,:,1]
+    y_pairwise = np.log(S_pairwise[:,1] / S_pairwise[:,0])
+    # pd.DataFrame({'y':y_pairwise, 'eta':log_S1_S2_approx(n_pairwise, beta=20)})
+
+    # Optimize
+    b0_init = np.log([1, 2, 5, 10, 20])
+    c_n_parmas = None
+    di_b0 = dict.fromkeys(b0_init)
+    for b0 in b0_init:
+        # np.mean(y_pairwise - log_S1_S2_approx(n_pairwise, *[np.log(0.5), np.log(1), np.log(13.35)]))
+        try:
+            di_b0[b0] = minimize(fun=lambda lgammabeta: np.mean((log_S1_S2_approx(n_pairwise, *lgammabeta) - y_pairwise)**2), 
+                 x0=[np.log(0.5), np.log(b0)]).x
+        except:
+            pass
+    b0_loss = np.array([MSE(y_pairwise,log_S1_S2_approx(n_pairwise, *v)) + np.abs(v).sum() for v in di_b0.values() if v is not None])
+    # np.array([MSE(y_pairwise,log_S1_S2_approx(n_pairwise, *v)) for v in di_b0.values() if v is not None])
+    # np.vstack(list(di_b0.values())).T[2]
+    assert b0_loss.shape[0] > 0, 'no solution found'
+    params_optim = di_b0[b0_init[np.argmin(b0_loss)]]
+    sd_C_n = ydata[-1] * C_n_gen(sample_size, *params_optim)
+    holder_parmas[i] = [sd_C_n, ydata[-1]]
+qq = pd.DataFrame(holder_parmas, columns=['sigma_hat', 'S_hat'])
+qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']]
 
 
 # (ii) Vanilla vs BCA vs exp(sum(log(r)))/n 
 
-
-
-
-
-# curve_fit(f=C_n_parametric, xdata=, ydata=, )
 
 
 ##################################
