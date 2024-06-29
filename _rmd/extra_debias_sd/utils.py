@@ -2,14 +2,19 @@
 Helpful functions for the Unbiased estimation of the standard deviation post
 """
 
+# Modules
 import numpy as np
 import pandas as pd
+from typing import Tuple
 from scipy.special import gamma as GammaFunc
 from scipy.special import gammaln as LogGammaFunc
-from typing import Tuple
 
 
-def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: int | None = None) -> np.ndarray:
+def sd_adj(x: np.ndarray, 
+           kappa: np.ndarray | None = None, 
+           ddof:int = 1, 
+           axis: int | None = None
+           ) -> np.ndarray:
     """
     Adjust the vanilla SD estimator 
     """
@@ -19,6 +24,59 @@ def sd_adj(x: np.ndarray, kappa: np.ndarray | None = None, ddof:int = 1, axis: i
         adj = 1 / ( 1 - (kappa - 1 + 2/(nrow-1)) / (8*nrow) ) 
         std = std * adj
     return std
+
+
+def sd_bs(
+        x:np.ndarray, 
+        axis: int = 0,
+        ddof: int = 0,
+        num_boot: int = 1000,
+        random_state: int | None = None
+        ) -> np.ndarray:
+    """
+    Generates {num_boot} bootstrap replicates for a 1-d array
+    """
+    # Input checks
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    num_dim = len(x.shape)
+    assert num_dim >= 1, f'x needs to have at least dimenion, not {x.shape}'
+    n = x.shape[axis]  # This is the axis we're actually calculate the SD over
+    
+    # Determine approach boased on dimension of x
+    np.random.seed(random_state)
+    if num_dim == 1:  # Fast to do random choice 
+        idx = np.random.randint(low=0, high=n, size=n*num_boot)
+        sigma_star = x[idx].reshape([n, num_boot]).std(ddof=ddof, axis=axis)
+    else:
+        idx = np.random.randint(low=0, high=n, size=x.shape+(num_boot,))
+        sigma_star = np.take_along_axis(np.expand_dims(x, -1), idx, axis=axis).\
+                        std(ddof=ddof, axis=axis)
+    return sigma_star
+
+
+def sd_loo(x:np.ndarray, 
+           ddof: int = 0,
+           axis: int = 0,
+           ) -> np.ndarray:
+    """
+    Calculates the leave-one-out (LOO) standard deviation
+    """
+    # Input checks
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    n = x.shape[axis]
+    # Calculate axis and LOO mean
+    xbar = np.mean(x, axis = 0)
+    xbar_loo = (n*xbar - x) / (n-1)
+    mu_x2 = np.mean(x ** 2, axis=0)
+    # Calculate unadjuasted LOO variance
+    sigma2_loo = (n / (n - 1)) * (mu_x2 - x**2 / n - (n - 1) * xbar_loo**2 / n)
+    # Apply DOF adjustment, if any
+    n_adj = (n-1) / (n - ddof - 1)
+    # Return final value
+    sigma_loo = np.sqrt(n_adj * sigma2_loo)
+    return sigma_loo
 
 
 def C_n_gaussian(n: int, approx:bool = True) -> float:

@@ -1,15 +1,20 @@
 """
 Can we use non-parametric or interpolating approaches for estimating E[S] * C_n = sigma?
 
-python3 -m _rmd.extra_debias_sd.sd_sim
+python3 -m _rmd.extra_debias_sd.sd_sim -W
 """
 
 # Modules
 import os
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
-from _rmd.extra_debias_sd.utils import generate_sd_curve
+import plotnine as pn
+from scipy.stats import norm, moment
+from mizani.formatters import percent_format
+from _rmd.extra_debias_sd.utils import generate_sd_curve, sd_loo, sd_bs
+
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # Folders
 dir_base = os.getcwd()
@@ -34,9 +39,206 @@ num_perm = 250
 num_points = 10
 sample_sizes = [10, 25, 50, 100, 1000]
 
+# Clean up the "describe" columns
+pcts = {0.1:'lb', 0.5:'med', 0.9:'ub'}
+di_cols_describe = {'mean':'mu', 'std':'sd', 
+                    'min':'mi', 'max':'mx'}
+di_cols_describe = {**di_cols_describe,
+                    **{f'{100*k:.0f}%':v for k,v in pcts.items()}}
+emp_CI = max(pcts) - min(pcts)
 
-#####################################
-# --- (1) ESTIMATE C_N DIRECTLY --- #
+
+##################################
+# --- (1) C_N FROM BOOTSTRAP --- #
+
+# (ii) Vanilla vs BCA vs exp(sum(log(r)))/n  vs median
+
+print('C_N FROM BOOTSTRAP')
+
+holder = []
+np.random.seed(seed)
+for sample_size in sample_sizes:
+    print(f'sample size: {sample_size}')
+    for i in range(nsim):
+        # (i) Draw data and get normal Bessel-SD
+        x = np.random.choice(data, sample_size, replace=False)
+        sighat_vanilla = x.std(ddof=1)
+        # (ii) Generate bootstrapped standard errors
+        sighat_bs = sd_bs(x, axis=0, ddof=1, num_boot=num_boot)
+        sighat_bs_mu = sighat_bs.mean()
+        # (iii) Generate different C_n bootstrapped forms
+        # Simple average of ratio
+        C_n_bs_mu_ratio = np.mean(sighat_vanilla / sighat_bs)
+        # Simple ratio of averages
+        C_n_bs_ratio_mu = sighat_vanilla / sighat_bs_mu
+        # Average of logs
+        C_n_explog = np.exp(np.mean(np.log(sighat_vanilla / sighat_bs)))
+        # BCA
+        sighat_loo = sd_loo(x, axis=0, ddof=1)
+        sighat_loo_mu = sighat_loo.mean()
+        # Here we'll count the number of times the ratio exceeds one
+        z0 = norm.ppf(np.mean(sighat_vanilla / sighat_bs > 1))
+        # The skew in the ratio is basically the sample thing
+        a = moment(sighat_loo, 3) / (6*np.var(sighat_loo)**1.5)
+        C_n_bca = C_n_bs_ratio_mu + z0/(1-a*z0)*np.std(sighat_vanilla / sighat_bs, ddof=1)
+        # (iv) Store results
+        di_res = {'vanilla':1, 
+                'mu_ratio':C_n_bs_mu_ratio, 
+                'ratio_mu': C_n_bs_ratio_mu,
+                'explog': C_n_explog,
+                'bca': C_n_bca,
+                }
+        di_res = {k:v*sighat_vanilla for k, v in di_res.items()}
+        tmp_df = pd.DataFrame(list(di_res.items()), columns=['method', 'values'])
+        tmp_df = tmp_df.assign(sim=i+1, n=sample_size)
+        holder.append(tmp_df)
+        if (i + 1) % 50 == 0:
+            print(i+1)
+# Merge results
+res_Cn = pd.concat(holder).reset_index(drop=True)
+
+# Get aggregate perf
+res_Cn_agg = res_Cn.groupby(['n', 'method'])['values'].\
+    describe(percentiles=pcts)[list(di_cols_describe)].\
+        rename(columns=di_cols_describe)
+res_Cn_pct = res_Cn_agg / sigma_pop
+dat_Cn_plot = res_Cn_pct.\
+    melt(id_vars=['lb', 'ub'], value_vars=['mu', 'med'], ignore_index=False, var_name='moment', value_name='pct').\
+    reset_index()
+dat_Cn_plot['moment'] = pd.Categorical(dat_Cn_plot['moment'], ['mu', 'med'])
+dat_Cn_plot2 = res_Cn_pct[['lb','ub','mu','med']].melt(ignore_index=False, var_name='moment', value_name='pct').reset_index()
+
+# Plot it
+h_Cn = 2 * dat_Cn_plot['method'].nunique()
+gg_debiased_Cn_sd = (pn.ggplot(dat_Cn_plot, pn.aes(x='n', y='pct')) + 
+                 pn.theme_bw() + 
+                 pn.geom_line(pn.aes(color='method'), size=1) + 
+                 pn.geom_ribbon(pn.aes(ymin='lb', ymax='ub', fill='method'), alpha=0.15, color='none') + 
+                 pn.facet_grid('method~moment') + 
+                 pn.scale_x_log10() + 
+                 pn.guides(color=False, fill=False) + 
+                 pn.scale_y_log10(labels=percent_format()) + 
+                 pn.geom_hline(yintercept=1, linetype='--') + 
+                 pn.ggtitle(f'Ribbon shows simulation {emp_CI*100:.0f}% CI') + 
+                 pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
+                 pn.scale_color_discrete(name='Moment') + 
+                 pn.scale_fill_discrete(name='Moment'))
+gg_debiased_Cn_sd.save(os.path.join(dir_figs, 'debiased_Cn_sd.png'), height=h_Cn, width=6)
+
+gg_debiased_Cn_sd2 = (pn.ggplot(dat_Cn_plot2, pn.aes(x='n', y='pct', color='method')) + 
+                 pn.theme_bw() + pn.geom_line() + 
+                 pn.facet_wrap('~moment',scales='free') + 
+                 pn.scale_x_log10() + 
+                 pn.scale_y_continuous(labels=percent_format()) + 
+                 pn.geom_hline(yintercept=1, linetype='--') + 
+                 pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
+                 pn.scale_color_discrete(name='Moment'))
+gg_debiased_Cn_sd2.save(os.path.join(dir_figs, 'debiased_Cn_sd2.png'), height=6, width=8)
+
+
+
+################################################
+# --- (2) ESTIMATE BIAS NON-PARAMETRICALLY --- #
+
+print('ESTIMATE BIAS NON-PARAMETRICALLY')
+
+# Unit testing
+x = data[:10]
+loo_fun = sd_loo(x = x)
+loo_manual = np.array([np.delete(x, i, 0).std(ddof=0) for i in range(len(x))])
+np.testing.assert_almost_equal(loo_fun, loo_manual)
+# Repeat for a higher ddof
+loo_fun_d1 = sd_loo(x = x, ddof=1)
+loo_manual_d1 = np.array([np.delete(x, i, 0).std(ddof=1) for i in range(len(x))])
+np.testing.assert_almost_equal(loo_fun_d1, loo_manual_d1)
+
+holder = []
+np.random.seed(seed)
+for sample_size in sample_sizes:
+    print(f'sample size: {sample_size}')
+    for i in range(nsim):
+        x = np.random.choice(data, sample_size, replace=False)
+        sighat_vanilla = x.std(ddof=1)
+        # jacknife
+        try:
+            sighat_loo = sd_loo(x, ddof=1)
+        except:
+            breakpoint()
+            sighat_loo = sd_loo(x, ddof=1)
+        sighat_loo_mu = sighat_loo.mean()
+        loo_bias = (sample_size - 1) * (sighat_loo_mu - sighat_vanilla)
+        sighat_loo_adj = sighat_vanilla - loo_bias
+        # bootstrap (simple)
+        sighat_bs = np.random.choice(x, sample_size*num_boot, replace=True).\
+                    reshape([sample_size, num_boot]).\
+                        std(ddof=1, axis=0)
+        assert sighat_bs.min() > 0
+        sighat_bs_mu = sighat_bs.mean()
+        sighat_bs_se = sighat_bs.std(ddof=1)
+        bias_bs = np.mean(sighat_bs - sighat_vanilla)
+        sighat_bs_adj1 = sighat_vanilla - bias_bs
+        
+        # bootstrap (BCA)
+        z0 = norm.ppf(np.mean(sighat_bs < sighat_vanilla))
+        a = np.mean((sighat_loo - sighat_loo_mu)**3) / (6*(np.mean((sighat_loo - sighat_loo_mu)**2))**1.5)
+        sighat_bs_bca = sighat_vanilla + z0/(1-a*z0)*sighat_bs_se
+
+        # store
+        di_res = {'vanilla':sighat_vanilla, 
+                'jackknife':sighat_loo_adj, 
+                'bs_bias': sighat_bs_adj1,
+                'bs_bca': sighat_bs_bca}
+        tmp_df = pd.DataFrame(list(di_res.items()), columns=['method', 'values'])
+        tmp_df = tmp_df.assign(sim=i+1, n=sample_size)
+        holder.append(tmp_df)
+        if (i + 1) % 50 == 0:
+            print(i+1)
+# Merge results
+res_bs = pd.concat(holder).reset_index(drop=True)
+
+# Get aggregate perf
+res_bs_agg = res_bs.groupby(['n', 'method'])['values'].\
+    describe(percentiles=pcts)[list(di_cols_describe)].\
+        rename(columns=di_cols_describe)
+res_bs_pct = res_bs_agg / sigma_pop
+dat_bs_plot = res_bs_pct.\
+    melt(id_vars=['lb', 'ub'], value_vars=['mu', 'med'], ignore_index=False, var_name='moment', value_name='pct').\
+    reset_index()
+dat_bs_plot['moment'] = pd.Categorical(dat_bs_plot['moment'], ['mu', 'med'])
+dat_bs_plot2 = res_bs_pct[['lb','ub','mu','med']].melt(ignore_index=False, var_name='moment', value_name='pct').reset_index()
+
+# Plot it
+h_bs = 2 * dat_bs_plot['method'].nunique()
+gg_debiased_bs_sd = (pn.ggplot(dat_bs_plot, pn.aes(x='n', y='pct')) + 
+                 pn.theme_bw() + 
+                 pn.geom_line(pn.aes(color='method'), size=1) + 
+                 pn.geom_ribbon(pn.aes(ymin='lb', ymax='ub', fill='method'), alpha=0.15, color='none') + 
+                 pn.facet_grid('method~moment') + 
+                 pn.scale_x_log10() + 
+                 pn.guides(color=False, fill=False) + 
+                 pn.scale_y_log10(labels=percent_format()) + 
+                 pn.geom_hline(yintercept=1, linetype='--') + 
+                 pn.ggtitle(f'Ribbon shows simulation {emp_CI*100:.0f}% CI') + 
+                 pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
+                 pn.scale_color_discrete(name='Moment') + 
+                 pn.scale_fill_discrete(name='Moment'))
+gg_debiased_bs_sd.save(os.path.join(dir_figs, 'debiased_bs_sd.png'), height=h_bs, width=6)
+
+gg_debiased_bs_sd2 = (pn.ggplot(dat_bs_plot2, pn.aes(x='n', y='pct', color='method')) + 
+                 pn.theme_bw() + pn.geom_line() + 
+                 pn.facet_wrap('~moment',scales='free') + 
+                 pn.scale_x_log10() + 
+                 pn.scale_y_continuous(labels=percent_format()) + 
+                 pn.geom_hline(yintercept=1, linetype='--') + 
+                 pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
+                 pn.scale_color_discrete(name='Moment'))
+gg_debiased_bs_sd2.save(os.path.join(dir_figs, 'debiased_bs_sd2.png'), height=6, width=8)
+
+
+##################################
+# --- (3) C_N PARAMETRICALLY --- #
+
+print('C_N PARAMETRICALLY')
 
 # (i) Parametric curve fitting
 from scipy.optimize import curve_fit
@@ -71,7 +273,7 @@ for i in range(nsim):
     holder_parmas[i] = [sol_i, S_hat]
 # Merge
 qq = pd.DataFrame(holder_parmas, columns=['sigma_hat', 'S_hat'])
-qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']]
+print(qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']])
 
 # Try pairwise...
 import itertools
@@ -124,128 +326,7 @@ for i in range(nsim):
     sd_C_n = ydata[-1] * C_n_gen(sample_size, *params_optim)
     holder_parmas[i] = [sd_C_n, ydata[-1]]
 qq = pd.DataFrame(holder_parmas, columns=['sigma_hat', 'S_hat'])
-qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']]
+print(qq.agg({'mean', 'median', 'std'}).T[['mean', 'median','std']])
 
 
-# (ii) Vanilla vs BCA vs exp(sum(log(r)))/n 
-
-
-
-##################################
-# --- (2) SIMULATIONS: MIXED --- #
-
-def leave_one_out_std(X, ddof: int = 0):
-    # Calculate the mean of the entire dataset
-    n = X.shape[0]
-    xbar = np.mean(x, axis = 0)
-    xbar_loo = (n*xbar - x) / (n-1)
-    mu_x2 = np.mean(X ** 2, axis=0)
-    sigma2_loo = (n / (n - 1)) * (mu_x2 - x**2 / n - (n - 1) * xbar_loo**2 / n)
-    n_adj = (n-1) / (n - ddof - 1)
-    sigma_loo = np.sqrt(n_adj * sigma2_loo)
-    return sigma_loo
-
-# Unit testing
-x = data[:10]
-loo_fun = leave_one_out_std(X = x)
-loo_manual = np.array([np.delete(x, i, 0).std(ddof=0) for i in range(len(x))])
-np.testing.assert_almost_equal(loo_fun, loo_manual)
-# Repeat for a higher ddof
-loo_fun_d1 = leave_one_out_std(X = x, ddof=1)
-loo_manual_d1 = np.array([np.delete(x, i, 0).std(ddof=1) for i in range(len(x))])
-np.testing.assert_almost_equal(loo_fun_d1, loo_manual_d1)
-
-
-holder = []
-np.random.seed(seed)
-for sample_size in sample_sizes:
-    print(f'sample size: {sample_size}')
-    for i in range(nsim):
-        x = np.random.choice(data, sample_size, replace=False)
-        sd_vanilla = x.std(ddof=1)
-        # jacknife
-        loo_sd = leave_one_out_std(x, ddof=1)
-        loo_sd_mu = loo_sd.mean()
-        loo_bias = (sample_size - 1) * (loo_sd_mu - sd_vanilla)
-        sd_loo = sd_vanilla - loo_bias
-        # bootstrap (simple)
-        bs_std = np.random.choice(x, sample_size*num_boot, replace=True).\
-                    reshape([sample_size, num_boot]).\
-                        std(ddof=1, axis=0)
-        assert bs_std.min() > 0
-        bs_mu = bs_std.mean()
-        bs_se = bs_std.std(ddof=1)
-        bias_bs = np.mean(bs_std - sd_vanilla)
-        sd_bs_v1 = sd_vanilla - bias_bs
-        
-        # Bootstrap C_n
-        # C_n_bs = np.mean(sd_vanilla / bs_std)
-        C_n_bs = np.exp(np.mean(np.log(sd_vanilla / bs_std)))
-        sd_bs_Cn = C_n_bs * sd_vanilla
-        
-        # bootstrap (complicated)
-        z0 = norm.ppf(np.mean(bs_std < sd_vanilla))
-        a = np.mean((loo_sd - loo_sd_mu)**3) / (6*(np.mean((loo_sd - loo_sd_mu)**2))**1.5)
-        sd_bs_bca = sd_vanilla + z0/(1-a*z0)*bs_se
-
-        # store
-        di_res = {'vanilla':sd_vanilla, 
-                'jackknife':sd_loo, 
-                'bs_bias': sd_bs_v1,
-                'bs_Cn': sd_bs_Cn, 
-                'bs_bca': sd_bs_bca}
-        tmp_df = pd.DataFrame(list(di_res.items()), columns=['method', 'values'])
-        tmp_df = tmp_df.assign(sim=i+1, n=sample_size)
-        holder.append(tmp_df)
-        if (i + 1) % 50 == 0:
-            print(i+1)
-
-# Merge results
-res_bs = pd.concat(holder).reset_index(drop=True)
-
-# Clean up the "describe" columns
-pcts = {0.1:'lb', 0.5:'med', 0.9:'ub'}
-di_cols_describe = {'mean':'mu', 'std':'sd', 
-                    'min':'mi', 'max':'mx'}
-di_cols_describe = {**di_cols_describe,
-                    **{f'{100*k:.0f}%':v for k,v in pcts.items()}}
-
-res_bs_agg = res_bs.groupby(['n', 'method'])['values'].\
-    describe(percentiles=pcts)[list(di_cols_describe)].\
-        rename(columns=di_cols_describe)
-res_bs_pct = res_bs_agg / sigma_pop
-dat_plot = res_bs_pct.\
-    melt(id_vars=['lb', 'ub'], value_vars=['mu', 'med'], ignore_index=False, var_name='moment', value_name='pct').\
-    reset_index()
-dat_plot2 = res_bs_pct[['lb','ub','mu','med']].melt(ignore_index=False, var_name='moment', value_name='pct').reset_index()
-
-# Plot it
-import plotnine as pn
-from mizani.formatters import percent_format
-
-gg_debiased_sd = (pn.ggplot(dat_plot, pn.aes(x='n', y='pct')) + 
-                 pn.theme_bw() + 
-                 pn.geom_line(pn.aes(color='method'), size=1) + 
-                 pn.geom_ribbon(pn.aes(ymin='lb', ymax='ub', fill='method'), alpha=0.15, color='none') + 
-                 pn.facet_grid('method~moment') + 
-                 pn.scale_x_log10() + 
-                 pn.guides(color=False, fill=False) + 
-                #  pn.scale_y_continuous(labels=percent_format()) + 
-                 pn.scale_y_log10(labels=percent_format()) + 
-                 pn.geom_hline(yintercept=1, linetype='--') + 
-                 pn.ggtitle('Ribbon shows simulation 80% CI') + 
-                 pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
-                 pn.scale_color_discrete(name='Moment') + 
-                 pn.scale_fill_discrete(name='Moment'))
-gg_debiased_sd.save(os.path.join(dir_figs, 'debiased_sd.png'), height=10, width=6)
-
-gg_debiased_sd2 = (pn.ggplot(dat_plot2, pn.aes(x='n', y='pct', color='method')) + 
-                 pn.theme_bw() + pn.geom_line() + 
-                 pn.facet_wrap('~moment',scales='free') + 
-                 pn.scale_x_log10() + 
-                 pn.scale_y_continuous(labels=percent_format()) + 
-                #  pn.scale_y_log10(labels=percent_format()) + 
-                 pn.geom_hline(yintercept=1, linetype='--') + 
-                 pn.labs(y=f'Average over {nsim} simulations / oracle (%)', x='Sample size') + 
-                 pn.scale_color_discrete(name='Moment'))
-gg_debiased_sd2.save(os.path.join(dir_figs, 'debiased_sd2.png'), height=6, width=8)
+print('\n\nEnd of sd_sim.py\n\n')
