@@ -47,37 +47,6 @@ di_cols_describe = {**di_cols_describe,
                     **{f'{100*k:.0f}%':v for k,v in pcts.items()}}
 emp_CI = max(pcts) - min(pcts)
 
-##################################
-# --- SCRATCH --- #
-
-# def sd_loo(x:np.ndarray, 
-#            axis: int = 0,
-#            ddof: int = 0,
-#            ) -> np.ndarray:
-#     """
-#     Calculates the leave-one-out (LOO) standard deviation
-#     """
-#     # Input checks
-#     if not isinstance(x, np.ndarray):
-#         x = np.array(x)
-#     n = x.shape[axis]
-#     # Calculate axis and LOO mean
-#     xbar = np.mean(x, axis = axis)
-#     xbar_loo = (n*xbar - x) / (n-1)
-#     mu_x2 = np.mean(x ** 2, axis=axis)
-#     # Calculate unadjuasted LOO variance
-#     sigma2_loo = (n / (n - 1)) * (mu_x2 - x**2 / n - (n - 1) * xbar_loo**2 / n)
-#     # Apply DOF adjustment, if any
-#     n_adj = (n-1) / (n - ddof - 1)
-#     # Return final value
-#     sigma_loo = np.sqrt(n_adj * np.abs(sigma2_loo))
-#     return sigma_loo
-
-# X = np.array([1, 2, 2, 2, 2])
-# breakpoint()
-# sd_loo(x=X, axis=0)
-# # sd_bs(x=X, axis=0)
-
 
 ##################################
 # --- (1) C_N FROM BOOTSTRAP --- #
