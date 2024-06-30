@@ -56,8 +56,8 @@ def sd_bs(
 
 
 def sd_loo(x:np.ndarray, 
-           ddof: int = 0,
            axis: int = 0,
+           ddof: int = 0,
            ) -> np.ndarray:
     """
     Calculates the leave-one-out (LOO) standard deviation
@@ -67,15 +67,15 @@ def sd_loo(x:np.ndarray,
         x = np.array(x)
     n = x.shape[axis]
     # Calculate axis and LOO mean
-    xbar = np.mean(x, axis = 0)
+    xbar = np.mean(x, axis = axis)
     xbar_loo = (n*xbar - x) / (n-1)
-    mu_x2 = np.mean(x ** 2, axis=0)
+    mu_x2 = np.mean(x ** 2, axis=axis)
     # Calculate unadjuasted LOO variance
     sigma2_loo = (n / (n - 1)) * (mu_x2 - x**2 / n - (n - 1) * xbar_loo**2 / n)
     # Apply DOF adjustment, if any
     n_adj = (n-1) / (n - ddof - 1)
-    # Return final value
-    sigma_loo = np.sqrt(n_adj * sigma2_loo)
+    # Return final value  ( note for var~0 values, apply absolute since might be like -1e-20)
+    sigma_loo = np.sqrt(n_adj * np.clip(sigma2_loo, 0, None))
     return sigma_loo
 
 
