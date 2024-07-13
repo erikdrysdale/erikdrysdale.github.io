@@ -1,7 +1,7 @@
 """
 Check Gaussian Bivariate Ellipse calculations
 
-python3 -m _rmd.extra_loss_moments.scratch2
+python3 -m _rmd.extra_loss_moments.scratch_BVN_ellipse
 """
 
 # External modules
