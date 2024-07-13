@@ -111,6 +111,17 @@ print(f"Trapezoidal Integration (Joint Density) Result: {joint_density_trapz:.4f
 #   Next, we have numerical values of f(y) = I_X(y), so we simply integrate of the domain of Y:
 #   \int_Y f(y) dy = \int_Y \int_X I(y, x) dy dx
 
+# (a) Approach 1: Vectorize norm()
+sig_X_cond = np.sqrt( sigma2_X*(1-rho**2) )
+mu_X_cond = mu_X + (sigma_X / sigma_Y)*rho*(yvals - mu_Y)
+dist_X_cond = norm(loc=mu_X_cond, scale=sig_X_cond)
+inner_integral = np.trapz(loss_function(Yvals, Xvals) * dist_X_cond.pdf(np.atleast_2d(xvals).T), xvals, axis=0)
+outer_integrand = inner_integral * dist_Y.pdf(yvals)
+outer_integral = np.trapz(outer_integrand, yvals)
+print(f"Trapezoidal Integration (Conditional Density) Result: {outer_integral:.4f}")
+
+
+# (b) Approach 2: Loop over the norm moments
 sig_X_cond = np.sqrt( sigma2_X*(1-rho**2) )
 outer_integrand = np.zeros(num_y_points)
 for j, y in enumerate(yvals):
