@@ -7,11 +7,15 @@ python3 -m _rmd.extra_loss_moments.scratch_poc
 # External modules
 import numpy as np
 import pandas as pd
+from timeit import timeit
 from typing import Callable, Tuple
 from scipy.integrate import dblquad
 from scipy.stats import norm, multivariate_normal
 from scipy.stats._multivariate import multivariate_normal_frozen
 from scipy.stats._distn_infrastructure import rv_continuous_frozen, rv_discrete_frozen
+
+# Run-time iterations
+num_t = 200
 
 ##############################
 # --- (1) SET PARAMETERS --- #
@@ -22,7 +26,7 @@ def loss_function(y, x):
 
 # Bivariate normal parameters
 mu_Y = 2.4
-mu_X = -0.5
+mu_X = -3.5
 sigma2_Y = 2.1
 sigma2_X = 0.9
 rho = 0.7
@@ -38,7 +42,24 @@ cov_matrix = np.array(cov_matrix)
 dist_YX = multivariate_normal(mean=mu, cov=cov_matrix)
 dist_Y = norm(loc=mu_Y, scale=np.sqrt(sigma2_Y))
 dist_X = norm(loc=mu_X, scale=np.sqrt(sigma2_X))
-dist_Yx = lambda x: norm(loc=mu_Y + (sigma_Y / sigma_X)*rho*(x - mu_X), scale=np.sqrt(sigma2_Y*(1-rho**2)))
+
+class dist_Ycond:
+    def __init__(self, mu_Y, sigma_Y, sigma_X, rho, mu_X):
+        self.mu_Y = mu_Y
+        self.sigma_Y = sigma_Y
+        self.sigma_X = sigma_X
+        self.rho = rho
+        self.mu_X = mu_X
+        self.sigma2_Y = sigma_Y**2
+    
+    def __call__(self, x):
+        loc = self.mu_Y + (self.sigma_Y / self.sigma_X) * self.rho * (np.array(x) - self.mu_X)
+        scale = np.sqrt(self.sigma2_Y * (1 - self.rho ** 2))
+        return norm(loc=loc, scale=scale)
+
+# Example usage
+dist_Yx = dist_Ycond(mu_Y=mu_Y, sigma_Y=sigma_Y, sigma_X=sigma_X, rho=rho, mu_X=mu_X)
+
 
 
 ################################################
@@ -46,7 +67,7 @@ dist_Yx = lambda x: norm(loc=mu_Y + (sigma_Y / sigma_X)*rho*(x - mu_X), scale=np
 
 # How many samples to draw frowm
 num_samples = 2000000
-seed = 1234
+seed = 12345
 
 def _is_int(x):
     return int(x) == x
@@ -255,21 +276,21 @@ def numint_joint_trapz(loss : Callable,
         inner_integral_X = np.zeros(xvals.shape[0])
         for i, x_i in enumerate(xvals):
             inner_integrand = loss_function(yvals, x_i)
-            inner_integrand *= dist_joint.pdf(np.c_[yvals, np.broadcast_to(x_i, yvals.shape)])
+            points_i = np.c_[yvals, np.broadcast_to(x_i, yvals.shape)]
+            inner_integrand *= dist_joint.pdf(points_i)
             inner_integral_X[i] = np.trapz(inner_integrand, yvals)
     # Calculate the outer integral by integrating the integrand (series of inner integrals) over X
     outer_integral = np.trapz(inner_integral_X, xvals)
     return outer_integral
-
-res_numint_joint_trapz = numint_joint_trapz(loss=loss_function, dist_joint=dist_YX, use_grid=True)
-assert numint_joint_trapz(loss=loss_function, dist_joint=dist_YX, use_grid=False) == res_numint_joint_trapz, 'use_grid should not change results'
+# Run the integral
+di_args_joint = {'loss':loss_function, 'dist_joint':dist_YX}
+res_numint_joint_trapz = numint_joint_trapz(**di_args_joint, use_grid=True)
+assert numint_joint_trapz(**di_args_joint, use_grid=False) == res_numint_joint_trapz, 'use_grid should not change results'
 print(f"Numerical Integration (Joint) trapezoidal: {res_numint_joint_trapz:.4f}")
 # Compate run-time
-from timeit import timeit
-num_t = 250
-t_grid = timeit("numint_joint_trapz(loss=loss_function, dist_joint=dist_YX, use_grid=False)", number=num_t, globals=globals())
-t_loop = timeit("numint_joint_trapz(loss=loss_function, dist_joint=dist_YX, use_grid=True)", number=num_t, globals=globals())
-print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f}')
+t_grid = timeit("numint_joint_trapz(**di_args_joint, use_grid=False)", number=num_t, globals=globals())
+t_loop = timeit("numint_joint_trapz(**di_args_joint, use_grid=True)", number=num_t, globals=globals())
+print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f} for joint trapezoidal')
 
 
 ###################################################
@@ -277,7 +298,7 @@ print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f}')
 
 
 # (1) CREATE INTO CUSTOM FUNCTIONS (DOCSTRINGS FOR EVERYONE!)
-# (2) RE-GENERALIZE TO DIST_X OUTSIDE OF THE BVN (I.E. IF F_X IS A MULTIVARIATE), SINCE BVN ONLY RELEVANT WHEN X ~ MVN, AND F_THETA(X): X'THETA
+# (2) RE-GENERALIZE TO DIST_X OUTSIDE OF THE BVN (I.E. IF F_X IS A MULTIVARIATE), SINCE BVN ONLY RELEVANT WHEN X ~ MVN, AND F_THETA(X): X'THETA0
 
 
 # Note that calling quad(outer_integrad, ...), outer_integrad = lambda x: quad(inner_intergrand,...) just takes WAY TOO LONG!! 
@@ -288,31 +309,90 @@ print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f}')
 #   Next, we have numerical values of f(y) = I_X(y), so we simply integrate of the domain of Y:
 #   \int_Y f(y) dy = \int_Y \int_X I(y, x) dy dx
 
-# (a) Approach 1: Vectorize norm()
-sig_X_cond = np.sqrt( sigma2_X*(1-rho**2) )
-mu_X_cond = mu_X + (sigma_X / sigma_Y)*rho*(yvals - mu_Y)
-dist_X_cond = norm(loc=mu_X_cond, scale=sig_X_cond)
-inner_integral = np.trapz(loss_function(Yvals, Xvals) * dist_X_cond.pdf(np.atleast_2d(xvals).T), xvals, axis=0)
-outer_integrand = inner_integral * dist_Y.pdf(yvals)
-outer_integral = np.trapz(outer_integrand, yvals)
-print(f"Trapezoidal Integration (Conditional Density) Result: {outer_integral:.4f}")
+def _gen_bvn_cond_bounds(
+                        dist_Y_condX : Callable,
+                        k_sd : int
+                        ) -> Tuple[float, float, float, float]:
+    """Re-construct the joint distribution and feed it into _gen_bvn_bounds(...)"""
+    mu = np.array([dist_Y_condX.mu_Y, dist_Y_condX.mu_X])
+    off_diag = dist_Y_condX.rho * dist_Y_condX.sigma_X * dist_Y_condX.sigma_Y
+    cov = np.array([[dist_Y_condX.sigma_Y**2, off_diag], [off_diag, dist_Y_condX.sigma_X**2]])
+    dist_joint = multivariate_normal(mean=mu, cov=cov)
+    return _gen_bvn_bounds(dist_joint, k_sd)
 
 
-# (b) Approach 2: Loop over the norm moments
-sig_X_cond = np.sqrt( sigma2_X*(1-rho**2) )
-outer_integrand = np.zeros(num_y_points)
-for j, y in enumerate(yvals):
-    # Outer loop
-    mu_X_cond = mu_X + (sigma_X / sigma_Y)*rho*(y - mu_Y)
-    dist_X_cond = norm(loc=mu_X_cond, scale=sig_X_cond)
-    # Solve inner integral
-    inner_integrand = loss_function(y=y, x=xvals) * dist_X_cond.pdf(xvals)
-    inner_integral = np.trapz(inner_integrand, xvals)
-    outer_integrand[j] = inner_integral
-outer_integrand *= dist_Y.pdf(yvals)
-cond_density_trapz = np.trapz(outer_integrand, yvals)
-print(f"Trapezoidal Integration (Conditional Density) Result: {cond_density_trapz:.4f}")
+def numint_cond_trapz(loss : Callable, 
+                      dist_X_uncond : rv_continuous_frozen, 
+                      dist_Y_condX : Callable, 
+                      k_sd : int = 3,
+                      n_Y : int | np.ndarray = 100,
+                      n_X : int | np.ndarray = 101,
+                      use_grid : bool = False,
+                      ) -> float:
+    """
+    Calculates the integral of a l(y,x) assuming (y,x) ~ BVN, using a double integral approach and the trapezoidal rule. 
+    
+    Description
+    -----------
+    We are solving the I_{YX} = \int_Y \int_X l(y,x) f_{YX}(y,x) dx dy = \int_X [\int_Y l(y, X=x) f_{Y|X}(y,X=x) dy] f_X(x) dx.
 
+    We do this in two steps: (1) First, for each x_i in {x_1, ..., x_{n_X}}, calculate the inner integral: I_{inner}(x_i) = \int_Y l(y,X=x_i) f_{Y|X}(y,X=x_i) dy. This gets back an (n_X,) length arrary. Next, calculate the outer integral: I_{outer} = \int_X I_{inner}(x) f_X(x) dx. 
+
+    In essence, we're iterating over the "feature space" one point at a time, calculating the expected loss at that feature space point, and then doing a weighted sum by the likelihood of those feature points
+    
+    Parameters
+    ----------
+    k_sd : int, optional
+        How many standard deviations away from the mean to perform the grid search over?
+    n_{Y,X} : int | np.ndarray, optional
+        The number of points along the Y, X direction to generate (equal spacing). If an array is provided, will assume these are the points to use for integration
+    use_grid : bool, optional
+        Whether a grid a values should be used, or whether we loop over X
+    **kwargs
+        See mci_cond
+    """
+    # Input checks
+    _checks_mci(loss=loss, dist1=dist_X_uncond, k_sd=k_sd, dist2=dist_Y_condX)
+    has_Y = not _is_int(n_Y)
+    has_X = not _is_int(n_X)
+    assert (has_Y & has_X) or (not has_Y and not has_X), f'if n_X is provided as an array, n_Y must be as well'
+    # Set up integration bounds
+    if not has_Y:
+        y_min, y_max, x_min, x_max = _gen_bvn_cond_bounds(dist_Y_condX=dist_Y_condX, k_sd=k_sd)
+        yvals = np.linspace(y_min, y_max, n_Y)
+        xvals = np.linspace(x_min, x_max, n_X)
+    else:
+        assert isinstance(n_Y, np.ndarray), f'if n_Y is not an int, it should be an array'
+        assert isinstance(n_X, np.ndarray), f'if n_X is not an int, it should be an array'
+        yvals, xvals = n_Y, n_X
+    # Calculate integrand and integral
+    if use_grid:
+        Yvals, Xvals = np.meshgrid(yvals, xvals)
+        # Calculate the integrand
+        loss_values = loss_function(Yvals, Xvals)
+        density_cond = dist_Y_condX(Xvals).pdf(Yvals)
+        integrand_values = loss_values * density_cond
+        # Integrate out the Yvals
+        inner_integral_X = np.trapz(integrand_values, yvals, axis=1)
+    else:
+        inner_integral_X = np.zeros(xvals.shape[0])
+        for i, x_i in enumerate(xvals):
+            inner_integrand = loss_function(yvals, x_i)
+            inner_integrand *= dist_Y_condX(x_i).pdf(yvals)
+            inner_integral_X[i] = np.trapz(inner_integrand, yvals)
+    # Calculate the outer integral by integrating the integrand (series of inner integrals) over X
+    outer_integrand = inner_integral_X * dist_X_uncond.pdf(xvals)
+    outer_integral = np.trapz(outer_integrand, xvals)
+    return outer_integral
+# Run the integral
+di_args_cond = {'loss':loss_function, 'dist_X_uncond': dist_X, 'dist_Y_condX': dist_Yx}
+res_numint_cond_trapz = numint_cond_trapz(**di_args_cond, use_grid=True)
+assert numint_cond_trapz(**di_args_cond, use_grid=False) == res_numint_cond_trapz, 'use_grid should not change results'
+print(f"Numerical Integration (Conditional) trapezoidal: {res_numint_cond_trapz:.4f}")
+# Compate run-time
+t_grid = timeit("numint_cond_trapz(**di_args_cond, use_grid=False)", number=num_t, globals=globals())
+t_loop = timeit("numint_cond_trapz(**di_args_cond, use_grid=True)", number=num_t, globals=globals())
+print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f} for conditional trapezoidal')
 
 ###############################
 # --- (3) COMBINE RESULTS --- #
@@ -322,7 +402,7 @@ di_res = {
             'MCI Conditional': res_mci_cond,
             'NumInt Joint Quad': res_numint_joint_quad, 
             'NumInt Joint Trapz': res_numint_joint_trapz,
-            'NumInt Conditional Trapz': None
+            'NumInt Conditional Trapz': res_numint_cond_trapz,
         }
 df_res = pd.DataFrame.from_dict(di_res, orient='index').\
     rename(columns={0:'integral'}).\
