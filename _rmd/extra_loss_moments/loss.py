@@ -10,6 +10,7 @@ from inspect import signature
 from typing import Callable, Union
 # Intenral modules
 from .utils import accepted_dists
+from ._mci import mci_joint, mci_cond
 from ._numerical import numint_joint_trapz, numint_cond_trapz, numint_joint_quad
 
 # Shared parameters
@@ -25,6 +26,12 @@ di_methods = {
     'numint_joint_quad': 
         {'name': 'Numerical Integration (Joint): Quadrature',
         'method': numint_joint_quad},
+    'mci_joint': 
+        {'name': 'Monte Carlo Integration (Joint)',
+        'method': mci_joint},
+    'mci_cond': 
+        {'name': 'Monte Carlo Integration (Conditional)',
+        'method': mci_cond},
 }
 valid_methods = list(di_methods.keys())
 method_desc = '\n'.join([f"'{k}': {v['name']}" for k, v in di_methods.items()])
@@ -66,6 +73,8 @@ class bvn_integral():
             n_X : int | None = None,
             use_grid : bool | None = None,
             sol_tol : float | None = None,
+            num_samples : int | None = None,
+            seed : int | None = None,
             **kwargs,
             ) -> float | np.ndarray:
         f"""
@@ -77,6 +86,8 @@ class bvn_integral():
             'numint_joint_trapz': Numerical Integration (Joint): Trapezoidal
             'numint_cond_trapz': Numerical Integration (Conditional): Trapezoidal
             'numint_joint_quad': Numerical Integration (Joint): Quadrature
+        **kwargs
+            Other named arguments for the various methods
 
         Returns
         -------
@@ -93,8 +104,10 @@ class bvn_integral():
                     'dist_X_uncond': self.dist_X, 
                     'dist_Y_condX': self.dist_Y_X,
                     'k_sd': k_sd, 'n_Y': n_Y, 'n_X': n_X,
-                    'use_grid': use_grid, 'sol_tol': sol_tol
+                    'use_grid': use_grid, 'sol_tol': sol_tol,
+                    'num_samples': num_samples, 'seed': seed,
                     }
+        di_args = {**kwargs, **di_args}
         di_args = self._subset_args(di_args, integral_method)
         di_args = {k: v for k, v in di_args.items() if v is not None}
         risk = integral_method(**di_args)
@@ -106,7 +119,6 @@ class bvn_integral():
         named_args = signature(func).parameters.keys()
         filtered_dict = {k: di[k] for k in named_args if k in di}
         return filtered_dict
-
 
     @staticmethod
     def _check_loss_and_dists(

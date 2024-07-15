@@ -58,11 +58,12 @@ num_samples = 2000000
 seed = 12345
 
 # -- (A) Joint distribution -- #
-res_mci_joint = mci_joint(loss_function, dist_YX, num_samples, seed)
+di_args_mci = {'num_samples': num_samples, 'seed': seed}
+res_mci_joint = mci_joint(loss_function, dist_YX, **di_args_mci)
 print(f"Monte Carlo Integration (joint): {res_mci_joint:.4f}")
 
 # -- (B) Conditional distribution -- #
-res_mci_cond = mci_cond(loss_function, dist_X, dist_Yx, num_samples, seed)
+res_mci_cond = mci_cond(loss_function, dist_X, dist_Yx, **di_args_mci)
 print(f"Monte Carlo Integration (conditional): {res_mci_cond:.4f}")
 
 
@@ -90,10 +91,10 @@ print(f"Numerical Integration (Conditional) trapezoidal: {res_numint_cond_trapz:
 # --- (4) CHECKS --- #
 
 # (i) Check the monte carlo equivalencies
-# res_mci_joint_v2 = bvn_joint.calculate_risk(method='...', ...)
-# np.testing.assert_equal(res_mci_joint, res_mci_joint_v2)
-# res_mci_cond_v2 = bvn_joint.calculate_risk(method='...', ...)
-# np.testing.assert_equal(res_mci_cond, res_mci_cond_v2)
+res_mci_joint_v2 = bvn_joint.calculate_risk(method='mci_joint', **di_args_mci)
+np.testing.assert_equal(res_mci_joint, res_mci_joint_v2)
+res_mci_cond_v2 = bvn_cond.calculate_risk(method='mci_cond', **di_args_mci)
+np.testing.assert_equal(res_mci_cond, res_mci_cond_v2)
 
 # (ii) Check the numerical
 res_numint_joint_quad_v2 = bvn_joint.calculate_risk(method='numint_joint_quad', **di_args_joint_quad)
