@@ -4,20 +4,19 @@ Utility scripts for monte carlo integration
 
 # External modules
 import numpy as np
-from typing import Callable
-from scipy.stats import norm, multivariate_normal
+from typing import Callable, Tuple
 from scipy.stats._multivariate import multivariate_normal_frozen
-from scipy.stats._distn_infrastructure import rv_continuous_frozen, rv_discrete_frozen
+from scipy.stats._distn_infrastructure import rv_continuous_frozen
 # Intenral modules
 from .utils import input_checks as _input_checks
-
 
 
 def mci_joint(loss : Callable, 
               dist_joint : multivariate_normal_frozen, 
               num_samples : int, 
-              seed: int | None = None
-              ) -> float:
+              seed: int | None = None,
+              calc_variance : bool = False,
+            ) -> float | Tuple[float, float]:
     """
     Function to compute the integral using Monte Carlo integration:
 
@@ -46,7 +45,11 @@ def mci_joint(loss : Callable,
     y_samples, x_samples = dist_joint.rvs(num_samples, random_state=seed).T
     # Calculate the average of the integrand
     mu = np.mean(loss(y=y_samples, x=x_samples))
-    return mu
+    if calc_variance:
+        var = np.var(loss(y=y_samples, x=x_samples), ddof=1)
+        return mu, var
+    else:
+        return mu
 
 
 
@@ -54,8 +57,9 @@ def mci_cond(loss : Callable,
               dist_X_uncond : rv_continuous_frozen, 
               dist_Y_condX : Callable, 
               num_samples : int, 
-              seed: int | None = None
-              ) -> float:
+              seed: int | None = None,
+              calc_variance : bool = False,
+            ) -> float | Tuple[float, float]:
     """
     Function to compute the integral using Monte Carlo integration. NOTE! The way scipy implements the .rvs method, if the `random_state` and `n` are the same, it uses the same uniform number draw so we need to increment the seed
 
@@ -81,4 +85,8 @@ def mci_cond(loss : Callable,
     y_samples = dist_Y_condX(x_samples).rvs(num_samples, random_state=seed+1)
     # Calculate the average of the integrand
     mu = np.mean(loss(y=y_samples, x=x_samples))
-    return mu
+    if calc_variance:
+        var = np.var(loss(y=y_samples, x=x_samples), ddof=1)
+        return mu, var
+    else:
+        return mu

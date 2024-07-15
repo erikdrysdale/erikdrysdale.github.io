@@ -33,12 +33,19 @@ def _integrand_joint(y, x, loss, dist):
     density = dist.pdf([y, x])
     return loss_values * density
 
+def _integrand2_joint(y, x, loss, dist):
+    """Internal function to compute the integrand (for numint_joint_quad)"""
+    loss_values = loss(y=y, x=x) ** 2
+    density = dist.pdf([y, x])
+    return loss_values * density
+
 
 def numint_joint_quad(loss : Callable, 
                       dist_joint : multivariate_normal_frozen, 
                       k_sd : int = 4,
-                      sol_tol : float = 1e-3
-                      ):
+                      sol_tol : float = 1e-3,
+                      calc_variance : bool = False,
+                      ) -> float | Tuple[float, float]:
     """
     Calculates the integral of a l(y,x) assuming (y,x) ~ BVN using scipy's wrapper around QUADPACK
 
@@ -57,17 +64,24 @@ def numint_joint_quad(loss : Callable,
     # Calculate the integral using numerical integration (joint density)
     mu, _ = dblquad(_integrand_joint, x_min, x_max, y_min, y_max,
                     args=(loss, dist_joint), epsabs=sol_tol, epsrel=sol_tol)
-    return mu
+    if calc_variance:
+        loss2, _ = dblquad(_integrand2_joint, x_min, x_max, y_min, y_max,
+                    args=(loss, dist_joint), epsabs=sol_tol, epsrel=sol_tol)
+        var = loss2 - mu**2
+        return mu, var
+    else:
+        return mu
 
 
 
 def numint_joint_trapz(loss : Callable, 
                       dist_joint : multivariate_normal_frozen, 
-                      k_sd : int = 3,
+                      k_sd : int = 4,
                       n_Y : int | np.ndarray = 100,
                       n_X : int | np.ndarray = 101,
                       use_grid : bool = False,
-                      ) -> float:
+                      calc_variance : bool = False,
+                      ) -> float | Tuple[float, float]:
     """
     Calculates the integral of a l(y,x) assuming (y,x) ~ BVN, using a double integral approach and the trapezoidal rule. 
     
@@ -108,18 +122,31 @@ def numint_joint_trapz(loss : Callable,
         density_values = dist_joint.pdf(np.dstack((Yvals, Xvals)))
         integrand_values = loss_values * density_values
         # Integrate out the Yvals
-        inner_integral_X = np.trapz(integrand_values, yvals, axis=1)
+        inner_integral_X_mu = np.trapz(integrand_values, yvals, axis=1)
+        if calc_variance:
+            inner_integral_X_var = np.trapz(loss_values**2 * density_values, yvals, axis=1)
     else:
-        inner_integral_X = np.zeros(xvals.shape[0])
+        inner_integral_X_mu = np.zeros(xvals.shape[0])
         for i, x_i in enumerate(xvals):
-            inner_integrand = loss(yvals, x_i)
+            inner_integrand_mu = loss(yvals, x_i)
             points_i = np.c_[yvals, np.broadcast_to(x_i, yvals.shape)]
-            inner_integrand *= dist_joint.pdf(points_i)
-            inner_integral_X[i] = np.trapz(inner_integrand, yvals)
+            inner_integrand_mu *= dist_joint.pdf(points_i)
+            inner_integral_X_mu[i] = np.trapz(inner_integrand_mu, yvals)
+        if calc_variance:
+            inner_integral_X_var = np.zeros(xvals.shape[0])
+            for i, x_i in enumerate(xvals):
+                inner_integrand_var = loss(yvals, x_i)**2
+                points_i = np.c_[yvals, np.broadcast_to(x_i, yvals.shape)]
+                inner_integrand_var *= dist_joint.pdf(points_i)
+                inner_integral_X_var[i] = np.trapz(inner_integrand_var, yvals)
     # Calculate the outer integral by integrating the integrand (series of inner integrals) over X
-    outer_integral = np.trapz(inner_integral_X, xvals)
-    return outer_integral
-
+    outer_integral_mu = np.trapz(inner_integral_X_mu, xvals)
+    if calc_variance:
+        outer_integral_var = np.trapz(inner_integral_X_var, xvals)
+        outer_integral_var -= outer_integral_mu**2
+        return outer_integral_mu, outer_integral_var
+    else:
+        return outer_integral_mu
 
 
 def _gen_bvn_cond_bounds(
@@ -137,11 +164,12 @@ def _gen_bvn_cond_bounds(
 def numint_cond_trapz(loss : Callable, 
                       dist_X_uncond : rv_continuous_frozen, 
                       dist_Y_condX : Callable, 
-                      k_sd : int = 3,
+                      k_sd : int = 4,
                       n_Y : int | np.ndarray = 100,
                       n_X : int | np.ndarray = 101,
                       use_grid : bool = False,
-                      ) -> float:
+                      calc_variance : bool = False,
+                      ) -> float | Tuple[float, float]:
     """
     Calculates the integral of a l(y,x) assuming (y,x) ~ BVN, using a double integral approach and the trapezoidal rule. 
     
@@ -184,16 +212,29 @@ def numint_cond_trapz(loss : Callable,
         # Calculate the integrand
         loss_values = loss(Yvals, Xvals)
         density_cond = dist_Y_condX(Xvals).pdf(Yvals)
-        integrand_values = loss_values * density_cond
         # Integrate out the Yvals
-        inner_integral_X = np.trapz(integrand_values, yvals, axis=1)
+        inner_integral_X_mu = np.trapz(loss_values * density_cond, yvals, axis=1)
+        if calc_variance:
+            inner_integral_X_var = np.trapz(loss_values**2 * density_cond, yvals, axis=1)
     else:
-        inner_integral_X = np.zeros(xvals.shape[0])
+        inner_integral_X_mu = np.zeros(xvals.shape[0])
         for i, x_i in enumerate(xvals):
-            inner_integrand = loss(yvals, x_i)
-            inner_integrand *= dist_Y_condX(x_i).pdf(yvals)
-            inner_integral_X[i] = np.trapz(inner_integrand, yvals)
+            inner_integrand_mu = loss(yvals, x_i)
+            inner_integrand_mu *= dist_Y_condX(x_i).pdf(yvals)
+            inner_integral_X_mu[i] = np.trapz(inner_integrand_mu, yvals)
+        if calc_variance:
+            inner_integral_X_var = np.zeros(xvals.shape[0])
+            for i, x_i in enumerate(xvals):
+                inner_integrand_var = loss(yvals, x_i)**2
+                inner_integrand_var *= dist_Y_condX(x_i).pdf(yvals)
+                inner_integral_X_var[i] = np.trapz(inner_integrand_var, yvals)
     # Calculate the outer integral by integrating the integrand (series of inner integrals) over X
-    outer_integrand = inner_integral_X * dist_X_uncond.pdf(xvals)
-    outer_integral = np.trapz(outer_integrand, xvals)
-    return outer_integral
+    outer_integrand_mu = inner_integral_X_mu * dist_X_uncond.pdf(xvals)
+    outer_integral_mu = np.trapz(outer_integrand_mu, xvals)
+    if calc_variance:
+        outer_integrand_var = inner_integral_X_var * dist_X_uncond.pdf(xvals)
+        outer_integral_var = np.trapz(outer_integrand_var, xvals)
+        outer_integral_var -= outer_integral_mu**2
+        return outer_integral_mu, outer_integral_var
+    else:
+        return outer_integral_mu

@@ -110,8 +110,8 @@ class bvn_integral():
         di_args = {**kwargs, **di_args}
         di_args = self._subset_args(di_args, integral_method)
         di_args = {k: v for k, v in di_args.items() if v is not None}
-        risk = integral_method(**di_args)
-        return risk
+        risk_var = integral_method(**di_args)
+        return risk_var
 
     @staticmethod
     def _subset_args(di: dict, func: Callable) -> dict:

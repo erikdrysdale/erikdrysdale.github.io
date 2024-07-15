@@ -58,55 +58,65 @@ num_samples = 2000000
 seed = 12345
 
 # -- (A) Joint distribution -- #
-di_args_mci = {'num_samples': num_samples, 'seed': seed}
-res_mci_joint = mci_joint(loss_function, dist_YX, **di_args_mci)
-print(f"Monte Carlo Integration (joint): {res_mci_joint:.4f}")
+di_args_mci = {'num_samples': num_samples, 'seed': seed, 'calc_variance': True}
+mu_mci_joint, var_mci_joint = mci_joint(loss_function, dist_YX, **di_args_mci)
+print(f"Monte Carlo Integration (joint): mean={mu_mci_joint:.3f}, variance={var_mci_joint:.3f}")
 
 # -- (B) Conditional distribution -- #
-res_mci_cond = mci_cond(loss_function, dist_X, dist_Yx, **di_args_mci)
-print(f"Monte Carlo Integration (conditional): {res_mci_cond:.4f}")
-
+mu_mci_cond, var_mci_cond = mci_cond(loss_function, dist_X, dist_Yx, **di_args_mci)
+print(f"Monte Carlo Integration (conditional): mean={mu_mci_cond:.3f}, variance={var_mci_cond:.3f}")
 
 #####################################
 # --- (3) NUMERICAL INTEGRATION --- #
 
 # -- (A) Joint quadrature -- #
 di_args_joint_quad = {'loss': loss_function, 'dist_joint': dist_YX, 
-                      'sol_tol': 1e-3, 'k_sd': 4}
-res_numint_joint_quad = numint_joint_quad(**di_args_joint_quad)
-print(f"Numerical Integration (Joint) dblquad: {res_numint_joint_quad:.4f}")
+                      'sol_tol': 1e-3, 'k_sd': 4, 'calc_variance': True}
+mu_numint_joint_quad, var_numint_joint_quad = numint_joint_quad(**di_args_joint_quad)
+print(f"Numerical Integration (Joint) dblquad: mean={mu_numint_joint_quad:.3f}, variance={var_numint_joint_quad:.3f}")
 
 # -- (B) Joint trapezoidal -- #
-di_args_joint_trapz = {'loss':loss_function, 'dist_joint':dist_YX}
-res_numint_joint_trapz = numint_joint_trapz(**di_args_joint_trapz, use_grid=True)
-print(f"Numerical Integration (Joint) trapezoidal: {res_numint_joint_trapz:.4f}")
+di_args_joint_trapz = {'loss':loss_function, 'dist_joint':dist_YX, 'calc_variance': True}
+mu_numint_joint_trapz, var_numint_joint_trapz = numint_joint_trapz(**di_args_joint_trapz)
+print(f"Numerical Integration (Joint) trapezoidal: {mu_numint_joint_trapz:.3f}, variance={var_numint_joint_trapz:.3f}")
 
 # -- (C) Conditional trapezoidal -- #
-di_args_cond_trapz = {'loss':loss_function, 'dist_X_uncond': dist_X, 'dist_Y_condX': dist_Yx}
-res_numint_cond_trapz = numint_cond_trapz(**di_args_cond_trapz, use_grid=True)
-print(f"Numerical Integration (Conditional) trapezoidal: {res_numint_cond_trapz:.4f}")
+di_args_cond_trapz = {'loss':loss_function, 
+                      'dist_X_uncond': dist_X, 'dist_Y_condX': dist_Yx, 'calc_variance': True}
+mu_numint_cond_trapz, var_numint_cond_trapz = numint_cond_trapz(**di_args_cond_trapz)
+print(f"Numerical Integration (Conditional) trapezoidal: {mu_numint_cond_trapz:.3f}, variance={var_numint_cond_trapz:.3f}")
 
 
 ######################
 # --- (4) CHECKS --- #
 
 # (i) Check the monte carlo equivalencies
-res_mci_joint_v2 = bvn_joint.calculate_risk(method='mci_joint', **di_args_mci)
-np.testing.assert_equal(res_mci_joint, res_mci_joint_v2)
-res_mci_cond_v2 = bvn_cond.calculate_risk(method='mci_cond', **di_args_mci)
-np.testing.assert_equal(res_mci_cond, res_mci_cond_v2)
+res_mci_joint = np.array([mu_mci_joint, var_mci_joint])
+mci_joint_v2 = np.array(bvn_joint.calculate_risk(method='mci_joint', **di_args_mci))
+np.testing.assert_equal(mci_joint_v2, res_mci_joint)
+# Repeat for MCI conditional
+res_mci_cond = np.array([mu_mci_cond, var_mci_cond])
+mci_cond_v2 = np.array(bvn_cond.calculate_risk(method='mci_cond', **di_args_mci))
+np.testing.assert_equal(mci_cond_v2, res_mci_cond)
 
 # (ii) Check the numerical
-res_numint_joint_quad_v2 = bvn_joint.calculate_risk(method='numint_joint_quad', **di_args_joint_quad)
-np.testing.assert_equal(res_numint_joint_quad, res_numint_joint_quad_v2)
-res_numint_joint_trapz_v2 = bvn_joint.calculate_risk(method='numint_joint_trapz', **di_args_joint_trapz)
-np.testing.assert_equal(res_numint_joint_trapz, res_numint_joint_trapz_v2)
-res_numint_cond_trapz_v2 = bvn_cond.calculate_risk(method='numint_cond_trapz', **di_args_cond_trapz)
-np.testing.assert_equal(res_numint_cond_trapz, res_numint_cond_trapz_v2)
+numint_joint_quad_v2 = np.array(bvn_joint.calculate_risk(method='numint_joint_quad', **di_args_joint_quad))
+res_joint_quad = np.array([mu_numint_joint_quad, var_numint_joint_quad])
+np.testing.assert_equal(res_joint_quad, numint_joint_quad_v2)
+# Repeat for joint traps
+numint_joint_trapz_v2 = np.array(bvn_joint.calculate_risk(method='numint_joint_trapz', **di_args_joint_trapz))
+res_joint_trapz = np.array([mu_numint_joint_trapz, var_numint_joint_trapz])
+np.testing.assert_equal(res_joint_trapz, numint_joint_trapz_v2)
+# Repeat for conditional trapz
+numint_cond_trapz_v2 = np.array(bvn_cond.calculate_risk(method='numint_cond_trapz', **di_args_cond_trapz))
+res_cond_trapz = np.array([mu_numint_cond_trapz, var_numint_cond_trapz])
+np.testing.assert_equal(res_cond_trapz, numint_cond_trapz_v2)
 
 # (iii) Check the use_grid arguments
-assert numint_joint_trapz(**di_args_joint_trapz, use_grid=False) == res_numint_joint_trapz, 'use_grid should not change results'
-assert numint_cond_trapz(**di_args_cond_trapz, use_grid=False) == res_numint_cond_trapz, 'use_grid should not change results'
+np.testing.assert_equal(numint_joint_trapz(**di_args_joint_trapz, use_grid=False), 
+                        res_joint_trapz, 'use_grid should not change results for the joint trapz')
+np.testing.assert_equal(numint_cond_trapz(**di_args_cond_trapz, use_grid=False),
+                        res_cond_trapz, 'use_grid should not change results for the cond trapz')
 
 
 #########################
@@ -118,8 +128,8 @@ t_loop_joint = timeit("numint_joint_trapz(**di_args_joint_trapz, use_grid=True)"
 print(f'Run time (s): grid={t_grid_joint:.2f}, loop={t_loop_joint:.2f} for joint trapezoidal')
 
 
-t_grid = timeit("numint_cond_trapz(**di_args_cond_trapz, use_grid=False)", number=int(num_t/2), globals=globals())
-t_loop = timeit("numint_cond_trapz(**di_args_cond_trapz, use_grid=True)", number=int(num_t/2), globals=globals())
+t_grid = timeit("numint_cond_trapz(**di_args_cond_trapz, use_grid=False)", number=int(num_t/8), globals=globals())
+t_loop = timeit("numint_cond_trapz(**di_args_cond_trapz, use_grid=True)", number=int(num_t/8), globals=globals())
 print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f} for conditional trapezoidal')
 
 
@@ -129,14 +139,14 @@ print(f'Run time (s): grid={t_grid:.2f}, loop={t_loop:.2f} for conditional trape
 di_res = {
             'MCI Joint': res_mci_joint,
             'MCI Conditional': res_mci_cond,
-            'NumInt Joint Quad': res_numint_joint_quad, 
-            'NumInt Joint Trapz': res_numint_joint_trapz,
-            'NumInt Conditional Trapz': res_numint_cond_trapz,
+            'NumInt Joint Quad': res_joint_quad, 
+            'NumInt Joint Trapz': res_joint_trapz,
+            'NumInt Conditional Trapz': res_cond_trapz,
         }
 df_res = pd.DataFrame.from_dict(di_res, orient='index').\
-    rename(columns={0:'integral'}).\
+    rename(columns={0:'risk', 1:'loss_variance'}).\
     rename_axis('method').\
-    round(3).\
+    round(4).\
     reset_index()
 print(df_res)
 
