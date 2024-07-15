@@ -4,89 +4,85 @@ Utility scripts for monte carlo integration
 
 # External modules
 import numpy as np
-from typing import Callable, Tuple
-from scipy.stats._multivariate import multivariate_normal_frozen
-from scipy.stats._distn_infrastructure import rv_continuous_frozen
+from typing import Tuple, Union
 # Intenral modules
-from .utils import input_checks as _input_checks
+from .utils import BaseIntegrator
+
+class MonteCarloIntegration(BaseIntegrator):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the Monte Carlo Integration class. See utils.BaseIntegrator for constructor arguments.
+        """
+        super().__init__(*args, **kwargs)
+
+    def _draw_samples(self, num_samples: int, seed: int | None) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Internal method for generating labels and features
+
+        If has_joint:
+            (y_i, x_i) ~ F_{Y, X}
+        If ~has_joint:
+            X_i \sim F_X
+            Y_i | X_i \sim F_{Y | X}
+        """
+        if self.has_joint:
+            y_samples, x_samples = self.dist_joint.rvs(num_samples, random_state=seed).T
+        else:
+            x_samples = self.dist_X_uncond.rvs(num_samples, random_state=seed)
+            y_samples = self.dist_Y_condX(x_samples).rvs(num_samples, random_state=seed+1)
+        return y_samples, x_samples
+
+    def _integrate(self, num_samples, calc_variance, seed):
+        """
+        Internal method for calculating self.integrate() for an arbitrary number of chunks
+        """
+        # Draw samples with the pre-defines method
+        y_samples, x_samples = self._draw_samples(num_samples, seed)
+        # Calculate the losses
+        losses = self.loss(y=y_samples, x=x_samples)
+        res = np.mean(losses)
+        if calc_variance:
+            # Add on variance if requested
+            var = np.var(losses, ddof=1)
+            res = (res, var)
+        return res
+
+    def integrate(self, 
+                  num_samples : int, 
+                  calc_variance : bool = False, 
+                  n_chunks : int = 1,
+                  seed : int | None = None
+                  ) -> Union[float, Tuple[float, float], np.ndarray]:
+        """
+        Compute the integral using Monte Carlo integration.
+
+        Parameters
+        ----------
+        num_samples : int
+            How many samples to draw: dist_joint.rvs(num_samples, ...)?
+        calc_variance : bool, optional
+            Should the variance be returned (in addition to the mean)?
+        n_chunks : int, optional
+            Should the Monte Carlo sampling be repeated n_chunks times?
+        seed: int | None, optional
+            Reproducibility seed
+        
+            
+        Returns
+        -------
+        float or tuple or np.ndarray
+            If ~calc_variance returns \hat{R}
+            If calc_variance, then returns (\hat{R}, \hat{V})
+            If n_chunks > 0, returns either a 
+            \hat{R} = mean([loss(y_1, x_1), ..., loss(y_{num_samples}, x_{num_samples})])
+            \hat{V} = var([loss(y_1, x_1), ..., loss(y_{num_samples}, x_{num_samples})])
+        """
+        # Input checks
+        assert n_chunks >= 1, f'n_chunks needs to be >=1, not {n_chunks}'
+        # Run calculations
+        res = [self._integrate(num_samples, calc_variance, seed=seed+chunk-1) for chunk in range(1,n_chunks+1)]
+        res = np.vstack(res).mean(axis=0)
+        res = self._return_tuple_or_float(res)
+        return res
 
 
-def mci_joint(loss : Callable, 
-              dist_joint : multivariate_normal_frozen, 
-              num_samples : int, 
-              seed: int | None = None,
-              calc_variance : bool = False,
-            ) -> float | Tuple[float, float]:
-    """
-    Function to compute the integral using Monte Carlo integration:
-
-    (y_i, x_i) ~ F_{Y, X}
-    (1/n) \sum_{i=1}^n loss(y_i, x_i)
-
-    Parameters
-    ----------
-    loss : Callable
-        Some loss function loss(y=..., x=...)
-    dist_joint : rv_continuous_frozen
-        Some scipy.stats dist such that (Y, X) ~ dist_joint.rvs(...)
-    num_samples : int
-        How many samples to draw: dist_joint.rvs(num_samples, ...)?
-    seed: int | None, optional
-        Reproducability seed: dist_joint.rvs(..., random_state=seed)
-
-    Returns
-    -------
-    float
-        Average over the integrand of mean([loss(y_1, x_1), ..., loss(y_{num_samples}, x_{num_samples})])
-    """
-    # Input checks
-    _input_checks(loss=loss, dist1=dist_joint, num_samples=num_samples, seed=seed)
-    # Draw data
-    y_samples, x_samples = dist_joint.rvs(num_samples, random_state=seed).T
-    # Calculate the average of the integrand
-    mu = np.mean(loss(y=y_samples, x=x_samples))
-    if calc_variance:
-        var = np.var(loss(y=y_samples, x=x_samples), ddof=1)
-        return mu, var
-    else:
-        return mu
-
-
-
-def mci_cond(loss : Callable, 
-              dist_X_uncond : rv_continuous_frozen, 
-              dist_Y_condX : Callable, 
-              num_samples : int, 
-              seed: int | None = None,
-              calc_variance : bool = False,
-            ) -> float | Tuple[float, float]:
-    """
-    Function to compute the integral using Monte Carlo integration. NOTE! The way scipy implements the .rvs method, if the `random_state` and `n` are the same, it uses the same uniform number draw so we need to increment the seed
-
-    X_i \sim F_X
-    Y_i | X_i \sim F_{Y | X}
-    (1/n) \sum_{i=1}^n loss(y_i, x_i)
-
-    Parameters
-    ----------
-    dist_X_uncond : rv_continuous_frozen
-        Some scipy.stats dist such that X ~ dist_X_uncond.rvs(...)
-    dist_Y_condX : Callable
-        Some function that returns a scipy.stats dist such that Y ~ dist_Y_condX(X=x).rvs(...)
-    **kwargs
-        For other named arugments, see mci_joint
-    """
-    # Input checks
-    _input_checks(loss=loss, dist1=dist_X_uncond, 
-                num_samples=num_samples, seed=seed, 
-                dist2=dist_Y_condX)
-    # Draw data in two steps
-    x_samples = dist_X_uncond.rvs(num_samples, random_state=seed)
-    y_samples = dist_Y_condX(x_samples).rvs(num_samples, random_state=seed+1)
-    # Calculate the average of the integrand
-    mu = np.mean(loss(y=y_samples, x=x_samples))
-    if calc_variance:
-        var = np.var(loss(y=y_samples, x=x_samples), ddof=1)
-        return mu, var
-    else:
-        return mu

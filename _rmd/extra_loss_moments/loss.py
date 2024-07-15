@@ -10,8 +10,8 @@ from inspect import signature
 from typing import Callable, Union
 # Intenral modules
 from .utils import accepted_dists
-from ._mci import mci_joint, mci_cond
-from ._numerical import numint_joint_trapz, numint_cond_trapz, numint_joint_quad
+from ._mci import MonteCarloIntegration
+from ._numerical import NumericalIntegrator
 
 # Shared parameters
 hint_DistributionTypes = Union[accepted_dists + (None,)]
@@ -19,24 +19,22 @@ hint_DistributionTypes = Union[accepted_dists + (None,)]
 di_methods = {
     'numint_joint_trapz': 
         {'name': 'Numerical Integration (Joint): Trapezoidal',
-         'method': numint_joint_trapz},
+         'method': NumericalIntegrator},
     'numint_cond_trapz': 
         {'name': 'Numerical Integration (Conditional): Trapezoidal',
-        'method': numint_cond_trapz},
+        'method': NumericalIntegrator},
     'numint_joint_quad': 
         {'name': 'Numerical Integration (Joint): Quadrature',
-        'method': numint_joint_quad},
+        'method': NumericalIntegrator},
     'mci_joint': 
         {'name': 'Monte Carlo Integration (Joint)',
-        'method': mci_joint},
+        'method': MonteCarloIntegration},
     'mci_cond': 
         {'name': 'Monte Carlo Integration (Conditional)',
-        'method': mci_cond},
+        'method': MonteCarloIntegration},
 }
 valid_methods = list(di_methods.keys())
 method_desc = '\n'.join([f"'{k}': {v['name']}" for k, v in di_methods.items()])
-print(method_desc)
-
 
 class bvn_integral():
     def __init__(self,
@@ -109,16 +107,18 @@ class bvn_integral():
                     }
         di_args = {**kwargs, **di_args}
         di_args = self._subset_args(di_args, integral_method)
-        di_args = {k: v for k, v in di_args.items() if v is not None}
         risk_var = integral_method(**di_args)
         return risk_var
+
 
     @staticmethod
     def _subset_args(di: dict, func: Callable) -> dict:
         """Convenience wrappers to return the keys of a dictionary that have the same named arguments"""
         named_args = signature(func).parameters.keys()
         filtered_dict = {k: di[k] for k in named_args if k in di}
+        filtered_dict = {k: v for k, v in filtered_dict.items() if v is not None}
         return filtered_dict
+
 
     @staticmethod
     def _check_loss_and_dists(
