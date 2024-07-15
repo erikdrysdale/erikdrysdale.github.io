@@ -8,16 +8,10 @@ from typing import Callable, Tuple
 from scipy.integrate import dblquad
 from scipy.stats import multivariate_normal
 from scipy.stats._multivariate import multivariate_normal_frozen
-from scipy.stats._distn_infrastructure import rv_continuous_frozen, rv_discrete_frozen
+from scipy.stats._distn_infrastructure import rv_continuous_frozen
 # Intenral modules
-from .utils import _is_int, _input_checks
-
-
-def _integrand_joint(y, x, loss, dist):
-    """Internal function to compute the integrand"""
-    loss_values = loss(y=y, x=x)
-    density = dist.pdf([y, x])
-    return loss_values * density
+from .utils import _is_int
+from .utils import input_checks as _input_checks
 
 
 def _gen_bvn_bounds(dist_joint : multivariate_normal_frozen,
@@ -31,6 +25,13 @@ def _gen_bvn_bounds(dist_joint : multivariate_normal_frozen,
     y_min, y_max = yx_bounds.T[0]
     x_min, x_max = yx_bounds.T[1]
     return y_min, y_max, x_min, x_max
+
+
+def _integrand_joint(y, x, loss, dist):
+    """Internal function to compute the integrand (for numint_joint_quad)"""
+    loss_values = loss(y=y, x=x)
+    density = dist.pdf([y, x])
+    return loss_values * density
 
 
 def numint_joint_quad(loss : Callable, 

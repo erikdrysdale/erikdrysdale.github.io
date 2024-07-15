@@ -9,7 +9,7 @@ from scipy.stats import norm, multivariate_normal
 from scipy.stats._multivariate import multivariate_normal_frozen
 from scipy.stats._distn_infrastructure import rv_continuous_frozen, rv_discrete_frozen
 # Intenral modules
-from .utils import _input_checks
+from .utils import input_checks as _input_checks
 
 
 
