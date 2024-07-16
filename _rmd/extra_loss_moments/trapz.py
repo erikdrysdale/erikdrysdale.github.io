@@ -8,8 +8,7 @@ from typing import Tuple, Union
 from scipy.integrate import dblquad
 from scipy.stats import multivariate_normal
 # Intenral modules
-from .utils import BaseIntegrator
-
+from ._base import BaseIntegrator
 
 
 class NumericalIntegrator(BaseIntegrator):
@@ -18,6 +17,24 @@ class NumericalIntegrator(BaseIntegrator):
         Initialize the Numerical Integration class. See utils.BaseIntegrator for constructor arguments.
         """
         super().__init__(*args, **kwargs)
+        # Assign the dictionary/methods that will get called later
+        # self.integrate_method
+        self.di_methods = {
+                    'trapz_loop': 
+                        {'method':self._trapz_integrate, 
+                         'kwargs': {'use_grid': False}},
+                    'trapz_grid': 
+                        {'method': self._trapz_integrate,
+                         'kwargs': {'use_grid': True}},
+                    'quadrature': 
+                        {'method': self._quad_integrate,
+                         'kwargs': {}},
+                     }
+        self.valid_methods = list(self.di_methods)
+        # self._trapz_integrate methods
+        self.di_grid_methods = {True: self._trapz_integrate_grid, 
+                           False: self._trapz_integrate_loop}
+        
 
     def _gen_bvn_bounds(self,
                         k_sd : int,
@@ -89,15 +106,13 @@ class NumericalIntegrator(BaseIntegrator):
         Internal wrapper to calculate either grid or non-grid based integration.
         """
         # Let the named argument {use_grid} determine the internal method
-        di_grid_methods = {True: self._trapz_integrate_grid, 
-                           False: self._trapz_integrate_loop}
         # Store function arguments
         di_args = {'yvals': yvals, 'xvals': xvals}
         # Calculate the risk
-        risk_var = di_grid_methods[use_grid](**di_args, power=1)
+        risk_var = self.di_grid_methods[use_grid](**di_args, power=1)
         if calc_variance:
             # Add on the loss variance if it's requested
-            risk2_var = di_grid_methods[use_grid](**di_args, power=2)
+            risk2_var = self.di_grid_methods[use_grid](**di_args, power=2)
             loss_var = risk2_var - risk_var**2
             risk_var = (risk_var, loss_var)
         res = self._return_tuple_or_float(risk_var)
@@ -200,19 +215,7 @@ class NumericalIntegrator(BaseIntegrator):
             Integrated value, optionally with variance.
         """
         # Input checks
-        di_methods = {
-                    'trapz_loop': 
-                        {'method':self._trapz_integrate, 
-                         'kwargs': {'use_grid': False}},
-                    'trapz_grid': 
-                        {'method': self._trapz_integrate,
-                         'kwargs': {'use_grid': True}},
-                    'quadrature': 
-                        {'method': self._quad_integrate,
-                         'kwargs': {}},
-                     }
-        valid_methods = list(di_methods)
-        assert method in valid_methods, f'method must be one {valid_methods}, not {method}'
+        assert method in self.valid_methods, f'method must be one {self.valid_methods}, not {method}'
         # Calculate the limits of integration
         y_min, y_max, x_min, x_max = self._gen_bvn_bounds(k_sd=k_sd)
         yvals = np.linspace(y_min, y_max, n_Y)
@@ -226,10 +229,10 @@ class NumericalIntegrator(BaseIntegrator):
                 'sol_tol':sol_tol,
                 }
         # Select the integration method
-        func_method = di_methods[method]['method']
+        func_method = self.di_methods[method]['method']
         di_args = self._subset_args(di_args, func_method)
         # Add on any special method kwargs
-        di_args = {**di_args, **di_methods[method]['kwargs']}
+        di_args = {**di_args, **self.di_methods[method]['kwargs']}
         # Call method and return
         res = func_method(**di_args)
         return res

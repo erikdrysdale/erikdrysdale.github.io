@@ -6,7 +6,7 @@ Utility scripts for monte carlo integration
 import numpy as np
 from typing import Tuple, Union
 # Intenral modules
-from .utils import BaseIntegrator
+from ._base import BaseIntegrator
 
 class MonteCarloIntegration(BaseIntegrator):
     def __init__(self, *args, **kwargs):
