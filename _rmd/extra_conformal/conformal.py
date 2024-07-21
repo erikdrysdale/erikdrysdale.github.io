@@ -6,6 +6,49 @@ Conformal utility functions
 import numpy as np
 from typing import Callable, Any
 
+class score_aps:
+    """Adaptable prediction sets"""
+    def __init__(self, f_theta: Any) -> None:
+        # Input checks
+        assert hasattr(f_theta, 'predict_proba')
+        self.f_theta = f_theta
+
+    def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """Generate the scores"""
+        phat = self.f_theta.predict_proba(x)
+        # Determine the order to sort from largest to smallest
+        idx_ord = np.argsort(-phat, axis=1)
+        phat_sorted_cusum = np.cumsum(np.take_along_axis(phat, idx_ord, axis=1), axis=1)
+        # Determine which sorting position corresponds to y (the label)
+        idx_ord_y = idx_ord == np.atleast_2d(y).T
+        # Find out the relative order y falls within
+        idx_y_sorted = idx_ord_y.argmax(axis=1)
+        # Generate the scores based on cumulative probability
+        scores = phat_sorted_cusum[np.arange(x.shape[0]), idx_y_sorted]
+        return scores
+    
+    @staticmethod
+    def find_sets(idx_bool: np.ndarray, idx_sort: np.ndarray) -> list:
+        """Returns a list of sets, where each set is a list of labels that meet threshold implicit in idx_book"""
+        exceeding_indices = np.where(idx_bool)
+        result = [[] for _ in range(idx_bool.shape[0])]
+        for row, col in zip(*exceeding_indices):
+            result[row].append(idx_sort[row, col])
+        return result
+
+    def invert_score(self, qhat: float, x: np.ndarray) -> list:
+        """For a given feature, find the label sets that conform with qhat"""
+        phat = self.f_theta.predict_proba(x)
+        # Sort in descending order
+        idx_ord = np.argsort(-phat, axis=1)
+        phat_sorted_cusum = np.cumsum(np.take_along_axis(phat, idx_ord, axis=1), axis=1)
+        # Find the cumulative phat cut-off
+        idx_find = phat_sorted_cusum < qhat
+        # Get the sets
+        tau = self.find_sets(idx_bool=idx_find, idx_sort=idx_ord)
+        return tau
+
+
 
 class score_ps:
     """Learns the traditional multiclass score"""

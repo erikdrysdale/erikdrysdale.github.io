@@ -13,7 +13,9 @@ from typing import Tuple, Any, Callable
 
 def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
                    n_train: int, n_calib: int,
-                   nsim: int = 100, seeder: int = 0):
+                   nsim: int = 100, seeder: int = 0,
+                   force_redraw: bool = False,
+                   ):
     """Runs simulation on coverage for a classification model"""
     # Input checks
     assert hasattr(dgp, 'rvs') and isinstance(getattr(dgp, 'rvs'), Callable)
@@ -21,7 +23,7 @@ def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
     holder = np.zeros([nsim, 3])
     for i in range(nsim):
         # (i) Draw training data and fit model
-        x_train, y_train = dgp.rvs(n=n_train, seeder=seeder+i)
+        x_train, y_train = dgp.rvs(n=n_train, seeder=seeder+i, force_redraw=force_redraw)
         ml_mdl.fit(x_train, y_train)
         # (ii) Conformalize scores on calibration data
         x_calib, y_calib = dgp.rvs(n=n_calib, seeder=seeder+i)
@@ -64,7 +66,8 @@ class NoisyLogisticRegression(BaseEstimator):
 
 
 class dgp_multinomial:
-    def __init__(self, p: int, k: int, snr: float = 1.0, seeder: int | None = None) -> None:
+    def __init__(self, p: int, k: int, snr: float = 1.0, 
+                 seeder: int | None = None) -> None:
         """
         Data generating process for multinomial data
         """
@@ -74,20 +77,27 @@ class dgp_multinomial:
         self.p = p
         self.k = k
         self.snr = snr
-
-    def rvs(self, n: int, seeder: int | None = None, ret_probs: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    
+    def rvs(self, n: int, 
+            seeder: int | None = None, 
+            ret_probs: bool = False,
+            force_redraw: bool = False,
+            ) -> Tuple[np.ndarray, np.ndarray]:
         """Draw data"""
         x = norm().rvs(size=(n, self.p), random_state=seeder)
         logits = x.dot(self.Beta)
         probs = softmax(logits, axis=1)
-        y = self.draw_class_indices(probs, seeder=seeder)
+        y = self.draw_class_indices(probs, seeder=seeder, force_redraw=force_redraw)
         if ret_probs:
             return x, y, probs    
         else:
             return x, y
 
-    @staticmethod
-    def draw_class_indices(p: np.ndarray, size: int = 1, seeder: int | None = None) -> np.ndarray:
+    def draw_class_indices(self, p: np.ndarray, 
+                           size: int = 1, 
+                           seeder: int | None = None,
+                           force_redraw: bool = False,
+                           ) -> np.ndarray:
         """
         Draw class indices based on the probabilities in array p.
 
@@ -105,12 +115,19 @@ class dgp_multinomial:
         u_size = (n, 1)
         if dim_expand:
             u_size += (size, )
-        u = np.random.uniform(size=u_size)
-        # Compute the cumulative sum of the probabilities for each row
-        cumul_p = np.cumsum(p, axis=1)
-        if dim_expand:
-            cumul_p = np.expand_dims(cumul_p, -1)
-        np.testing.assert_allclose(cumul_p[:,-1], 1, err_msg='expected sum of porabilities to be close to 1')
-        # Vectorized search to find the class index for each random number
-        class_indices = (u < cumul_p).argmax(axis=1)
+        # Do not let degenerate draw occur
+        keep_running = True
+        while keep_running:
+            u = np.random.uniform(size=u_size)
+            # Compute the cumulative sum of the probabilities for each row
+            cumul_p = np.cumsum(p, axis=1)
+            if dim_expand:
+                cumul_p = np.expand_dims(cumul_p, -1)
+            np.testing.assert_allclose(cumul_p[:,-1], 1, err_msg='expected sum of porabilities to be close to 1')
+            # Vectorized search to find the class index for each random number
+            class_indices = (u < cumul_p).argmax(axis=1)
+            if np.unique(class_indices).shape[0] == self.k:
+                keep_running = False
+            if force_redraw == False:
+                keep_running = False
         return class_indices
