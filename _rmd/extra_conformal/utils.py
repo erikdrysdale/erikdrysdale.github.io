@@ -23,15 +23,18 @@ def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
     assert hasattr(dgp, 'rvs') and isinstance(getattr(dgp, 'rvs'), Callable)
     # Run simulation
     holder = np.zeros([nsim, 3])
+    seeder_i = None
     for i in range(nsim):
+        if seeder is not None:
+            seeder_i = seeder+i 
         # (i) Draw training data and fit model
-        x_train, y_train = dgp.rvs(n=n_train, seeder=seeder+i, force_redraw=force_redraw)
+        x_train, y_train = dgp.rvs(n=n_train, seeder=seeder_i, force_redraw=force_redraw)
         ml_mdl.fit(x_train, y_train)
         # (ii) Conformalize scores on calibration data
-        x_calib, y_calib = dgp.rvs(n=n_calib, seeder=seeder+i)
+        x_calib, y_calib = dgp.rvs(n=n_calib, seeder=seeder_i)
         cp_mdl.fit(x=x_calib, y=y_calib)
         # (iii) Draw a new data point and get conformal sets
-        x_test, y_test = dgp.rvs(n=1, seeder=seeder+i)
+        x_test, y_test = dgp.rvs(n=1, seeder=seeder_i)
         tau_x = cp_mdl.predict(x_test)[0]
         # (iv) Do an evaluation and store
         cover_x = np.isin(y_test, tau_x)[0]

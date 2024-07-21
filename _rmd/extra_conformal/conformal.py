@@ -87,7 +87,7 @@ class score_ps:
 
 
 
-class classification_sets:
+class conformal_sets:
     """
     Class to support conformal inference for the multiclass situation. score_fun must have methods gen_score and invert_score as well as accept f_theta
     """

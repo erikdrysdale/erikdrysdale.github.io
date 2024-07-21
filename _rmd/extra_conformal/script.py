@@ -10,7 +10,7 @@ from scipy.stats import beta, binom
 from sklearn.linear_model import LogisticRegression
 # Internal
 from _rmd.extra_conformal.utils import dgp_multinomial, NoisyLogisticRegression, simulation_classification
-from _rmd.extra_conformal.conformal import classification_sets, score_ps, score_aps
+from _rmd.extra_conformal.conformal import conformal_sets, score_ps, score_aps
 # Ignore warnings
 from sklearn.exceptions import ConvergenceWarning
 import warnings
@@ -21,10 +21,10 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 # --- (0) SIM PARAMS --- #
 
 # Set parameters
-seed = 124
+seed = 12
 nsim = 500
-p = 2
-k = 10
+p = 3
+k = 4
 snr_k = 0.25 * k
 
 
@@ -32,11 +32,11 @@ snr_k = 0.25 * k
 # --- (1) SET UP --- #
 
 # Specify data sizes
-n_train = 1000
-n_calib = 500
+n_train = 250
+n_calib = 100
 
 # Error rate
-alpha = 0.2
+alpha = 0.1
 
 # Expected distribution of coverage
 dist_cover_marg = binom(n=nsim, p=1-alpha)
@@ -51,7 +51,8 @@ mdl = NoisyLogisticRegression(max_iter=250, noise_std = 0.0, seeder=seed,
                               subestimator=LogisticRegression,
                               penalty=None, )
 # Set up conformalizer
-conformalizer = classification_sets(f_theta=mdl, score_fun=score_aps, alpha=alpha, upper=True)
+conformalizer = conformal_sets(f_theta=mdl, score_fun=score_ps, alpha=alpha, upper=True)
+# conformalizer = conformal_sets(f_theta=mdl, score_fun=score_aps, alpha=alpha, upper=True)
 
 
 ##########################
