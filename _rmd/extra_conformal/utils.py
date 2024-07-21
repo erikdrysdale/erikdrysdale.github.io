@@ -6,48 +6,89 @@ Data geneerating and model fitting utility scripts
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
+from inspect import signature
 from scipy.special import softmax
 from sklearn.base import BaseEstimator
 from typing import Tuple, Any, Callable
-
-from mapie.classification import MapieClassifier
-
-
-def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
-                   n_train: int, n_calib: int,
-                   nsim: int = 100, seeder: int = 0,
-                   force_redraw: bool = False,
-                   ):
-    """Runs simulation on coverage for a classification model"""
-    # Input checks
-    assert hasattr(dgp, 'rvs') and isinstance(getattr(dgp, 'rvs'), Callable)
-    # Run simulation
-    holder = np.zeros([nsim, 3])
-    seeder_i = None
-    for i in range(nsim):
-        if seeder is not None:
-            seeder_i = seeder+i 
-        # (i) Draw training data and fit model
-        x_train, y_train = dgp.rvs(n=n_train, seeder=seeder_i, force_redraw=force_redraw)
-        ml_mdl.fit(x_train, y_train)
-        # (ii) Conformalize scores on calibration data
-        x_calib, y_calib = dgp.rvs(n=n_calib, seeder=seeder_i)
-        cp_mdl.fit(x=x_calib, y=y_calib)
-        # (iii) Draw a new data point and get conformal sets
-        x_test, y_test = dgp.rvs(n=1, seeder=seeder_i)
-        tau_x = cp_mdl.predict(x_test)[0]
-        # (iv) Do an evaluation and store
-        cover_x = np.isin(y_test, tau_x)[0]
-        tau_size = len(tau_x)
-        # Store
-        holder[i] = cover_x, tau_size, cp_mdl.qhat
-    res = pd.DataFrame(holder, columns=['cover', 'set_size', 'qhat'])
-    res['cover'] = res['cover'].astype(bool)
-    res['set_size'] = res['set_size'].astype(int)
-    return res
+from mapie.classification import MapieClassifier  # Look at line 1207
 
 
-class NoisyLogisticRegression(BaseEstimator):
+def check_callable_method(obj, attr) -> None:
+    """Raises assertion checks to see if an object has a callable method"""
+    assert hasattr(obj, attr), f'object={obj} does not have attribute={attr}'
+    assert isinstance(getattr(obj, attr), Callable), f'object={obj} must be callable'
+
+
+def check_named_args(func, arg_names):
+    """Check whether a function has the expected names"""
+    # Get the signature of the function
+    sig = signature(func)
+    # Extract the parameter names from the signature
+    param_names = list(sig.parameters.keys())
+    # Check if the function has all the required named arguments
+    matches = sorted(param_names) == sorted(arg_names)
+    assert matches, f'woops function={func} did not have named arguments={arg_names}, instead it had {param_names}'
+
+
+class simulation_cp:
+    def __init__(self,
+                dgp: Any, 
+                ml_mdl: Any, 
+                cp_mdl: Any,
+                is_classification: bool,
+                ) -> None:
+        """Runs simulation for either regression or classification model"""
+        # Input checks
+        check_callable_method(dgp, 'rvs')
+        # Assign as attributes
+        self.dgp = dgp
+        self.ml_mdl = ml_mdl
+        self.cp_mdl = cp_mdl
+        self.is_classification = is_classification
+    
+    def check_coverage(self, tau: np.ndarray | list, y: np.ndarray) -> Tuple[float, float]:
+        """Checks coverage and returns interval length"""
+        if self.is_classification:
+            cover_x = np.isin(y, tau).mean()
+            tau_size = np.mean([len(z) for z in tau])
+        else:
+            cover_x = ((y <= tau[:, 1]) & (y >= tau[:, 0])).mean()
+            tau_size = np.mean(tau[:, 1] - tau[:, 0])
+        return cover_x, tau_size
+
+    def run_simulation(self,
+                    n_train: int, 
+                    n_calib: int,
+                    nsim: int, 
+                    seeder: int = 0,
+                    n_test: int = 1,
+                    **kwargs,
+                    ) -> pd.DataFrame:
+        """Run simulation"""
+        # Run simulation
+        holder = np.zeros([nsim, 3])
+        seeder_i = None
+        for i in range(nsim):
+            if seeder is not None:
+                seeder_i = seeder+i 
+            # (i) Draw training data and fit model
+            x_train, y_train = self.dgp.rvs(n=n_train, seeder=seeder_i, **kwargs)
+            self.ml_mdl.fit(x_train, y_train)
+            # (ii) Conformalize scores on calibration data
+            x_calib, y_calib = self.dgp.rvs(n=n_calib, seeder=seeder_i)
+            self.cp_mdl.fit(x=x_calib, y=y_calib)
+            # (iii) Draw a new data point and get conformal sets
+            x_test, y_test = self.dgp.rvs(n=n_test, seeder=seeder_i)
+            # (iv) Do an evaluation and store
+            tau_x = self.cp_mdl.predict(x_test)
+            cover_x, tau_size = self.check_coverage(tau=tau_x, y=y_test)
+            # Store
+            holder[i] = cover_x, tau_size, self.cp_mdl.qhat
+        res = pd.DataFrame(holder, columns=['cover', 'set_size', 'qhat'])
+        return res
+
+
+class NoisyGLM(BaseEstimator):
     """Using some sklearn subestimator"""
     def __init__(self, subestimator=None, 
                  noise_std=0.1, seeder: int | None = None, **kwargs):
@@ -62,7 +103,8 @@ class NoisyLogisticRegression(BaseEstimator):
         noise = np.random.normal(0, self.noise_std, self.subestimator.coef_.shape)
         self.subestimator.coef_ += noise
         self.coef_ = self.subestimator.coef_
-        self.classes_ = self.subestimator.classes_
+        if hasattr(self.subestimator, 'classes_'):
+            self.classes_ = self.subestimator.classes_
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -71,6 +113,35 @@ class NoisyLogisticRegression(BaseEstimator):
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return self.subestimator.predict_proba(X)
 
+
+class dgp_continuous:
+    def __init__(self, p: int, k: int, snr: float = 1.0, 
+                 seeder: int | None = None) -> None:
+        """
+        Data generating process for multinomial data
+        """
+        # Create attributes
+        dist_beta = norm(loc=0, scale=snr)
+        self.beta = dist_beta.rvs(size=p, random_state=seeder)
+        self.p = p
+        self.k = k
+        self.snr = snr
+
+    def rvs(self, 
+            n: int, 
+            seeder: int | None = None, 
+            ret_eta: bool = False,
+            **kwargs,
+            ) -> Tuple[np.ndarray, np.ndarray]: 
+        x = norm().rvs(size=(n, self.p), random_state=seeder)
+        eta = x.dot(self.beta)
+        u = norm().rvs(size=n, random_state=seeder)
+        y = eta + u
+        if ret_eta:
+            return x, y, eta    
+        else:
+            return x, y
+        
 
 class dgp_multinomial:
     def __init__(self, p: int, k: int, snr: float = 1.0, 

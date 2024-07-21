@@ -5,6 +5,8 @@ Conformal utility functions
 # External modules
 import numpy as np
 from typing import Callable, Any
+from .utils import check_callable_method, check_named_args
+
 
 class score_aps:
     """Adaptable prediction sets"""
@@ -55,6 +57,7 @@ class score_aps:
         tau = self.find_sets(idx_bool=idx_find, idx_sort=idx_ord)
         return tau
 
+
 class score_ps:
     """Learns the traditional multiclass score"""
     def __init__(self, f_theta: Any) -> None:
@@ -86,6 +89,45 @@ class score_ps:
         return tau
 
 
+class score_mae:
+    """Does simple MAE inversion"""
+    def __init__(self, f_theta: Any) -> None:
+        # Input checks
+        check_callable_method(f_theta, 'predict')
+        self.f_theta = f_theta
+
+    def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """Generate absolute error scores"""
+        err = y - self.f_theta.predict(x)
+        return np.abs(err)
+    
+    def invert_score(self, qhat: float, x: np.ndarray) -> list:
+        """For a given feature, find the label sets that conform with qhat"""
+        yhat = self.f_theta.predict(x)
+        yhat = yhat.reshape([yhat.shape[0], 1])
+        tau = yhat + np.atleast_2d([-qhat, qhat])
+        return tau
+
+class score_mse:
+    """Does simple MSE inversion"""
+    def __init__(self, f_theta: Any) -> None:
+        # Input checks
+        check_callable_method(f_theta, 'predict')
+        self.f_theta = f_theta
+
+    def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """Generate absolute error scores"""
+        err = y - self.f_theta.predict(x)
+        return np.power(err, 2)
+    
+    def invert_score(self, qhat: float, x: np.ndarray) -> list:
+        """For a given feature, find the label sets that conform with qhat"""
+        yhat = self.f_theta.predict(x)
+        yhat = yhat.reshape([yhat.shape[0], 1])
+        rqhat = qhat ** 0.5
+        tau = yhat + np.atleast_2d([-rqhat, rqhat])
+        return tau
+
 
 class conformal_sets:
     """
@@ -97,10 +139,13 @@ class conformal_sets:
                  alpha: float,
                  upper: bool = True
                  ) -> None:
-        # Input check
-        assert hasattr(score_fun, 'gen_score') & hasattr(score_fun, 'gen_score')
-        # Assign as attributes
+        # Input checks
+        check_callable_method(score_fun, 'gen_score')
+        check_callable_method(score_fun, 'invert_score')
         self.score_fun = score_fun(f_theta = f_theta)
+        check_named_args(getattr(self.score_fun, 'gen_score'), ['x', 'y'])
+        check_named_args(getattr(self.score_fun, 'invert_score'), ['qhat', 'x'])
+        # Assign other attributes
         self.alpha = alpha
         self.upper = upper
         self.qmethod = 'higher' if upper else 'lower'
