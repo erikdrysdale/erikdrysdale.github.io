@@ -10,6 +10,7 @@ from inspect import signature
 from scipy.special import softmax
 from sklearn.base import BaseEstimator
 from typing import Tuple, Any, Callable
+from statsmodels.regression.quantile_regression import QuantReg
 
 
 def check_callable_method(obj, attr) -> None:
@@ -61,6 +62,7 @@ class simulation_cp:
                     nsim: int, 
                     seeder: int = 0,
                     n_test: int = 1,
+                    verbose: bool = False, n_iter: int = 25,
                     **kwargs,
                     ) -> pd.DataFrame:
         """Run simulation"""
@@ -70,6 +72,9 @@ class simulation_cp:
         for i in range(nsim):
             if seeder is not None:
                 seeder_i = seeder+i 
+            if (i+1) % n_iter == 0:
+                if verbose:
+                    print(f'Simluation {i+1} of {nsim}')
             # (i) Draw training data and fit model
             x_train, y_train = self.dgp.rvs(n=n_train, seeder=seeder_i, **kwargs)
             self.ml_mdl.fit(x_train, y_train)
@@ -111,6 +116,61 @@ class NoisyGLM(BaseEstimator):
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return self.subestimator.predict_proba(X)
+
+
+class LinearQuantileRegressor:
+    """Wrapper around QuantReg"""
+    def __init__(self, quantile: float, has_int: bool = False) -> None:
+        self.quantile = quantile
+        self.has_int = has_int
+    
+    @staticmethod
+    def add_intercept(X):
+        return np.c_[np.ones(X.shape[0]), X]
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
+        if not self.has_int:
+            X = self.add_intercept(X)
+        self.mdl = QuantReg(endog=y, exog=X).fit(q=self.quantile, max_iter=5000)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        if not self.has_int:
+            X = self.add_intercept(X)
+        return self.mdl.predict(X)
+
+
+class QuantileRegressors:
+    """Stacks multiple quantile regressos"""
+    def __init__(self, 
+                subestimator: Any, 
+                alphas: float | np.ndarray, 
+                noise_std=0.1, 
+                seeder: int | None = None, 
+                **kwargs
+                ) -> None:
+        self.alphas = np.atleast_1d(alphas)
+        self.n_alpha = len(self.alphas)
+        kwarg_names = list(signature(subestimator).parameters.keys())
+        alpha_name = 'quantile' if 'quantile' in kwarg_names else 'alpha'
+        self.subestimators = [subestimator(**{alpha_name:alph}, **kwargs) for alph in self.alphas]
+        self.noise_std = noise_std
+        self.seeder = seeder
+
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:
+        np.random.seed(self.seeder)
+        for i in range(self.n_alpha):
+            self.subestimators[i].fit(X, y, **kwargs)
+            # Add Gaussian noise to the coefficients (optional)
+            if hasattr(self.subestimators[i], 'coef_'):
+                noise = np.random.normal(0, self.noise_std, self.subestimators[i].coef_.shape)
+                self.subestimators[i].coef_ += noise
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        n_X = X.shape[0]
+        res = np.zeros([n_X, self.n_alpha])
+        for j in range(self.n_alpha):
+            res[:, j] = self.subestimators[j].predict(X)
+        return res
 
 
 class dgp_continuous:

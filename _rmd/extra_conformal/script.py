@@ -6,15 +6,22 @@ python3 -m _rmd.extra_conformal.script
 
 # External
 import numpy as np
-from scipy.stats import beta, binom, betabinom
-from sklearn.linear_model import LogisticRegression, LinearRegression, QuantileRegressor
+from scipy.stats import beta, betabinom
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.ensemble import GradientBoostingRegressor as GBR
 from mapie.classification import MapieClassifier  # Look at line 1207
+# https://mapie.readthedocs.io/en/stable/theoretical_description_classification.html#adaptive-prediction-sets-aps
+# https://mapie.readthedocs.io/en/stable/generated/mapie.classification.MapieClassifier.html
 # Internal
-from _rmd.extra_conformal.utils import dgp_multinomial, dgp_continuous, \
-                            NoisyGLM, simulation_cp
+from _rmd.extra_conformal.utils import dgp_multinomial, \
+                                        dgp_continuous, \
+                                        NoisyGLM, simulation_cp, \
+                                        LinearQuantileRegressor, \
+                                        QuantileRegressors
 from _rmd.extra_conformal.conformal import conformal_sets, \
                                             score_ps, score_aps, \
-                                            score_mae, score_mse
+                                            score_mae, score_mse, \
+                                                score_pinpall
 # Ignore warnings
 from sklearn.exceptions import ConvergenceWarning
 import warnings
@@ -25,7 +32,7 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 # --- (1) SIM PARAMS --- #
 
 # Set parameters
-seed = 123
+seed = 12
 nsim = 500
 p = 3
 k = 4
@@ -85,15 +92,20 @@ if run_class:
 
 if run_reg:
     data_generating_process = dgp_continuous(p, k, snr=snr_k, seeder=seed)
-    mdl = NoisyGLM(noise_std = 0.0, seeder=seed, subestimator=LinearRegression)
-    conformalizer = conformal_sets(f_theta=mdl, score_fun=score_mae, alpha=alpha, upper=True)
+    # # (i) Standard method
+    # mdl = NoisyGLM(noise_std = 0.0, seeder=seed, subestimator=LinearRegression)
+    # conformalizer = conformal_sets(f_theta=mdl, score_fun=score_mse, alpha=alpha, upper=True)
+    # (ii) Quantile method
+    mdl = QuantileRegressors(noise_std = 0.0, seeder=seed, subestimator=LinearQuantileRegressor, alphas=[alpha/2, 1-alpha/2]) 
+    # mdl = QuantileRegressors(seeder=seed, subestimator=GBR, alphas=[alpha/2, 1-alpha/2], n_estimators=50, loss='quantile')
+    conformalizer = conformal_sets(f_theta=mdl, score_fun=score_pinpall, alpha=alpha, upper=True)
     simulator = simulation_cp(dgp=data_generating_process, 
                               ml_mdl=mdl, 
                               cp_mdl=conformalizer, 
                               is_classification=False)
-    res_reg = simulator.run_simulation(**sim_kwargs)
+    res_reg = simulator.run_simulation(**sim_kwargs, verbose=True)
     print('~~~ Regression intervals ~~~')
-    print(f"CP: coverage={100*res_reg['cover'].mean():.1f}%, set size={res_reg['set_size'].mean():.2f}, q={res_reg['qhat'].mean():.3f}")
+    print(f"CP: coverage={100*res_reg['cover'].mean():.1f}%, interval width={res_reg['set_size'].mean():.2f}, q={res_reg['qhat'].mean():.3f}")
     pval = dist_cover_marg.cdf(res_reg['cover'].sum())
     pval = np.minimum(pval, 1-pval) * 2
     print(f"P-value for observered coverage = {100*pval:.1f}%")

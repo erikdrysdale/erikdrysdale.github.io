@@ -109,6 +109,7 @@ class score_mae:
         tau = yhat + np.atleast_2d([-qhat, qhat])
         return tau
 
+
 class score_mse:
     """Does simple MSE inversion"""
     def __init__(self, f_theta: Any) -> None:
@@ -130,6 +131,25 @@ class score_mse:
         tau = yhat + np.atleast_2d([-rqhat, rqhat])
         return tau
 
+class score_pinpall:
+    """Adjusts quantile regression for a method f_theta that produces an array of two columns (lb/ub)"""
+    def __init__(self, f_theta: Any) -> None:
+        # Input checks
+        check_callable_method(f_theta, 'predict')
+        self.f_theta = f_theta
+        
+    def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """Generate absolute error scores"""
+        yhat_lb, yhat_ub = self.f_theta.predict(x).T
+        score = np.maximum(yhat_lb - y, y - yhat_ub)
+        return score
+    
+    def invert_score(self, qhat: float, x: np.ndarray) -> list:
+        """For a given feature, find the label sets that conform with qhat"""
+        yhat = self.f_theta.predict(x)
+        tau = yhat + np.atleast_2d([-qhat, +qhat])
+        return tau
+
 
 class conformal_sets:
     """
@@ -139,12 +159,13 @@ class conformal_sets:
                  f_theta: Any, 
                  score_fun: Callable,
                  alpha: float,
-                 upper: bool = True
+                 upper: bool = True,
+                 **kwargs,
                  ) -> None:
         # Input checks
         check_callable_method(score_fun, 'gen_score')
         check_callable_method(score_fun, 'invert_score')
-        self.score_fun = score_fun(f_theta = f_theta)
+        self.score_fun = score_fun(f_theta = f_theta, **kwargs)
         check_named_args(getattr(self.score_fun, 'gen_score'), ['x', 'y'])
         check_named_args(getattr(self.score_fun, 'invert_score'), ['qhat', 'x'])
         # Assign other attributes
