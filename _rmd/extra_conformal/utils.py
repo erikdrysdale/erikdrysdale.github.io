@@ -1,12 +1,66 @@
 """
-Conformal utility scripts
+Data geneerating and model fitting utility scripts
 """
 
-# Utilities
+# Modules
 import numpy as np
-from typing import Tuple
+import pandas as pd
 from scipy.stats import norm
 from scipy.special import softmax
+from sklearn.base import BaseEstimator
+from typing import Tuple, Any, Callable
+
+
+def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
+                   n_train: int, n_calib: int,
+                   nsim: int = 100, seeder: int = 0):
+    """Runs simulation on coverage for a classification model"""
+    # Input checks
+    assert hasattr(dgp, 'rvs') and isinstance(getattr(dgp, 'rvs'), Callable)
+    # Run simulation
+    holder = np.zeros([nsim, 3])
+    for i in range(nsim):
+        # (i) Draw training data and fit model
+        x_train, y_train = dgp.rvs(n=n_train, seeder=seeder+i)
+        ml_mdl.fit(x_train, y_train)
+        # (ii) Conformalize scores on calibration data
+        x_calib, y_calib = dgp.rvs(n=n_calib, seeder=seeder+i)
+        cp_mdl.fit(x=x_calib, y=y_calib)
+        # (iii) Draw a new data point and get conformal sets
+        x_test, y_test = dgp.rvs(n=1, seeder=seeder+i)
+        tau_x = cp_mdl.predict(x_test)
+        # (iv) Do an evaluation and store
+        cover_x = np.isin(y_test, tau_x)[0]
+        tau_size = np.mean([len(z) for z in tau_x])
+        # Store
+        holder[i] = cover_x, tau_size, cp_mdl.qhat
+    res = pd.DataFrame(holder, columns=['cover', 'set_size', 'qhat'])
+    res['cover'] = res['cover'].astype(bool)
+    res['set_size'] = res['set_size'].astype(int)
+    return res
+
+
+class NoisyLogisticRegression(BaseEstimator):
+    """Using some sklearn subestimator"""
+    def __init__(self, subestimator=None, 
+                 noise_std=0.1, seeder: int | None = None, **kwargs):
+        self.subestimator = subestimator(**kwargs)
+        self.noise_std = noise_std
+        self.seeder = seeder
+
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
+        self.subestimator.fit(X, y, **kwargs)
+        # Add Gaussian noise to the coefficients
+        np.random.seed(self.seeder)
+        noise = np.random.normal(0, self.noise_std, self.subestimator.coef_.shape)
+        self.subestimator.coef_ += noise
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.subestimator.predict(X)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        return self.subestimator.predict_proba(X)
 
 
 class dgp_multinomial:
@@ -26,7 +80,7 @@ class dgp_multinomial:
         x = norm().rvs(size=(n, self.p), random_state=seeder)
         logits = x.dot(self.Beta)
         probs = softmax(logits, axis=1)
-        y = self.draw_class_indices(probs)
+        y = self.draw_class_indices(probs, seeder=seeder)
         if ret_probs:
             return x, y, probs    
         else:
