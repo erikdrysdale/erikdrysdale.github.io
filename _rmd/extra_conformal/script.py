@@ -7,7 +7,8 @@ python3 -m _rmd.extra_conformal.script
 # External
 import numpy as np
 from scipy.stats import beta, binom, betabinom
-from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.linear_model import LogisticRegression, LinearRegression, QuantileRegressor
+from mapie.classification import MapieClassifier  # Look at line 1207
 # Internal
 from _rmd.extra_conformal.utils import dgp_multinomial, dgp_continuous, \
                             NoisyGLM, simulation_cp
@@ -47,9 +48,11 @@ print(f'Theory: cover lb = {(1-alpha):.3f}, ub={1-alpha+1/(n_calib+1):.3f}')
 
 run_class = False
 run_reg = True
+run_quant = False
 
 sim_kwargs = {'n_train':n_train, 'n_calib':n_calib, 'n_test': n_eval, 
               'nsim':nsim, 'seeder':seed, }
+
 
 ##############################
 # --- (1) CLASSIFICATION --- #
@@ -95,3 +98,5 @@ if run_reg:
     pval = np.minimum(pval, 1-pval) * 2
     print(f"P-value for observered coverage = {100*pval:.1f}%")
     print('\n')
+
+

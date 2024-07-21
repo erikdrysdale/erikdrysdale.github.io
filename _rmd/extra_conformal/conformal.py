@@ -99,7 +99,8 @@ class score_mae:
     def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Generate absolute error scores"""
         err = y - self.f_theta.predict(x)
-        return np.abs(err)
+        score = np.abs(err)
+        return score
     
     def invert_score(self, qhat: float, x: np.ndarray) -> list:
         """For a given feature, find the label sets that conform with qhat"""
@@ -118,7 +119,8 @@ class score_mse:
     def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Generate absolute error scores"""
         err = y - self.f_theta.predict(x)
-        return np.power(err, 2)
+        score = np.power(err, 2)
+        return score
     
     def invert_score(self, qhat: float, x: np.ndarray) -> list:
         """For a given feature, find the label sets that conform with qhat"""

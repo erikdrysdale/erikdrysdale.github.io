@@ -10,7 +10,6 @@ from inspect import signature
 from scipy.special import softmax
 from sklearn.base import BaseEstimator
 from typing import Tuple, Any, Callable
-from mapie.classification import MapieClassifier  # Look at line 1207
 
 
 def check_callable_method(obj, attr) -> None:
@@ -116,13 +115,17 @@ class NoisyGLM(BaseEstimator):
 
 class dgp_continuous:
     def __init__(self, p: int, k: int, snr: float = 1.0, 
-                 seeder: int | None = None) -> None:
+                 seeder: int | None = None,) -> None:
         """
         Data generating process for multinomial data
         """
-        # Create attributes
-        dist_beta = norm(loc=0, scale=snr)
+        # Normalize variance so SNR matches
+        dist_beta = norm(loc=0, scale=1)
         self.beta = dist_beta.rvs(size=p, random_state=seeder)
+        eta_var = np.sum(self.beta**2)
+        u_var = eta_var / snr
+        self.dist_u = norm(loc=0, scale=u_var**0.5)
+        self.dist_x = norm(loc=0, scale=1)
         self.p = p
         self.k = k
         self.snr = snr
@@ -133,9 +136,9 @@ class dgp_continuous:
             ret_eta: bool = False,
             **kwargs,
             ) -> Tuple[np.ndarray, np.ndarray]: 
-        x = norm().rvs(size=(n, self.p), random_state=seeder)
+        x = self.dist_x.rvs(size=(n, self.p), random_state=seeder)
         eta = x.dot(self.beta)
-        u = norm().rvs(size=n, random_state=seeder)
+        u = self.dist_u.rvs(size=n, random_state=seeder)
         y = eta + u
         if ret_eta:
             return x, y, eta    
