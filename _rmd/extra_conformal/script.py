@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 # --- (0) SIM PARAMS --- #
 
 # Set parameters
-seed = 1245
+seed = 124
 nsim = 500
 p = 2
 k = 10
@@ -36,7 +36,7 @@ n_train = 1000
 n_calib = 500
 
 # Error rate
-alpha = 0.3
+alpha = 0.2
 
 # Expected distribution of coverage
 dist_cover_marg = binom(n=nsim, p=1-alpha)

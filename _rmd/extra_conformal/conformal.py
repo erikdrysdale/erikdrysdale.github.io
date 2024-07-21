@@ -13,6 +13,11 @@ class score_aps:
         assert hasattr(f_theta, 'predict_proba')
         self.f_theta = f_theta
 
+    def noisy_scores(self, scores: np.ndarray, shift: float = 0.0):
+        noise = np.random.uniform(low=0.5-shift, high=0.5+shift, size=scores.shape[0])
+        return scores * noise
+
+
     def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Generate the scores"""
         phat = self.f_theta.predict_proba(x)
@@ -25,6 +30,7 @@ class score_aps:
         idx_y_sorted = idx_ord_y.argmax(axis=1)
         # Generate the scores based on cumulative probability
         scores = phat_sorted_cusum[np.arange(x.shape[0]), idx_y_sorted]
+        scores = self.noisy_scores(scores)
         return scores
     
     @staticmethod
@@ -41,14 +47,13 @@ class score_aps:
         phat = self.f_theta.predict_proba(x)
         # Sort in descending order
         idx_ord = np.argsort(-phat, axis=1)
-        phat_sorted_cusum = np.cumsum(np.take_along_axis(phat, idx_ord, axis=1), axis=1)
+        scores = np.cumsum(np.take_along_axis(phat, idx_ord, axis=1), axis=1)
+        scores = self.noisy_scores(scores)
         # Find the cumulative phat cut-off
-        idx_find = phat_sorted_cusum < qhat
+        idx_find = scores < qhat
         # Get the sets
         tau = self.find_sets(idx_bool=idx_find, idx_sort=idx_ord)
         return tau
-
-
 
 class score_ps:
     """Learns the traditional multiclass score"""

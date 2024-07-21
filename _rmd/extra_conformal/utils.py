@@ -10,6 +10,8 @@ from scipy.special import softmax
 from sklearn.base import BaseEstimator
 from typing import Tuple, Any, Callable
 
+from mapie.classification import MapieClassifier
+
 
 def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
                    n_train: int, n_calib: int,
@@ -30,10 +32,10 @@ def simulation_classification(dgp: Any, ml_mdl: Any, cp_mdl: Any,
         cp_mdl.fit(x=x_calib, y=y_calib)
         # (iii) Draw a new data point and get conformal sets
         x_test, y_test = dgp.rvs(n=1, seeder=seeder+i)
-        tau_x = cp_mdl.predict(x_test)
+        tau_x = cp_mdl.predict(x_test)[0]
         # (iv) Do an evaluation and store
         cover_x = np.isin(y_test, tau_x)[0]
-        tau_size = np.mean([len(z) for z in tau_x])
+        tau_size = len(tau_x)
         # Store
         holder[i] = cover_x, tau_size, cp_mdl.qhat
     res = pd.DataFrame(holder, columns=['cover', 'set_size', 'qhat'])
@@ -56,6 +58,8 @@ class NoisyLogisticRegression(BaseEstimator):
         np.random.seed(self.seeder)
         noise = np.random.normal(0, self.noise_std, self.subestimator.coef_.shape)
         self.subestimator.coef_ += noise
+        self.coef_ = self.subestimator.coef_
+        self.classes_ = self.subestimator.classes_
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
