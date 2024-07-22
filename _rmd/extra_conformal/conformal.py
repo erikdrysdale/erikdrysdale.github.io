@@ -58,8 +58,8 @@ class score_aps:
         return tau
 
 
-class score_ps:
-    """Learns the traditional multiclass score"""
+class score_lac:
+    """Learns the traditional multiclass score (least ambiguous class)"""
     def __init__(self, f_theta: Any) -> None:
         # Input checks
         assert hasattr(f_theta, 'predict_proba')

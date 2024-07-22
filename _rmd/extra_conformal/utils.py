@@ -49,7 +49,7 @@ class simulation_cp:
     def check_coverage(self, tau: np.ndarray | list, y: np.ndarray) -> Tuple[float, float]:
         """Checks coverage and returns interval length"""
         if self.is_classification:
-            cover_x = np.isin(y, tau).mean()
+            cover_x = np.mean([label in tau[i] for i, label in enumerate(y)])
             tau_size = np.mean([len(z) for z in tau])
         else:
             cover_x = ((y <= tau[:, 1]) & (y >= tau[:, 0])).mean()
@@ -76,13 +76,13 @@ class simulation_cp:
                 if verbose:
                     print(f'Simluation {i+1} of {nsim}')
             # (i) Draw training data and fit model
-            x_train, y_train = self.dgp.rvs(n=n_train, seeder=seeder_i, **kwargs)
+            x_train, y_train = self.dgp.rvs(n=n_train, seeder=seeder_i+1, **kwargs)
             self.ml_mdl.fit(x_train, y_train)
             # (ii) Conformalize scores on calibration data
-            x_calib, y_calib = self.dgp.rvs(n=n_calib, seeder=seeder_i)
+            x_calib, y_calib = self.dgp.rvs(n=n_calib, seeder=seeder_i+2)
             self.cp_mdl.fit(x=x_calib, y=y_calib)
             # (iii) Draw a new data point and get conformal sets
-            x_test, y_test = self.dgp.rvs(n=n_test, seeder=seeder_i)
+            x_test, y_test = self.dgp.rvs(n=n_test, seeder=seeder_i+3)
             # (iv) Do an evaluation and store
             tau_x = self.cp_mdl.predict(x_test)
             cover_x, tau_size = self.check_coverage(tau=tau_x, y=y_test)
@@ -144,7 +144,7 @@ class QuantileRegressors:
     def __init__(self, 
                 subestimator: Any, 
                 alphas: float | np.ndarray, 
-                noise_std=0.1, 
+                noise_std=0.0, 
                 seeder: int | None = None, 
                 **kwargs
                 ) -> None:
@@ -161,9 +161,16 @@ class QuantileRegressors:
         for i in range(self.n_alpha):
             self.subestimators[i].fit(X, y, **kwargs)
             # Add Gaussian noise to the coefficients (optional)
-            if hasattr(self.subestimators[i], 'coef_'):
-                noise = np.random.normal(0, self.noise_std, self.subestimators[i].coef_.shape)
-                self.subestimators[i].coef_ += noise
+            if self.noise_std > 0:
+                if hasattr(self.subestimators[i], 'coef_'):  # for sklearn
+                    noise = np.random.normal(0, self.noise_std, self.subestimators[i].coef_.shape)
+                    self.subestimators[i].coef_ += noise
+                if hasattr(self.subestimators[i], 'mdl'):  # for statsmodels wrapper
+                    if hasattr(self.subestimators[i].mdl, 'params'):
+                        bhat = self.subestimators[i].mdl.params[1:]
+                        noise = np.random.normal(0, self.noise_std, bhat.shape)
+                        self.subestimators[i].mdl.params[1:] += noise
+
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         n_X = X.shape[0]
