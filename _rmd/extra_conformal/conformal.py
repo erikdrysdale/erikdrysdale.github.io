@@ -17,8 +17,9 @@ class score_aps:
 
     def noisy_scores(self, scores: np.ndarray, shift: float = 0.0):
         noise = np.random.uniform(low=0.5-shift, high=0.5+shift, size=scores.shape[0])
+        if len(scores.shape) == 2:
+            noise = noise.reshape([noise.shape[0], 1])
         return scores * noise
-
 
     def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Generate the scores"""
