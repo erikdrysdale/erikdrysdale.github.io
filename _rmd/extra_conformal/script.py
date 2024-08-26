@@ -40,7 +40,7 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Set parameters
 seed = 12
-nsim = 1500
+nsim = 500
 p = 3
 k = 4
 snr_k = 0.5 * k
@@ -95,7 +95,7 @@ if run_class:
                       pn.labs(y='Density', x='Empirical coverage') + 
                       pn.geom_line(pn.aes(x='x',y='y'), data=dat_pmf, color='red') +
                       pn.ggtitle('Classification simulation\nRed line shows beta-binomial distribution'))
-    gg_cover_class.save(os.path.join(dir_figs, 'cover_class.png'), width=6, height=4)
+    gg_cover_class.save(os.path.join(dir_figs, 'cover_class.png'), width=6, height=4, verbose=False)
     print('\n')
 
 
@@ -128,7 +128,7 @@ if run_reg:
                       pn.labs(y='Density', x='Empirical coverage') + 
                       pn.geom_line(pn.aes(x='x',y='y'), data=dat_pmf, color='red') +
                       pn.ggtitle('Regression simulation\nRed line shows beta-binomial distribution'))
-    gg_cover_reg.save(os.path.join(dir_figs, 'cover_reg.png'), width=6, height=4)
+    gg_cover_reg.save(os.path.join(dir_figs, 'cover_reg.png'), width=6, height=4, verbose=False)
 
     print('\n')
 
