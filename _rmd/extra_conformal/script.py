@@ -4,8 +4,15 @@ Show how conformal prediction works
 python3 -m _rmd.extra_conformal.script
 """
 
+# Path
+import os
+dir_base = os.getcwd()
+dir_figs = '_rmd/extra_conformal'
+
 # External
 import numpy as np
+import pandas as pd
+import plotnine as pn
 from scipy.stats import beta, betabinom
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor as GBR
@@ -33,7 +40,7 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Set parameters
 seed = 12
-nsim = 500
+nsim = 1500
 p = 3
 k = 4
 snr_k = 0.5 * k
@@ -44,12 +51,13 @@ n_val = 100
 # Error rate
 alpha = 0.1
 # Expected distribution of coverage
-r = np.floor((n_calib + 1) * alpha)
+r = n_calib - np.ceil((n_calib + 1) * (1-alpha))
 a = n_calib + 1 - r
 b = r
 dist_cover_cond = beta(a=a, b=b)
 dist_cover_marg = betabinom(n=n_val, a=a, b=b)
-
+n_cover = np.arange(*dist_cover_marg.ppf([0.001, 0.9999])).astype(int)
+dat_pmf = pd.DataFrame({'x':n_cover, 'y':dist_cover_marg.pmf(n_cover)})
 print('~~~~~~~~~~~~~~~')
 print(f'Theory: cover lb = {(1-alpha):.3f}, ub={1-alpha+1/(n_calib+1):.3f}')
 
@@ -80,9 +88,14 @@ if run_class:
     res_class = simulator.run_simulation(**sim_kwargs, force_redraw=True, n_iter=250, verbose=True)
     print('~~~ Classification sets ~~~')
     print(f"CP: coverage={100*res_class['cover'].mean():.1f}%, set size={res_class['set_size'].mean():.2f}, q={res_class['qhat'].mean():.3f}")
-    pval = dist_cover_marg.cdf(np.mean(n_val * res_class['cover']))
-    pval = np.minimum(pval, 1-pval) * 2
-    print(f"P-value for observered coverage = {100*pval:.1f}%")
+    # Add a plot of empirical coverage to beta-binomial
+    gg_cover_class = (pn.ggplot(res_class, pn.aes(x='cover * n_val', y='..density..')) +
+                      pn.theme_bw() + 
+                      pn.geom_histogram(binwidth=1, color='blue', fill='grey', alpha=0.2) +
+                      pn.labs(y='Density', x='Empirical coverage') + 
+                      pn.geom_line(pn.aes(x='x',y='y'), data=dat_pmf, color='red') +
+                      pn.ggtitle('Classification simulation\nRed line shows beta-binomial distribution'))
+    gg_cover_class.save(os.path.join(dir_figs, 'cover_class.png'), width=6, height=4)
     print('\n')
 
 
@@ -104,12 +117,19 @@ if run_reg:
                               ml_mdl=mdl, 
                               cp_mdl=conformalizer, 
                               is_classification=False)
-    res_reg = simulator.run_simulation(**sim_kwargs, verbose=True, n_iter=50)
+    res_reg = simulator.run_simulation(**sim_kwargs, verbose=True, n_iter=250)
     print('~~~ Regression intervals ~~~')
     print(f"CP: coverage={100*res_reg['cover'].mean():.1f}%, interval width={res_reg['set_size'].mean():.2f}, q={res_reg['qhat'].mean():.3f}")
-    pval = dist_cover_marg.cdf(np.mean(n_val * res_reg['cover']))
-    pval = np.minimum(pval, 1-pval) * 2
-    print(f"P-value for observered coverage = {100*pval:.1f}%")
+
+    # Add a plot of empirical coverage to beta-binomial
+    gg_cover_reg = (pn.ggplot(res_reg, pn.aes(x='cover * n_val', y='..density..')) +
+                      pn.theme_bw() + 
+                      pn.geom_histogram(binwidth=1, color='blue', fill='grey', alpha=0.2) +
+                      pn.labs(y='Density', x='Empirical coverage') + 
+                      pn.geom_line(pn.aes(x='x',y='y'), data=dat_pmf, color='red') +
+                      pn.ggtitle('Regression simulation\nRed line shows beta-binomial distribution'))
+    gg_cover_reg.save(os.path.join(dir_figs, 'cover_reg.png'), width=6, height=4)
+
     print('\n')
 
 

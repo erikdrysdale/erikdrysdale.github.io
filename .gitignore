@@ -12,6 +12,7 @@ node_modules
 package.json
 output/
 
+.venv
 *.idea
 *__pycache__*
 *.h5
