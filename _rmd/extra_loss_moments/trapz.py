@@ -131,15 +131,15 @@ class NumericalIntegrator(BaseIntegrator):
             # For the joint distribution, the inner integral is the same thing as the outer intergrand
             density_inner = self.dist_joint.pdf(np.dstack((Yvals, Xvals)))
             inner_integrand = loss_values * density_inner
-            outer_integrand = np.trapz(inner_integrand, yvals, axis=1)
+            outer_integrand = np.trapezoid(inner_integrand, yvals, axis=1)
         else:
             # For the conditional distribution, the outer integrand needs to weighted by the unconditional X dist
             density_inner = self.dist_Y_condX(Xvals).pdf(Yvals)
             inner_integrand = loss_values * density_inner
-            inner_integral = np.trapz(inner_integrand, yvals, axis=1)
+            inner_integral = np.trapezoid(inner_integrand, yvals, axis=1)
             outer_integrand = inner_integral * self.dist_X_uncond.pdf(xvals)
         # Get the final integral (float)
-        outer_integral = np.trapz(outer_integrand, xvals)
+        outer_integral = np.trapezoid(outer_integrand, xvals)
         return outer_integral
         
     def _trapz_integrate_loop(self, 
@@ -155,18 +155,18 @@ class NumericalIntegrator(BaseIntegrator):
                     inner_integrand_i = np.power(self.loss(yvals, x_i), power)
                     points_i = np.c_[yvals, np.broadcast_to(x_i, yvals.shape)]
                     inner_integrand_i *= self.dist_joint.pdf(points_i)
-                    inner_integral[i] = np.trapz(inner_integrand_i, yvals)
+                    inner_integral[i] = np.trapezoid(inner_integrand_i, yvals)
                 # The outer integral is simply the integral over the feature space
-                outer_integral = np.trapz(inner_integral, xvals)
+                outer_integral = np.trapezoid(inner_integral, xvals)
             else:
                 # For the conditional distribution, the inner integral is weighted by the conditional distribution
                 for i, x_i in enumerate(xvals):
                     inner_integrand_i = np.power(self.loss(yvals, x_i), power)
                     inner_integrand_i *= self.dist_Y_condX(x_i).pdf(yvals)
-                    inner_integral[i] = np.trapz(inner_integrand_i, yvals)
+                    inner_integral[i] = np.trapezoid(inner_integrand_i, yvals)
                 # The outer integrand is the inner integral weighted by the feature space
                 outer_integrand = inner_integral * self.dist_X_uncond.pdf(xvals)
-                outer_integral = np.trapz(outer_integrand, xvals)
+                outer_integral = np.trapezoid(outer_integrand, xvals)
             return outer_integral
 
 
