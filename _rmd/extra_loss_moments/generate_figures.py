@@ -205,17 +205,25 @@ df_compare = pd.DataFrame({
 df_refs = pd.DataFrame({'Moment': ['Risk', 'Loss Variance'],
                         'Reference': [ref_risk, ref_var]})
 
+df_compare = df_compare.merge(df_refs, on='Moment')
+df_compare['PctDiff'] = (df_compare['Estimate'] - df_compare['Reference']) / df_compare['Reference'].abs() * 100
+df_compare['PctLabel'] = df_compare['PctDiff'].map(lambda v: f'{v:+.2f}%')
+
+df_compare['Moment'] = pd.Categorical(df_compare['Moment'], categories=['Risk', 'Loss Variance'], ordered=True)
+df_refs['Moment'] = pd.Categorical(df_refs['Moment'], categories=['Risk', 'Loss Variance'], ordered=True)
+
 pn.options.figure_size = (9.5, 4.5)
 gg_fig2 = (
-    pn.ggplot(df_compare, pn.aes(x='Method', y='Estimate', fill='Method')) +
+    pn.ggplot(df_compare, pn.aes(x='Method', y='Estimate', color='Method')) +
     pn.theme_bw() +
-    pn.geom_col(alpha=0.85) +
+    pn.geom_point(size=4, alpha=0.9) +
     pn.geom_hline(pn.aes(yintercept='Reference'), data=df_refs,
                   linetype='dashed', color='black', size=0.8) +
+    pn.geom_text(pn.aes(label='PctLabel'), nudge_y=0.02, va='bottom', size=7) +
     pn.facet_wrap('~Moment', scales='free_y') +
-    pn.scale_fill_brewer(type='qual', palette='Set2', guide=None) +
+    pn.scale_color_brewer(type='qual', palette='Set2', guide=None) +
     pn.labs(x='', y='Estimated value',
-            title='All five integration methods on loss |Y|\u00b7log(X\u00b2) over BVN\nDashed line = high-precision MCI reference') +
+            title='All five integration methods on loss |Y|\u00b7log(X\u00b2) over BVN\nDashed line = high-precision MCI reference; labels = % difference from reference') +
     pn.theme(plot_title=pn.element_text(size=9),
              axis_text_x=pn.element_text(size=8))
 )
@@ -229,22 +237,35 @@ print('Saved Fig 2: Method comparison')
 
 sample_sizes = [500, 1000, 2000, 5000, 10000, 50000, 100000, 500000]
 n_reps = 40
-print(f'MCI convergence study ({n_reps} reps x {len(sample_sizes)} sizes)...')
-holder = np.zeros((len(sample_sizes), n_reps))
+print(f'MCI convergence study ({n_reps} reps x {len(sample_sizes)} sizes, joint and conditional)...')
+holder_joint = np.zeros((len(sample_sizes), n_reps))
+holder_cond  = np.zeros((len(sample_sizes), n_reps))
 for j, n in enumerate(sample_sizes):
     for r in range(n_reps):
-        result = mci_ex_joint.integrate(num_samples=n, seed=SEED + r, calc_variance=False)
-        holder[j, r] = result[0] if isinstance(result, tuple) else float(result)
+        res_j = mci_ex_joint.integrate(num_samples=n, seed=SEED + r, calc_variance=False)
+        res_c = mci_ex_cond.integrate(num_samples=n, seed=SEED + r, calc_variance=False)
+        holder_joint[j, r] = res_j[0] if isinstance(res_j, tuple) else float(res_j)
+        holder_cond[j, r]  = res_c[0] if isinstance(res_c, tuple) else float(res_c)
 print('  Done.')
 
-df_conv = pd.DataFrame({
-    'n': sample_sizes,
-    'mu': holder.mean(axis=1),
-    'lb': np.percentile(holder, 10, axis=1),
-    'ub': np.percentile(holder, 90, axis=1),
-})
+df_conv = pd.concat([
+    pd.DataFrame({
+        'n': sample_sizes,
+        'mu': holder_joint.mean(axis=1),
+        'lb': np.percentile(holder_joint, 10, axis=1),
+        'ub': np.percentile(holder_joint, 90, axis=1),
+        'Method': 'MCI (Joint)',
+    }),
+    pd.DataFrame({
+        'n': sample_sizes,
+        'mu': holder_cond.mean(axis=1),
+        'lb': np.percentile(holder_cond, 10, axis=1),
+        'ub': np.percentile(holder_cond, 90, axis=1),
+        'Method': 'MCI (Conditional)',
+    }),
+])
 
-pn.options.figure_size = (7, 4.5)
+pn.options.figure_size = (11, 4.5)
 gg_fig3 = (
     pn.ggplot(df_conv, pn.aes(x='n', y='mu')) +
     pn.theme_bw() +
@@ -252,12 +273,13 @@ gg_fig3 = (
     pn.geom_line(color='steelblue', size=1) +
     pn.geom_hline(yintercept=ref_risk, linetype='dashed', color='black', size=0.8) +
     pn.scale_x_log10(labels=lambda x: [f'{int(v):,}' for v in x]) +
+    pn.facet_wrap('~Method') +
     pn.labs(x='Number of samples (log scale)', y='Risk estimate',
             title='MCI convergence: shaded region = 10th\u201390th percentile across 40 replicates\n'
                   'Dashed line = high-precision reference value') +
     pn.theme(plot_title=pn.element_text(size=9))
 )
-gg_fig3.save(os.path.join(dir_figs, 'loss_moments_fig3.png'), height=4.5, width=7)
+gg_fig3.save(os.path.join(dir_figs, 'loss_moments_fig3.png'), height=4.5, width=11)
 print('Saved Fig 3: MCI convergence')
 
 
@@ -363,6 +385,9 @@ df_sq_pts_long = pd.melt(
 df_vline = pd.DataFrame({'xintercept': [theta1_opt, theta1_opt],
                           'Moment': ['Risk', 'Loss Variance']})
 
+for _df in [df_sq_curve, df_sq_pts_long, df_vline]:
+    _df['Moment'] = pd.Categorical(_df['Moment'], categories=['Risk', 'Loss Variance'], ordered=True)
+
 pn.options.figure_size = (9.5, 4.5)
 gg_fig4 = (
     pn.ggplot(df_sq_curve, pn.aes(x='theta1', y='value')) +
@@ -400,6 +425,9 @@ df_abs_pts_long = pd.melt(
     Moment=lambda d: np.where(d['variable'].str.contains('risk'), 'Risk', 'Loss Variance'),
     Method=lambda d: np.where(d['variable'].str.contains('mci'), 'MCI', 'Trapz')
 )
+
+for _df in [df_abs_curve, df_abs_pts_long]:
+    _df['Moment'] = pd.Categorical(_df['Moment'], categories=['Risk', 'Loss Variance'], ordered=True)
 
 pn.options.figure_size = (9.5, 4.5)
 gg_fig5 = (
@@ -455,7 +483,7 @@ risk_ng_curve = np.array([risk_ng_closed(t1, alpha_true, beta_true_ng,
 # Conditional distributions for numerical methods
 dist_Yx_ng = dist_Ycond_LinearExp(alpha=alpha_true, beta=beta_true_ng, rate=rate,
                                    mu_X=mu_X_ng, sigma_X=sigma_X_ng)
-theta1_pts_ng = np.linspace(-1.5, 3.5, 9)
+theta1_pts_ng = np.sort(np.unique(np.append(np.linspace(-1.5, 3.5, 8), beta_true_ng)))
 
 
 def sq_loss_factory_t0(t0, t1):
@@ -503,6 +531,9 @@ df_ng_pts_long = pd.melt(
 
 # Analytical line only for Risk panel (no closed form for loss variance)
 df_ng_curve_risk = df_ng_curve[df_ng_curve['Moment'] == 'Risk'].copy()
+
+for _df in [df_ng_pts_long, df_ng_curve_risk]:
+    _df['Moment'] = pd.Categorical(_df['Moment'], categories=['Risk', 'Loss Variance'], ordered=True)
 
 pn.options.figure_size = (9.5, 4.5)
 gg_fig6 = (
@@ -632,6 +663,9 @@ df_clf_pts_long = pd.melt(
     Loss=lambda d: np.where(d['variable'].str.contains('ll'), 'Log-loss', '0/1 loss'),
     Moment=lambda d: np.where(d['variable'].str.contains('risk'), 'Risk', 'Loss Variance'),
 )
+
+for _df in [df_clf_curve, df_clf_pts_long]:
+    _df['Moment'] = pd.Categorical(_df['Moment'], categories=['Risk', 'Loss Variance'], ordered=True)
 
 pn.options.figure_size = (9.5, 6.5)
 gg_fig7 = (

@@ -11,9 +11,9 @@ In this post I describe how to calculate the first and second moments of a [loss
 
 Three strategies are covered: Monte Carlo integration (MCI), trapezoidal numerical integration, and double quadrature. Each strategy can be applied to either a joint distribution over \\((Y, X)\\) or a conditional distribution \\(Y \vert X\\) combined with a marginal distribution for \\(X\\). As a regression benchmark, both the Gaussian case (where closed-form expressions exist) and non-Gaussian noise (where only numerical methods apply) are considered. The post concludes with a classification example covering log-loss and the 0/1 accuracy loss.
 
-The rest of this post is structured as follows. [Section 1](#(1)-background) provides background on the supervised ML problem and the integration approaches used. [Section 2](#(2)-regression-models) works through three regression scenarios of increasing complexity. [Section 3](#(3)-classification-models) covers classification. [Section 4](#(4)-conclusion) concludes.
+The rest of this post is structured as follows. [Section 1](#1-background) provides background on the supervised ML problem and the integration approaches used. [Section 2](#2-regression-models) works through three regression scenarios of increasing complexity. [Section 3](#3-classification-models) covers classification. [Section 4](#4-conclusion) concludes.
 
-This post was generated from an original notebook that can be [found here](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_loss_moments/post.ipynb). For readability, various code blocks have been suppressed and the text has been tidied up. All figures are produced by [this script](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_loss_moments/generate_figures.py).
+For readability, various code blocks have been suppressed and the text has been tidied up. All figures are produced by [this script](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_loss_moments/generate_figures.py).
 
 <br>
 
@@ -21,7 +21,7 @@ This post was generated from an original notebook that can be [found here](https
 
 ### (1.1) The ML problem
 
-The goal of supervised machine learning is to "learn" a function \\(f_\theta(x)\\), \\(f: \mathbb{R}^p \to \mathbb{R}^k\\), that maps a feature vector \\(x \in \mathbb{R}^p\\) and seeks to approximate a label \\(y\\). We assume that the actual data generating process (DGP) follows some (unknown) probabilistic joint distribution \\(P_{\phi}(Y,X)\\). In a supervised learning scenario we have a dataset \\(\{(y_i, x_i)\}_{i=1}^n\\) consisting of \\(n\\) observations. We learn \\(\theta\\) by minimizing some training loss: \\(\hat\theta = \arg\min_\theta \hat\ell(y, f_\theta(x))\\). Once training is complete, \\(f_{\hat\theta}\\) hopefully generalizes to new data drawn from \\(P_\phi\\).
+The goal of supervised machine learning is to "learn" a function \\(f_\theta(x)\\), \\(f: \mathbb{R}^p \to \mathbb{R}^k\\), that maps a feature vector \\(x \in \mathbb{R}^p\\) and seeks to approximate a label \\(y\\). We assume that the actual data generating process (DGP) follows some (unknown) probabilistic joint distribution \\(P_{\phi}(Y,X)\\). In a supervised learning scenario we have a dataset \\( \\{(y_i, x_i)\\}^n_{i=1} \\) consisting of \\(n\\) observations. We learn \\(\theta\\) by minimizing some training loss: \\(\hat\theta = \arg\min_\theta \hat\ell(y, f_\theta(x))\\). Once training is complete, \\(f_{\hat\theta}\\) hopefully generalizes to new data drawn from \\(P_\phi\\).
 
 After a model is trained, we are often interested in how well it will perform on future data for some primary loss function \\(\ell\\).[[^1]] The expected value of this loss is the risk:
 
@@ -69,20 +69,20 @@ R(\theta) &= \int_{\mathcal{X}} \left[ \int_{\mathcal{Y}} \ell(y, f_\theta(x)) \
 \end{align*}
 $$
 
-Since we often think of the covariates as driving the labels, this is frequently a more natural decomposition. It also has practical advantages: the joint distribution \\(p(y,x)\\) may be difficult to characterize analytically even when \\(p_X(x)\\) and \\(p_{Y|X}(y \vert x)\\) are both tractable.[[^3]]
+Since we often think of the covariates as "causing" the labels, this is frequently a more natural decomposition. It also has practical advantages: the joint distribution \\(p(y,x)\\) may be difficult to characterize analytically even when \\(p_X(x)\\) and \\(p_{Y \vert X}(y \vert x)\\) are both tractable.[[^3]]
 
 ### (1.3) Monte Carlo integration
 
 If a researcher can draw from the joint or conditional distribution, the simplest approach is Monte Carlo integration (MCI). Its precision is controlled entirely by sample size.
 
 **Joint sampling**
-1. Draw \\(n\\) samples \\(\{(y_i, x_i)\}_{i=1}^n\\) with \\((y_i, x_i) \sim P_{Y,X}\\)
+1. Draw \\(n\\) samples \\(\\{(y_i, x_i)\\}^n_{i=1}\\) with \\((y_i, x_i) \sim P_{Y,X}\\)
 2. Evaluate \\(\ell_i = \ell(y_i, f_\theta(x_i))\\)
 3. Estimate \\(\hat{R} = n^{-1}\sum_{i=1}^n \ell_i\\) and \\(\hat{V} = (n-1)^{-1}\sum_{i=1}^n \ell_i^2 - [\hat{R}]^2\\)
 
 **Conditional sampling**
 1. Draw \\(x_i \sim P_X\\)
-2. Draw \\(y_i \vert x_i \sim P_{Y|X}\\)
+2. Draw \\(y_i \vert x_i \sim P_{Y \vert X}\\)
 3. Proceed as above
 
 ### (1.4) Numerical methods
@@ -96,7 +96,7 @@ Unlike MCI, numerical methods are deterministic and can be run to a specified to
 
 **Conditional density**
 
-Steps (1) and (2) differ only in that the inner integral uses \\(p_{Y|X}(y, X{=}x_i)\\) and the outer integral weights by \\(p_X(x)\\):
+Steps (1) and (2) differ only in that the inner integral uses \\(p_{Y \vert X}(y, X{=}x_i)\\) and the outer integral weights by \\(p_X(x)\\):
 
 $$
 \hat{R} = \text{trapz}\big(I(x) \cdot p_X(x),\; x \in \hat{\mathcal{X}}\big)
@@ -108,7 +108,23 @@ The trapezoidal approach trades off grid resolution (\\(n_y, n_x\\)) against acc
 
 ### (1.5) Worked example
 
-All three integration strategies are implemented in a small library with two classes: `MonteCarloIntegration` and `NumericalIntegrator`. Both accept a `loss` function of the form `loss(y=..., x=...)` and either a joint distribution (`dist_joint`) or a pair of conditional and marginal distributions (`dist_Y_condX`, `dist_X_uncond`).
+To ground the three integration strategies in a concrete example, consider a bivariate normal (BVN) DGP, \\((Y, X) \sim \text{BVN}(\mu, \Sigma)\\), with the following custom loss function:
+
+$$
+\ell(y, x) = |y| \cdot \log(x^2)
+$$
+
+This loss has no closed-form risk or variance — there is no analytic expression for \\(\int\int \\|y\\| \log(x^2) \, p(y,x) \, dy\, dx\\) under the BVN density — making it a useful benchmark for comparing the numerical methods. All three strategies (MCI, trapezoidal, and double quadrature) should converge to the same value; agreement across methods serves as a mutual validation.
+
+For the conditional approach, the BVN has the convenient property that \\(Y \vert X{=}x\\) is Gaussian with a known mean and variance:
+
+$$
+Y \mid X{=}x \;\sim\; N\!\left(\mu_Y + \rho\frac{\sigma_Y}{\sigma_X}(x - \mu_X),\; \sigma_Y^2(1-\rho^2)\right)
+$$
+
+so the conditional distribution is available analytically. This is encapsulated in the `dist_Ycond_BVN` helper class.
+
+All three integration strategies are implemented in a small library with two classes: `MonteCarloIntegration` and `NumericalIntegrator`. Both accept a `loss` function of the form `loss(y=..., x=...)` and either a joint distribution (`dist_joint`) or a pair of conditional and marginal distributions (`dist_Y_condX`, `dist_X_uncond`). The full source for these utilities is available in the [`_rmd/extra_loss_moments/`](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_loss_moments) folder of the GitHub repo.
 
 ```python
 import numpy as np
@@ -167,7 +183,7 @@ All five integration strategies produce nearly identical estimates for both the 
 
 <center><p><img src="/figures/loss_moments_fig2.png" width="95%"></p></center>
 
-Figure 3 illustrates how the MCI risk estimate converges to the true value as the sample size grows. The shaded band is the 10th–90th percentile spread across 40 independent replicates. Even at \\(n=500\\), the estimate is in the right ballpark; at \\(n=10{,}000\\) the spread is already narrow.
+Figure 3 illustrates how the MCI risk estimate converges to the true value as the sample size grows, shown separately for joint and conditional sampling. The shaded band is the 10th–90th percentile spread across 40 independent replicates. Even at \\(n=500\\), the estimate is in the right ballpark; at \\(n=10{,}000\\) the spread is already narrow. However, to ensure the estimation variation is produced <1% error most of the time, 100K draws are required.
 
 <center><p><img src="/figures/loss_moments_fig3.png" width="75%"></p></center>
 
@@ -193,7 +209,7 @@ Z &\sim N(\mu_Z,\; \sigma_Z^2) \\
 \end{align*}
 $$
 
-The risk is then simply the second moment of \\(Z\\):
+The risk is then simply the second moment of \\(Z\\). This follows from the standard identity \\(E[Z^2] = \text{Var}(Z) + (E[Z])^2\\), which holds for any random variable:
 
 $$
 \begin{align*}
@@ -201,11 +217,13 @@ R(\theta) &= E[Z^2] = \mu_Z^2 + \sigma_Z^2
 \end{align*}
 $$
 
-Minimising over \\((\theta_0, \theta_1)\\) gives the ordinary-least-squares solution. With the parameterization above (\\(\theta_0\\) always set optimally), the slope optimum is \\(\theta_1^* = \rho \sigma_Y / \sigma_X\\), which sets \\(\mu_Z = 0\\) and minimises \\(\sigma_Z^2\\) simultaneously. The resulting minimum risk is the irreducible noise:
+Minimising over \\((\theta_0, \theta_1)\\) gives the ordinary-least-squares solution. With the parameterization above (\\(\theta_0\\) always set optimally), the slope optimum is \\(\theta_1^* = \rho \sigma_Y / \sigma_X\\), which sets \\(\mu_Z = 0\\) and minimises \\(\sigma_Z^2\\) simultaneously. Substituting \\(\theta_0^*\\) and \\(\theta_1^*\\) into \\(R(\theta)\\) gives the minimum risk — the irreducible noise that cannot be explained by any linear function of \\(X\\):
 
 $$
 R^* = \sigma_Y^2 (1 - \rho^2)
 $$
+
+This has an intuitive interpretation. When \\(\rho = 1\\), \\(X\\) and \\(Y\\) are perfectly linearly related, so knowing \\(X\\) determines \\(Y\\) exactly and \\(R^* = 0\\). When \\(\rho < 1\\), there is variance in \\(Y\\) that is orthogonal to \\(X\\) — i.e. noise that no linear predictor can capture — and \\(R^*\\) is that irreducible component. In fact, \\(1 - \rho^2\\) is exactly one minus the coefficient of determination \\(R^2 = \rho^2\\) from a simple linear regression of \\(Y\\) on \\(X\\).
 
 #### Closed-form loss variance
 
@@ -257,7 +275,7 @@ Figure 4 plots both the risk and loss variance as functions of \\(\theta_1\\) ac
 
 ### (2.2) Absolute error, Gaussian covariates
 
-Replacing squared loss with absolute error, \\(\ell(y, \hat{y}) = |y - \hat{y}|\\), the risk becomes \\(R(\theta) = E[|Z|]\\) where \\(Z \sim N(\mu_Z, \sigma_Z^2)\\) as before. The expected absolute value of a Gaussian random variable has an exact formula:[[^4]]
+Replacing squared loss with absolute error, \\(\ell(y, \hat{y}) = \\|y - \hat{y}\\|\\), the risk becomes \\(R(\theta) = E[\\|Z\\|]\\) where \\(Z \sim N(\mu_Z, \sigma_Z^2)\\) as before. The expected absolute value of a Gaussian random variable has an exact formula:[[^4]]
 
 $$
 \begin{align*}
@@ -265,7 +283,7 @@ R(\theta) = E[|Z|] &= \sigma_Z \sqrt{\frac{2}{\pi}} \exp\!\left(-\frac{\mu_Z^2}{
 \end{align*}
 $$
 
-The loss variance for absolute error has a surprisingly clean form. Since \\(|Z|^2 = Z^2\\) always:
+The loss variance for absolute error has a surprisingly clean form. Since \\(\\|Z\\|^2 = Z^2\\) always:
 
 $$
 \begin{align*}
@@ -360,7 +378,7 @@ Figure 6 shows the risk and loss variance as a function of \\(\theta_1\\) for th
 
 ## (3) Classification models
 
-In classification, \\(Y \in \{0, 1\}\\) is a binary label. The conditional distribution \\(Y \vert X\\) is Bernoulli rather than Gaussian, so the NumericalIntegrator class (which integrates over a continuous \\(Y\\) grid) does not apply directly. Instead, we use two complementary approaches: MCI (which works for any distribution) and a one-dimensional numerical integral over \\(X\\) alone (exploiting the fact that the inner integral over \\(Y\\) can be computed analytically for each \\(x\\)).
+In classification, \\(Y \in \{0, 1\}\\) is a binary label. The conditional distribution \\(Y \vert X\\) is Bernoulli rather than Gaussian, so the `NumericalIntegrator` class (which integrates over a continuous \\(Y\\) grid) does not apply directly. Instead, we use two complementary approaches: MCI (which works for any distribution) and a one-dimensional numerical integral over \\(X\\) alone (exploiting the fact that the inner integral over \\(Y\\) can be computed analytically for each \\(x\\)).
 
 The setup throughout is:
 - \\(X \sim N(0, 1)\\)
@@ -457,9 +475,10 @@ The loss variance for 0/1 loss is simply the Bernoulli variance of the misclassi
 
 Figure 7 shows the risk and loss variance for both loss functions across a range of model slopes \\(\beta \in [-1, 4]\\). Solid lines are the 1D numerical integrals; red dots are MCI estimates. Several features stand out:
 
-- Both loss functions have their risk minimised at the true slope \\(\beta_0 = 1.5\\) (dotted vertical line).
-- The loss variance for log-loss peaks away from the optimum, where the model is systematically wrong but not confidently wrong. Deep misspecification (e.g., \\(\beta = -1\\)) produces consistently large losses with lower variance.
-- The 0/1 loss variance curve is the Bernoulli variance \\(R(1-R)\\), which is symmetric around its maximum at \\(R = 0.5\\) and tracks the error rate directly.
+- **Log-loss risk** is minimised uniquely at \\(\beta = \beta_0 = 1.5\\), where the predicted probabilities match the true DGP. This is because log-loss is a [proper scoring rule](https://en.wikipedia.org/wiki/Scoring_rule#Proper_scoring_rules): it is minimised if and only if the model is perfectly calibrated.
+- **0/1 loss risk** is constant for all \\(\beta > 0\\). This is because the decision rule \\(\hat{y} = \mathbf{1}[\beta x \geq 0]\\) depends only on the sign of \\(\beta\\), not its magnitude — any positive slope places the decision boundary at \\(x = 0\\), which is already the Bayes-optimal boundary for this symmetric DGP. The risk only changes when \\(\beta\\) crosses zero and the boundary flips.
+- **The log-loss variance minimum does not coincide with its risk minimum.** At \\(\beta_0\\), the model is well-calibrated but \\(p(x)\\) varies across \\(X\\): near \\(x=0\\), both outcomes are plausible and the loss is moderate but variable; for large \\(\\|x\\|\\), outcomes are more predictable but a wrong prediction incurs a very large loss (log-loss is unbounded). An underconfident model (\\(\beta < \beta_0\\), closer to 0) pushes all predicted probabilities toward 0.5, making losses more uniform across observations — reducing variance at the cost of higher average loss. The loss variance is therefore minimised at a flatter, more conservative \\(\beta\\) than \\(\beta_0\\).
+- **The 0/1 loss variance** is the Bernoulli variance \\(R(1-R)\\), which tracks the error rate directly and is symmetric around its maximum at \\(R = 0.5\\).
 
 <center><p><img src="/figures/loss_moments_fig7.png" width="95%"></p></center>
 
@@ -469,13 +488,13 @@ Figure 7 shows the risk and loss variance for both loss functions across a range
 
 This post has shown how to numerically compute the risk and loss variance of a machine learning model for a variety of regression and classification settings. The key takeaways are:
 
-1. **Three approaches, all valid.** Monte Carlo integration (MCI), the trapezoidal rule, and double quadrature all produce consistent estimates. MCI is the most general since it requires only the ability to draw samples, while numerical methods require density evaluations but are deterministic and more precise for smooth, low-dimensional problems.
+1. **Multiple valid approaches:** Monte Carlo integration (MCI), the trapezoidal rule, and double quadrature all produce consistent estimates. MCI is the most general since it requires only the ability to draw samples distributions. However this tends to only be efficient for distributions where you can analytically invert the CDF to be able to draw from it (e.g. \\(x \sim F^{-1}(u), u \sim U(0,1) \\)). In contrast numerical methods only require density evaluations, are deterministic, and will be more precise for smooth, low-dimensional problems.
 
 2. **Gaussian regression admits closed forms.** For squared loss or absolute error with a Gaussian DGP, both the risk and loss variance have exact analytical expressions derived from the moments of the normal distribution. These expressions confirm the numerical results and provide intuition — for example, the minimum squared-error risk \\(\sigma_Y^2(1-\rho^2)\\) is directly related to the coefficient of determination \\(R^2 = \rho^2\\).
 
 3. **Non-Gaussian noise breaks the closed form for variance.** While the risk formula generalises cleanly to non-Gaussian errors (just replace \\(\sigma_\varepsilon^2\\) with the noise variance), the loss variance becomes a function of higher-order moments of the error distribution and no longer has a simple closed form. Numerical integration remains valid.
 
-4. **Classification has a 1D reduction.** Because the label distribution given \\(X\\) is fully characterised, the 2D integral over \\((Y, X)\\) reduces to a 1D integral over \\(X\\) alone. The 0/1 loss has the additional property that its loss variance is just \\(R(1-R)\\) — a free result once the error rate is known.
+4. **Binary classification eliminates the Y integral analytically.** Because \\(Y \in \{0,1\}\\), the inner expectation \\(E[\ell(Y, f_\beta(x)) \mid X{=}x]\\) is always a two-term weighted sum — no integration over \\(Y\\) is required, regardless of the dimension of \\(X\\). What remains is a \\(p\\)-dimensional integral over \\(X\\) alone; in this post \\(X\\) is univariate so the result is a scalar integral, but for multivariate \\(X\\) one would face a \\(p\\)-dimensional integral. For multi-class classification (\\(Y \in \{0,\ldots,K{-}1\}\\)) the same principle applies — the inner sum has \\(K\\) terms instead of 2 — so the analytical elimination of \\(Y\\) generalises cleanly. The 0/1 loss has the additional property that its loss variance is just \\(R(1-R)\\) — a free result once the error rate is known. This Bernoulli variance shortcut also carries over to multi-class, since the 0/1 loss remains in \\(\{0,1\}\\) regardless of \\(K\\).
 
 <br>
 
