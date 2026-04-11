@@ -180,6 +180,74 @@ class QuantileRegressors:
         return res
 
 
+class StudentizedEstimator:
+    """
+    Bundles a mean model (f_theta) and a scale model (sigma_theta) for use
+    with score_studentized.
+
+    Training procedure:
+        1. Fit the mean model on (X_train, y_train).
+        2. Compute in-sample absolute residuals: r_i = |y_i - f(x_i)|.
+        3. Fit the scale model on (X_train, r) to predict local noise scale.
+
+    The scale model is fit on in-sample residuals, which slightly under-
+    estimates true out-of-sample scale, but is sufficient for a blog post
+    demonstration.  In practice one would use cross-fitting.
+    """
+    def __init__(self, mean_estimator: Any, scale_estimator: Any) -> None:
+        self.mean_est = mean_estimator
+        self.scale_est = scale_estimator
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
+        self.mean_est.fit(X, y)
+        resid = np.abs(y - self.mean_est.predict(X))
+        self.scale_est.fit(X, resid)
+
+    def predict_mean(self, X: np.ndarray) -> np.ndarray:
+        return self.mean_est.predict(X)
+
+    def predict_sigma(self, X: np.ndarray) -> np.ndarray:
+        return np.maximum(self.scale_est.predict(X), 1e-8)
+
+    # Convenience alias so NoisyGLM wrappers can be dropped in
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.predict_mean(X)
+
+
+class dgp_heteroskedastic:
+    """
+    Continuous regression DGP with input-dependent (heteroskedastic) noise.
+
+    The signal is linear: eta = X @ beta
+    The noise scale is: sigma(x) = exp(x @ gamma) * base_sigma
+    So the noise variance varies strongly across the input space.
+
+    This makes studentized conformal prediction and CQR clearly more efficient
+    than simple residual-based methods.
+    """
+    def __init__(self, p: int, snr: float = 1.0,
+                 seeder: int | None = None) -> None:
+        rng = np.random.default_rng(seeder)
+        self.beta  = rng.standard_normal(p)
+        self.gamma = rng.standard_normal(p) * 0.5   # controls variance
+        eta_var    = np.sum(self.beta ** 2)
+        self.base_sigma = (eta_var / snr) ** 0.5
+        self.p = p
+
+    def rvs(self, n: int, seeder: int | None = None,
+            ret_sigma: bool = False, **kwargs) -> Tuple:
+        rng = np.random.default_rng(seeder)
+        X   = rng.standard_normal((n, self.p))
+        eta = X @ self.beta
+        # Noise scale grows/shrinks exponentially with linear function of X
+        sigma_x = np.exp(X @ self.gamma / self.p) * self.base_sigma
+        u = rng.standard_normal(n) * sigma_x
+        y = eta + u
+        if ret_sigma:
+            return X, y, sigma_x
+        return X, y
+
+
 class dgp_continuous:
     def __init__(self, p: int, k: int, snr: float = 1.0, 
                  seeder: int | None = None,) -> None:

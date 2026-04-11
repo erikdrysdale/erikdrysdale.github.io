@@ -9,7 +9,19 @@ from .utils import check_callable_method, check_named_args
 
 
 class score_aps:
-    """Adaptable prediction sets"""
+    """
+    Adaptive Prediction Sets (APS) score.
+
+    Introduced in Romano, Sesia & Candès (NeurIPS 2020) "Classification with
+    Valid and Adaptive Coverage". The score is the cumulative probability mass
+    needed to include the true label, summing from most-to-least probable class.
+
+    A uniform noise term o ~ U(0, p_{pi(y)}) is subtracted before computing
+    the cumulative sum, so the score is:
+        s(x, y) = sum_{j: pi_j < pi_y} p_{pi_j}  +  U * p_{pi_y}
+    where pi is the descending probability ordering. This randomization breaks
+    ties and allows exact (rather than merely conservative) marginal coverage.
+    """
     def __init__(self, f_theta: Any) -> None:
         # Input checks
         assert hasattr(f_theta, 'predict_proba')
@@ -60,7 +72,13 @@ class score_aps:
 
 
 class score_lac:
-    """Learns the traditional multiclass score (least ambiguous class)"""
+    """
+    Least Ambiguous set-valued Classifier (LAC) score.
+
+    The non-conformity score is s(x, y) = 1 - p_y(x), i.e. one minus the
+    predicted probability for the true class. Higher scores mean the model is
+    less confident about the true label.
+    """
     def __init__(self, f_theta: Any) -> None:
         # Input checks
         assert hasattr(f_theta, 'predict_proba')
@@ -149,6 +167,42 @@ class score_pinpall:
         """For a given feature, find the label sets that conform with qhat"""
         yhat = self.f_theta.predict(x)
         tau = yhat + np.atleast_2d([-qhat, +qhat])
+        return tau
+
+
+class score_studentized:
+    """
+    Studentized (locally-weighted) residual score for regression.
+
+    The non-conformity score is:
+        s(x, y) = |y - f(x)| / sigma(x)
+
+    where sigma(x) is a second model estimating the local residual scale.
+    This makes the intervals adaptive to heteroskedasticity: the conformal
+    quantile q_hat is shared across x, but each interval width is scaled by
+    sigma(x), yielding:
+        C(x) = [f(x) - q_hat * sigma(x),  f(x) + q_hat * sigma(x)]
+
+    See Lei et al. (2018) "Distribution-Free Predictive Inference For
+    Regression" (JASA) for the normalized / studentized variant.
+
+    The f_theta passed in must be a StudentizedEstimator (from utils.py) that
+    exposes both .predict_mean(x) and .predict_sigma(x).
+    """
+    def __init__(self, f_theta: Any) -> None:
+        check_callable_method(f_theta, 'predict_mean')
+        check_callable_method(f_theta, 'predict_sigma')
+        self.f_theta = f_theta
+
+    def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        yhat = self.f_theta.predict_mean(x)
+        sigma = np.maximum(self.f_theta.predict_sigma(x), 1e-8)
+        return np.abs(y - yhat) / sigma
+
+    def invert_score(self, qhat: float, x: np.ndarray) -> np.ndarray:
+        yhat = self.f_theta.predict_mean(x).reshape(-1, 1)
+        sigma = np.maximum(self.f_theta.predict_sigma(x), 1e-8).reshape(-1, 1)
+        tau = yhat + sigma * np.atleast_2d([-qhat, qhat])
         return tau
 
 
