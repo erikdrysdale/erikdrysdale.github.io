@@ -97,7 +97,7 @@ $$
 s_{\text{LAC}}(x, y) = 1 - \hat{p}_y(x)
 $$
 
-where \\(\hat{p}_y(x)\\) is the predicted probability for the true class. High scores mean the model assigned low probability to the correct label. Inverting \\(s_{\text{LAC}} \leq \hat{q}\\) gives the prediction set:
+where \\(\hat{p}\_y(x)\\) is the predicted probability for the true class. High scores mean the model assigned low probability to the correct label. Inverting \\(s\_{\text{LAC}} \leq \hat{q}\\) gives the prediction set:
 
 $$
 \mathcal{C}_{\text{LAC}}(x) = \left\{ c : \hat{p}_c(x) \geq 1 - \hat{q} \right\}
@@ -109,7 +109,7 @@ This simply thresholds the predicted probabilities: include all classes whose pr
 
 The LAC score can produce sets of unequal statistical efficiency across inputs. For a hard example, many classes may have similar predicted probabilities and LAC will include all of them; for an easy example, only one class is needed but the threshold may still be loose. The **APS score** (Romano, Sesia & Candès 2020) is designed to adapt the set size to the local difficulty of the prediction.
 
-Sort the classes in descending order of predicted probability: \\(\pi_1, \pi_2, \ldots, \pi_k\\) where \\(\hat{p}_{\pi_1}(x) \geq \hat{p}_{\pi_2}(x) \geq \cdots\\). The APS score for the true label \\(y\\) is:
+Sort the classes in descending order of predicted probability: \\(\pi_1, \pi_2, \ldots, \pi_k\\) where \\(\hat{p}\_{\pi_1}(x) \geq \hat{p}\_{\pi_2}(x) \geq \cdots\\). The APS score for the true label \\(y\\) is:
 
 $$
 s_{\text{APS}}(x, y) = \sum_{j: \pi_j \prec \pi_y} \hat{p}_{\pi_j}(x) + U \cdot \hat{p}_{\pi_y}(x), \quad U \sim \text{Uniform}(0,1)
@@ -257,7 +257,7 @@ $$
 
 Now interval width *scales with* \\(\hat{\sigma}(x)\\): regions where the model is locally uncertain get wider intervals, and confident regions get narrower ones. The marginal coverage guarantee still holds exactly as before — the studentized score is just a different NCS, and the conformal calibration is agnostic to the form of the score.
 
-In practice, \\(\hat{\sigma}(x)\\) is fit on the absolute training residuals \\(|y_i - \hat{f}(x_i)|\\) after training \\(\hat{f}\\). A ridge or gradient boosting regressor works well.
+In practice, \\(\hat{\sigma}(x)\\) is fit on the absolute training residuals \\(\|y\_i - \hat{f}(x_i)\|\\) after training \\(\hat{f}\\). A ridge or gradient boosting regressor works well.
 
 ```python
 from sklearn.linear_model import LinearRegression, Ridge
@@ -288,7 +288,7 @@ $$
 \mathcal{C}_{\text{CQR}}(x) = \left[ \hat{q}_{\alpha/2}(x) - \hat{q},\;\; \hat{q}_{1-\alpha/2}(x) + \hat{q} \right]
 $$
 
-When the quantile regression model is well-specified, the uncalibrated interval already has approximately \\(1-\alpha\\) coverage and \\(\hat{q} \approx 0\\). The conformal step provides the marginal coverage guarantee as a correction, while the quantile model provides the adaptivity. CQR has the appealing property that the intervals are **asymmetric**: \\(y - \hat{q}_{1-\alpha/2}\\) and \\(\hat{q}_{\alpha/2} - y\\) can have different magnitudes depending on the conditional distribution of \\(Y | X\\).
+When the quantile regression model is well-specified, the uncalibrated interval already has approximately \\(1-\alpha\\) coverage and \\(\hat{q} \approx 0\\). The conformal step provides the marginal coverage guarantee as a correction, while the quantile model provides the adaptivity. CQR has the appealing property that the intervals are **asymmetric**: \\(y - \hat{q}\_{1-\alpha/2}\\) and \\(\hat{q}\_{\alpha/2} - y\\) can have different magnitudes depending on the conditional distribution of \\(Y \vert X\\).
 
 ```python
 from utils import QuantileRegressors, LinearQuantileRegressor
@@ -351,4 +351,4 @@ The Diabetes dataset (Efron et al. 2004) has \\(n=442\\) observations and 10 qua
 
 <br>
 
-[^1]: A mean squared error (MSE) score \\(s_{\text{MSE}}(x,y) = (y - \hat{f}(x))^2\\) is equivalent up to a monotone transformation: \\(\hat{q}_{\text{MSE}}^{1/2} = \hat{q}_{\text{MAE}}\\), so the two produce identical intervals. MAE is more common in the literature.
+[^1]: A mean squared error (MSE) score \\(s_{\text{MSE}}(x,y) = (y - \hat{f}(x))^2\\) is equivalent up to a monotone transformation: \\(\hat{q}\_{\text{MSE}}^{1/2} = \hat{q}\_{\text{MAE}}\\), so the two produce identical intervals. MAE is more common in the literature.
