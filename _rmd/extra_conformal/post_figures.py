@@ -28,6 +28,7 @@ from _rmd.extra_conformal.utils import (
     NoisyGLM, simulation_cp,
     LinearQuantileRegressor, QuantileRegressors,
     StudentizedEstimator,
+    TemperatureScaledClassifier,
 )
 from _rmd.extra_conformal.conformal import (
     conformal_sets,
@@ -42,6 +43,9 @@ os.makedirs(dir_figs, exist_ok=True)
 
 seed = 42
 rng  = np.random.default_rng(seed)
+temperature_lac = 1.0
+temperature_aps_rand = 1.0
+temperature_aps_det = 5.0
 
 
 def parse_targets() -> set:
@@ -142,7 +146,10 @@ if 'digits' in targets:
     X_te, y_te   = raw_X_noisy[idx_test],  raw_y[idx_test]
 
     # Fit logistic regression with L2 to prevent perfect separation on noisy data
-    f_dig = LogisticRegression(C=0.1, max_iter=2000)
+    f_dig = TemperatureScaledClassifier(
+        base_estimator=LogisticRegression(C=0.1, max_iter=2000),
+        temperature=temperature_lac,
+    )
     f_dig.fit(X_tr, y_tr)
 
     # Calibrate LAC
@@ -237,19 +244,22 @@ if 'digits_v2' in targets:
     X_cal, y_cal = raw_X_noisy[idx_calib], raw_y[idx_calib]
     X_te, y_te   = raw_X_noisy[idx_test], raw_y[idx_test]
 
-    f_dig = LogisticRegression(C=0.1, max_iter=2000)
-    f_dig.fit(X_tr, y_tr)
-
     method_specs = [
-        ('LAC', score_lac, {}),
-        ('APS (noise=U(0,1))', score_aps, {'noise': 'uniform', 'random_state': 42}),
-        ('APS (noise=0)', score_aps, {'noise': 0.0, 'random_state': 42}),
+        ('LAC', score_lac, {}, temperature_lac),
+        ('APS (noise=U(0,1))', score_aps, {'noise': 'uniform', 'random_state': 42}, temperature_aps_rand),
+        ('APS (noise=0)', score_aps, {'noise': 0.0, 'random_state': 42}, temperature_aps_det),
     ]
 
     cp_methods = {}
-    for method_name, score_cls, score_kwargs in method_specs:
+    f_methods = {}
+    for method_name, score_cls, score_kwargs, temp in method_specs:
+        f_method = TemperatureScaledClassifier(
+            base_estimator=LogisticRegression(C=0.1, max_iter=2000),
+            temperature=temp,
+        )
+        f_method.fit(X_tr, y_tr)
         cp = conformal_sets(
-            f_theta=f_dig,
+            f_theta=f_method,
             score_fun=score_cls,
             alpha=alpha_d,
             upper=True,
@@ -257,10 +267,10 @@ if 'digits_v2' in targets:
         )
         cp.fit(x=X_cal, y=y_cal)
         cp_methods[method_name] = cp
-        print(f'  {method_name}: qhat={cp.qhat:.3f}')
+        f_methods[method_name] = f_method
+        print(f'  {method_name}: T={temp:.1f}, qhat={cp.qhat:.3f}')
 
     classes = np.arange(10)
-    phat_te = f_dig.predict_proba(X_te)
 
     # Pick 4 examples with varied LAC set sizes for diverse rows.
     lac_sets = cp_methods['LAC'].predict(X_te)
@@ -281,38 +291,71 @@ if 'digits_v2' in targets:
                 break
 
     panel_rows = []
+    panel_ann = []
+    panel_order = []
     for row_id, i in enumerate(picked, start=1):
-        phat_i = phat_te[i]
         true_i = int(y_te[i])
         example_label = f'Example {row_id}: true={true_i}'
-        for method_name, _, _ in method_specs:
+        for method_name, _, _, _ in method_specs:
             cp_i = cp_methods[method_name]
+            f_i = f_methods[method_name]
             qhat_i = cp_i.qhat
-            tau_i = cp_i.predict(X_te[[i]])[0]
-            in_set_i = set(tau_i)
+            phat_i = f_i.predict_proba(X_te[[i]])[0]
+            panel_id = f'{example_label} | {method_name}'
+            panel_order.append(panel_id)
 
-            # LAC has a global probability cutoff; APS has an example-specific
-            # boundary in probability space, so use the minimum included
-            # probability as a visual boundary for that panel.
             if method_name == 'LAC':
-                cutoff_prob = 1.0 - qhat_i
-            elif len(in_set_i) > 0:
-                cutoff_prob = float(np.min([phat_i[c] for c in in_set_i]))
+                idx_ord = np.arange(len(classes))
+                probs_sorted = phat_i[idx_ord]
+                in_set_sorted = probs_sorted >= (1.0 - qhat_i)
+                u_sorted = np.full_like(probs_sorted, np.nan, dtype=float)
+                cum_sorted = np.full_like(probs_sorted, np.nan, dtype=float)
+                ncs_sorted = np.full_like(probs_sorted, np.nan, dtype=float)
+                threshold_y = 1.0 - qhat_i
             else:
-                cutoff_prob = np.nan
+                idx_ord = np.argsort(-phat_i)
+                probs_sorted = phat_i[idx_ord]
+                u_sorted = cp_i.score_fun.draw_noise(probs_sorted.shape[0])
+                cum_sorted = np.cumsum(probs_sorted)
+                ncs_sorted = cum_sorted - u_sorted * probs_sorted
+                in_set_sorted = ncs_sorted <= qhat_i
+                threshold_y = qhat_i
+                idx_true = int(np.where(idx_ord == true_i)[0][0])
+                u_true = float(u_sorted[idx_true])
+                ann_label = f'u_true={u_true:.2f}'
+            
+            first_x_key = f'{panel_id}|01|{int(idx_ord[0])}'
+            if method_name == 'LAC':
+                ann_label = ''
+            panel_ann.append({
+                'panel_id': panel_id,
+                'x_key': first_x_key,
+                'y': 0.985,
+                'label': ann_label,
+            })
 
-            for c in classes:
+            for rank, c in enumerate(idx_ord, start=1):
+                x_key = f'{panel_id}|{rank:02d}|{int(c)}'
                 panel_rows.append({
                     'example': example_label,
                     'method': method_name,
-                    'class': str(c),
-                    'prob': float(phat_i[c]),
-                    'cutoff_prob': cutoff_prob,
-                    'in_set': bool(c in in_set_i),
+                    'panel_id': panel_id,
+                    'x_key': x_key,
+                    'class': str(int(c)),
+                    'prob': float(probs_sorted[rank - 1]),
+                    'cum_prob': float(cum_sorted[rank - 1]) if method_name != 'LAC' else np.nan,
+                    'ncs': float(ncs_sorted[rank - 1]) if method_name != 'LAC' else np.nan,
+                    'threshold_y': float(threshold_y),
+                    'u_draw': float(u_sorted[rank - 1]) if method_name != 'LAC' else np.nan,
+                    'in_set': bool(in_set_sorted[rank - 1]),
                     'true': bool(c == true_i),
                 })
 
     dat_v2 = pd.DataFrame(panel_rows)
+    dat_ann = pd.DataFrame(panel_ann)
+    panel_order = list(dict.fromkeys(panel_order))
+    dat_v2['panel_id'] = pd.Categorical(dat_v2['panel_id'], categories=panel_order, ordered=True)
+    dat_ann['panel_id'] = pd.Categorical(dat_ann['panel_id'], categories=panel_order, ordered=True)
     dat_v2['fill_group'] = np.where(dat_v2['true'], 'true label', 'other label')
     dat_v2['edge_group'] = np.where(dat_v2['in_set'], 'in set', 'excluded')
 
@@ -320,17 +363,28 @@ if 'digits_v2' in targets:
     dat_v2['method'] = pd.Categorical(dat_v2['method'], categories=method_order, ordered=True)
 
     gg_dig_v2 = (
-        pn.ggplot(dat_v2, pn.aes(x='class', y='prob', fill='fill_group', color='edge_group'))
+        pn.ggplot(dat_v2, pn.aes(x='x_key'))
         + pn.theme_bw()
-        + pn.geom_col(size=0.85)
-        + pn.geom_hline(pn.aes(yintercept='cutoff_prob'), linetype='dashed', color='black', size=0.5)
-        + pn.facet_grid('example~method')
+        + pn.geom_col(pn.aes(y='prob', fill='fill_group', color='edge_group'), size=0.85)
+        + pn.geom_line(pn.aes(y='cum_prob', group='panel_id'), color='#6A51A3', size=0.7)
+        + pn.geom_point(pn.aes(y='ncs', group='panel_id'), color='#FF7F0E', size=1.2, alpha=0.9)
+        + pn.geom_hline(pn.aes(yintercept='threshold_y'), linetype='dashed', color='black', size=0.5)
+        + pn.geom_text(
+            pn.aes(x='x_key', y='y', label='label'),
+            data=dat_ann,
+            inherit_aes=False,
+            ha='left',
+            va='top',
+            size=7,
+        )
+        + pn.facet_wrap('~panel_id', nrow=4, scales='free_x')
         + pn.scale_fill_manual(values={'true label': '#2171B5', 'other label': '#D9D9D9'})
         + pn.scale_color_manual(values={'in set': '#2CA02C', 'excluded': '#D62728'})
+        + pn.scale_x_discrete(labels=lambda xs: [x.split('|')[-1] for x in xs])
         + pn.scale_y_continuous(limits=(0, 1))
         + pn.labs(x='Digit class', y='Predicted probability', fill='Label type', color='Set membership')
-        + pn.ggtitle('Digits prediction sets (4x3): LAC vs APS variants\n'
-                     f'Rows=examples, columns=methods, α={alpha_d}; dashed line is method-specific probability cutoff')
+        + pn.ggtitle('Digits prediction sets in score space (4x3): LAC vs APS variants\n'
+                     f'LAC uses p_y cutoff; APS uses ranked classes, purple=cumsum, orange=cumsum-U*p, dashed=qhat, α={alpha_d}')
         + pn.theme(
             legend_position='bottom',
             figure_size=(13, 10),
@@ -357,27 +411,38 @@ if 'class_coverage' in targets or 'class_setsize' in targets:
     n_train_c  = 250
     n_calib_c  = 500
     n_val_c    = 100
-    nsim_c     = 500
+    nsim_c     = 2000
     alpha_c    = 0.10
 
     dgp_c = dgp_multinomial(p_sim, k_sim, snr=snr_c, seeder=seed)
 
     results_class = {}
     class_specs = [
-        ('LAC', score_lac, {}),
-        ('APS (noise=0)', score_aps, {'noise': 0.0, 'random_state': seed}),
-        ('APS (noise=U(0,1))', score_aps, {'noise': 'uniform', 'random_state': seed}),
+        ('LAC', score_lac, {}, temperature_lac),
+        ('APS (noise=0)', score_aps, {'noise': 0.0, 'random_state': seed}, temperature_aps_det),
+        ('APS (noise=U(0,1))', score_aps, {'noise': 'uniform', 'random_state': seed}, temperature_aps_rand),
     ]
     method_colors = {
         'LAC': '#2171B5',
         'APS (noise=0)': '#E6550D',
         'APS (noise=U(0,1))': '#31A354',
     }
-    for score_name, score_cls, score_kwargs in class_specs:
-        mdl_c = NoisyGLM(max_iter=250, noise_std=0.0, seeder=seed,
-                         subestimator=LogisticRegression, penalty=None)
-        cp_c = conformal_sets(f_theta=mdl_c, score_fun=score_cls,
-                              alpha=alpha_c, upper=True, **score_kwargs)
+    for score_name, score_cls, score_kwargs, temp in class_specs:
+        mdl_c = NoisyGLM(
+            max_iter=250,
+            noise_std=0.0,
+            seeder=seed,
+            temperature=temp,
+            subestimator=LogisticRegression,
+            penalty=None,
+        )
+        cp_c = conformal_sets(
+            f_theta=mdl_c,
+            score_fun=score_cls,
+            alpha=alpha_c,
+            upper=True,
+            **score_kwargs,
+        )
         sim_c = simulation_cp(dgp=dgp_c, ml_mdl=mdl_c, cp_mdl=cp_c,
                               is_classification=True)
         res = sim_c.run_simulation(n_train=n_train_c, n_calib=n_calib_c,
@@ -385,7 +450,7 @@ if 'class_coverage' in targets or 'class_setsize' in targets:
                                    force_redraw=True, n_iter=100, verbose=True)
         res['method'] = score_name
         results_class[score_name] = res
-        print(f"  {score_name}: cover={100*res['cover'].mean():.1f}%  "
+        print(f"  {score_name} (T={temp:.1f}): cover={100*res['cover'].mean():.1f}%  "
               f"set_size={res['set_size'].mean():.2f}")
 
     dat_class = pd.concat(results_class.values(), ignore_index=True)
@@ -466,6 +531,7 @@ if 'coverage_vs_alpha' in targets:
     rows_sweep   = []
     for a in alphas_sweep:
         mdl_sw = NoisyGLM(max_iter=250, noise_std=0.0, seeder=seed,
+                          temperature=temperature_lac,
                           subestimator=LogisticRegression, penalty=None)
         cp_sw  = conformal_sets(f_theta=mdl_sw, score_fun=score_lac,
                                 alpha=a, upper=True)

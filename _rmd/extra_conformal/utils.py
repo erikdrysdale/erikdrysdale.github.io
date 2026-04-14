@@ -30,6 +30,43 @@ def check_named_args(func, arg_names):
     assert matches, f'woops function={func} did not have named arguments={arg_names}, instead it had {param_names}'
 
 
+def temperature_scale_proba(proba: np.ndarray, temperature: float) -> np.ndarray:
+    """Apply temperature scaling to a probability matrix.
+
+    temperature=1 leaves probabilities unchanged. Higher values flatten,
+    lower values sharpen.
+    """
+    t = float(temperature)
+    if t <= 0:
+        raise ValueError('temperature must be > 0')
+    if np.isclose(t, 1.0):
+        return proba
+    logp = np.log(np.clip(proba, 1e-12, 1.0)) / t
+    logp = logp - logp.max(axis=1, keepdims=True)
+    p = np.exp(logp)
+    return p / p.sum(axis=1, keepdims=True)
+
+
+class TemperatureScaledClassifier(BaseEstimator):
+    """Wrap any classifier with predict_proba and apply temperature scaling."""
+    def __init__(self, base_estimator: Any, temperature: float = 1.0):
+        self.base_estimator = base_estimator
+        self.temperature = temperature
+
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
+        self.base_estimator.fit(X, y, **kwargs)
+        if hasattr(self.base_estimator, 'classes_'):
+            self.classes_ = self.base_estimator.classes_
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.base_estimator.predict(X)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        p = self.base_estimator.predict_proba(X)
+        return temperature_scale_proba(p, self.temperature)
+
+
 class simulation_cp:
     def __init__(self,
                 dgp: Any, 
@@ -95,10 +132,14 @@ class simulation_cp:
 class NoisyGLM(BaseEstimator):
     """Using some sklearn subestimator"""
     def __init__(self, subestimator=None, 
-                 noise_std=0.1, seeder: int | None = None, **kwargs):
+                 noise_std=0.1,
+                 seeder: int | None = None,
+                 temperature: float = 1.0,
+                 **kwargs):
         self.subestimator = subestimator(**kwargs)
         self.noise_std = noise_std
         self.seeder = seeder
+        self.temperature = temperature
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
         self.subestimator.fit(X, y, **kwargs)
@@ -115,7 +156,8 @@ class NoisyGLM(BaseEstimator):
         return self.subestimator.predict(X)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        return self.subestimator.predict_proba(X)
+        p = self.subestimator.predict_proba(X)
+        return temperature_scale_proba(p, self.temperature)
 
 
 class LinearQuantileRegressor:

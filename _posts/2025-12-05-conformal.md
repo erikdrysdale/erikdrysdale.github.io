@@ -238,6 +238,33 @@ The figure below shows eight test images from the digits dataset (with added noi
 
 <br>
 
+### (2.3a) Comparative view: LAC vs APS in score space
+
+The figure below shows four different test images, each with three columns comparing LAC, randomized APS (`U ~ Uniform(0,1)`), and deterministic APS (`U=0`). This visualization makes the different scoring logic transparent.
+
+**LAC column (left):**
+- Bars show the model's predicted probabilities in the original class order (0–9).
+- Dashed line is the inclusion cutoff $1-\hat{q}$: classes above this line (green borders) are in the prediction set.
+- The decision rule is simple: use a global threshold.
+
+**APS columns (middle and right):**
+- Classes are sorted by descending probability: the highest-probability class is labeled 0, the next is 1, etc.
+- Bars still show individual class probabilities (the height of each bar is the original model's softmax).
+- **Purple line**: cumulative probability $\sum_{j \le k} p_{(\pi_j)}$, where $(\pi_1), (\pi_2), \ldots$ is the sorted order.
+- **Orange dots**: the realized APS nonconformity score for each class, $s_{APS}(x, c) = \text{cumsum}_c - U_c \cdot p_c$.  
+  - For deterministic APS, $U_c = 0$, so the orange dots exactly follow the purple line.
+  - For randomized APS, $U_c$ is drawn once per test image; you see the unique realization as a label (`u_true=...`) in the first bar.
+- **Dashed line**: $\hat{q}$, the conformal threshold. Classes whose APS score (orange dot) falls below the dashed line are included in the prediction set.
+
+**Key insight:** The APS score "consumes" probability mass as you move down the ranked list. A class near the top of the ranking (say, position 2) has a lower cumulative sum and is thus less likely to exceed $\hat{q}$. A class near the bottom (position 9) has burned through all prior probability and is unlikely to be included. This ranking-based logic makes APS adaptive: it naturally biases toward high-probability classes while automatically expanding the set when the model is uncertain (flat probabilities, high cumsum).
+
+<center><h4>Figure 1b: LAC vs APS variants in score space  (α=0.10)</h4>
+<p><img src="/figures/conformal_digits_sets_v2.png" width="100%"></p>
+<p><i>4×3 grid: rows = four test examples, columns = LAC / APS randomized / APS deterministic. LAC uses a global probability cutoff (dashed line at 1−q̂). APS ranks classes by probability and plots cumulative probability (purple line) and realized NCS scores (orange dots); inclusion is determined by score ≤ q̂. For randomized APS, the label u_true shows the uniform random draw for that example. The color coding (green = in set, grey = excluded, blue = true label) is consistent across all three methods.</i></p>
+</center>
+
+<br>
+
 ### (2.4) Simulation: LAC vs APS — same coverage, different efficiency
 
 The following simulation compares LAC, deterministic APS (`noise=0`), and the textbook randomized APS (`noise=U(0,1)`) across 500 independent trials on a synthetic \\(k=6\\) class multinomial problem. In each trial, a logistic regression is trained on \\(n_{\text{train}}=250\\) observations, calibrated on \\(n_{\text{cal}}=500\\), and evaluated on \\(n_{\text{val}}=100\\) test points.
