@@ -52,7 +52,7 @@ def parse_targets() -> set:
         action='append',
         help=(
             'Figure(s) to generate. Can be repeated or comma-separated. '
-            'Choices: all, digits, class, class_coverage, class_setsize, '
+            'Choices: all, digits, digits_v2, class, class_coverage, class_setsize, '
             'coverage_vs_alpha, reg, reg_coverage, reg_width, diabetes'
         ),
     )
@@ -60,7 +60,7 @@ def parse_targets() -> set:
 
     if not args.figure:
         return {
-            'digits', 'class_coverage', 'class_setsize',
+            'digits', 'digits_v2', 'class_coverage', 'class_setsize',
             'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes'
         }
 
@@ -71,7 +71,7 @@ def parse_targets() -> set:
 
     if 'all' in requested:
         return {
-            'digits', 'class_coverage', 'class_setsize',
+            'digits', 'digits_v2', 'class_coverage', 'class_setsize',
             'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes'
         }
 
@@ -84,7 +84,7 @@ def parse_targets() -> set:
         elif item == 'diabetes':
             expanded.add('diabetes')
         elif item in {
-            'digits', 'class_coverage', 'class_setsize',
+            'digits', 'digits_v2', 'class_coverage', 'class_setsize',
             'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes'
         }:
             expanded.add(item)
@@ -213,6 +213,138 @@ if 'digits' in targets:
 
 
 # =========================================================================== #
+# FIGURE 1B — Digits v2: 4x3 table (rows=examples, cols=methods)
+# =========================================================================== #
+
+if 'digits_v2' in targets:
+    print("=== Figure 1B: Digits prediction-set examples (4x3 LAC vs APS variants) ===")
+
+    raw_X, raw_y = load_digits(return_X_y=True)
+    rng_dig2 = np.random.default_rng(42)
+    raw_X_noisy = raw_X + 8.0 * rng_dig2.random(raw_X.shape)
+
+    n_total   = raw_X_noisy.shape[0]
+    n_calib_d = 400
+    n_train_d = n_total - n_calib_d - 100
+    alpha_d   = 0.10
+
+    idx = rng_dig2.permutation(n_total)
+    idx_train = idx[:n_train_d]
+    idx_calib = idx[n_train_d:n_train_d + n_calib_d]
+    idx_test  = idx[n_train_d + n_calib_d:]
+
+    X_tr, y_tr = raw_X_noisy[idx_train], raw_y[idx_train]
+    X_cal, y_cal = raw_X_noisy[idx_calib], raw_y[idx_calib]
+    X_te, y_te   = raw_X_noisy[idx_test], raw_y[idx_test]
+
+    f_dig = LogisticRegression(C=0.1, max_iter=2000)
+    f_dig.fit(X_tr, y_tr)
+
+    method_specs = [
+        ('LAC', score_lac, {}),
+        ('APS (noise=U(0,1))', score_aps, {'noise': 'uniform', 'random_state': 42}),
+        ('APS (noise=0)', score_aps, {'noise': 0.0, 'random_state': 42}),
+    ]
+
+    cp_methods = {}
+    for method_name, score_cls, score_kwargs in method_specs:
+        cp = conformal_sets(
+            f_theta=f_dig,
+            score_fun=score_cls,
+            alpha=alpha_d,
+            upper=True,
+            **score_kwargs,
+        )
+        cp.fit(x=X_cal, y=y_cal)
+        cp_methods[method_name] = cp
+        print(f'  {method_name}: qhat={cp.qhat:.3f}')
+
+    classes = np.arange(10)
+    phat_te = f_dig.predict_proba(X_te)
+
+    # Pick 4 examples with varied LAC set sizes for diverse rows.
+    lac_sets = cp_methods['LAC'].predict(X_te)
+    picked = []
+    seen_sizes = set()
+    for i, s in enumerate(lac_sets):
+        size_i = len(s)
+        if size_i not in seen_sizes or size_i >= 3:
+            picked.append(i)
+            seen_sizes.add(size_i)
+        if len(picked) == 4:
+            break
+    if len(picked) < 4:
+        for i in range(len(y_te)):
+            if i not in picked:
+                picked.append(i)
+            if len(picked) == 4:
+                break
+
+    panel_rows = []
+    for row_id, i in enumerate(picked, start=1):
+        phat_i = phat_te[i]
+        true_i = int(y_te[i])
+        example_label = f'Example {row_id}: true={true_i}'
+        for method_name, _, _ in method_specs:
+            cp_i = cp_methods[method_name]
+            qhat_i = cp_i.qhat
+            tau_i = cp_i.predict(X_te[[i]])[0]
+            in_set_i = set(tau_i)
+
+            # LAC has a global probability cutoff; APS has an example-specific
+            # boundary in probability space, so use the minimum included
+            # probability as a visual boundary for that panel.
+            if method_name == 'LAC':
+                cutoff_prob = 1.0 - qhat_i
+            elif len(in_set_i) > 0:
+                cutoff_prob = float(np.min([phat_i[c] for c in in_set_i]))
+            else:
+                cutoff_prob = np.nan
+
+            for c in classes:
+                panel_rows.append({
+                    'example': example_label,
+                    'method': method_name,
+                    'class': str(c),
+                    'prob': float(phat_i[c]),
+                    'cutoff_prob': cutoff_prob,
+                    'in_set': bool(c in in_set_i),
+                    'true': bool(c == true_i),
+                })
+
+    dat_v2 = pd.DataFrame(panel_rows)
+    dat_v2['fill_group'] = np.where(dat_v2['true'], 'true label', 'other label')
+    dat_v2['edge_group'] = np.where(dat_v2['in_set'], 'in set', 'excluded')
+
+    method_order = [m[0] for m in method_specs]
+    dat_v2['method'] = pd.Categorical(dat_v2['method'], categories=method_order, ordered=True)
+
+    gg_dig_v2 = (
+        pn.ggplot(dat_v2, pn.aes(x='class', y='prob', fill='fill_group', color='edge_group'))
+        + pn.theme_bw()
+        + pn.geom_col(size=0.85)
+        + pn.geom_hline(pn.aes(yintercept='cutoff_prob'), linetype='dashed', color='black', size=0.5)
+        + pn.facet_grid('example~method')
+        + pn.scale_fill_manual(values={'true label': '#2171B5', 'other label': '#D9D9D9'})
+        + pn.scale_color_manual(values={'in set': '#2CA02C', 'excluded': '#D62728'})
+        + pn.scale_y_continuous(limits=(0, 1))
+        + pn.labs(x='Digit class', y='Predicted probability', fill='Label type', color='Set membership')
+        + pn.ggtitle('Digits prediction sets (4x3): LAC vs APS variants\n'
+                     f'Rows=examples, columns=methods, α={alpha_d}; dashed line is method-specific probability cutoff')
+        + pn.theme(
+            legend_position='bottom',
+            figure_size=(13, 10),
+            subplots_adjust={'wspace': 0.15, 'hspace': 0.25},
+        )
+    )
+
+    fn1b = os.path.join(dir_figs, 'conformal_digits_sets_v2.png')
+    gg_dig_v2.save(fn1b, width=13, height=10, verbose=False)
+    saved_files.append(fn1b)
+    print(f'  saved {fn1b}')
+
+
+# =========================================================================== #
 # FIGURE 2 — Classification simulation: LAC vs APS coverage + set size
 # =========================================================================== #
 
@@ -271,7 +403,13 @@ if 'class_coverage' in targets or 'class_setsize' in targets:
             pn.ggplot(dat_class, pn.aes(x='n_cover', y='..density..', fill='method'))
             + pn.theme_bw()
             + pn.geom_histogram(binwidth=1, color='white', alpha=0.6)
-            + pn.geom_line(pn.aes(x='x', y='pmf'), data=dat_pmf_c, color='red', size=0.8)
+            + pn.geom_line(
+                pn.aes(x='x', y='pmf'),
+                data=dat_pmf_c,
+                color='red',
+                size=0.8,
+                inherit_aes=False,
+            )
             + pn.geom_vline(
                 pn.aes(xintercept='mean_n_cover'),
                 data=dat_class_mean,
@@ -296,7 +434,7 @@ if 'class_coverage' in targets or 'class_setsize' in targets:
         gg_class_sz = (
             pn.ggplot(dat_class, pn.aes(x='set_size', fill='method'))
             + pn.theme_bw()
-            + pn.geom_histogram(binwidth=0.2, position='identity', color='white', alpha=0.5)
+            + pn.geom_histogram(binwidth=0.1, position='identity', color='white', alpha=0.5)
             + pn.scale_fill_manual(values=method_colors)
             + pn.labs(x='Average prediction set size', y='Count', fill='Score')
             + pn.ggtitle('Set size: LAC vs APS variants  (same coverage guarantee)')
