@@ -7,11 +7,11 @@ status: publish
 mathjax: true
 ---
 
-Most machine learning models are point predictors: they output a single number (a regression estimate or a most-likely class label). But deploying a model in practice almost always requires understanding *how uncertain* that prediction is. A regression model's confidence interval and a classifier's softmax scores both attempt to communicate uncertainty, but neither carries a finite-sample statistical guarantee. If the model is mis-specified, or the data distribution has shifted even slightly, the stated coverage of a "95% confidence interval" can be far from 95%.
+Most machine learning models are point predictors: they output a single number (a regression estimate or a most-likely class label). But deploying a model in practice almost always requires understanding *how uncertain* that prediction is. Heuristic measures of uncertainty that come out of a ML model like the posterior variance from a GPR, the variance of a prediction from dropout, or a classifier's softmax scores both attempt to communicate uncertainty, but neither carries a finite-sample statistical guarantee. If the model is any way mis-specified (which it will be in practice) the stated coverage of a "95% prediction interval" can be far from 95%.
 
-**Conformal prediction** (CP) is a distribution-free framework for constructing prediction sets with rigorous marginal coverage guarantees. It wraps any pre-trained model and requires only that the calibration and test data are exchangeable (a weaker condition than i.i.d.)[[^2]]. No distributional assumptions are needed, and the guarantee holds for finite samples. The trade-off is that CP provides *marginal* coverage—averaged over randomness in the calibration set—rather than *conditional* coverage at each individual \\(x\\). The gap between these two notions is where the interesting methodological variation lives, and is the focus of the regression section below.
+**Conformal prediction** (CP) is a distribution-free framework for constructing prediction sets with rigorous marginal coverage guarantees. It wraps any pre-trained model and requires only that the calibration and test data are exchangeable (a weaker condition than i.i.d.)[[^2]]. No distributional assumptions are needed, and the guarantee holds for finite samples. The trade-off is that CP requires a "clean" set of data, and provides only a *marginal* coverage—averaged over randomness in the calibration set—rather than *conditional* coverage at each individual \\(x\\). Trying to reduce the gap between marginal and conditional coverage is where the interesting methodological variation lives, and is the focus of the regression section below.
 
-This post covers the *split conformal* variant (aka inductive conformal), which is the most practical form; the computationally heavier *full conformal* alternative is discussed in Section 1.5. The code developed here is available in the [repository](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_conformal). Key references are:
+Note that what I call CP is the *split conformal* variant (aka inductive conformal), which is the most practical form; the computationally heavier *full conformal* alternative is discussed in Section 1.5. The code developed here is available in the [repository](https://github.com/erikdrysdale/erikdrysdale.github.io/tree/master/_rmd/extra_conformal). Key references are:
 
 - **VGS05**: Vovk, Gammerman & Shafer, [*Algorithmic Learning in a Random World*](https://www.alrw.net/), Springer 2005 — original transductive framework
 - **RSC20**: Romano, Sesia & Candès, [*"Classification with Valid and Adaptive Coverage"*](https://arxiv.org/abs/2006.02544), NeurIPS 2020 — APS score
@@ -29,13 +29,11 @@ The rest of this post is structured as follows. [Section 1](#1-the-split-conform
 
 ### (1.1) Setup and notation
 
-Let \\((X_i, Y_i)\\) be input-output pairs, where \\(X_i \in \mathbb{R}^p\\) and \\(Y_i \in \mathcal{Y}\\) (either a continuous response or a class label). We have access to a pre-trained model \\(\hat{f}\\), fit on a training set of \\(n_{\text{train}}\\) observations. The split conformal process can be thought or using several disjoint data splits:
+Let \\((X_i, Y_i)\\) be input-output pairs, where \\(X_i \in \mathbb{R}^p\\) and \\(Y_i \in \mathcal{Y}\\) (either a continuous response or a class label). We have access to a pre-trained model \\(\hat{f}\\), fit on a training set of \\(n_{\text{train}}\\) observations. The split conformal process can be thought or using several disjoint data splits:[[^3]]
 
 - **Training set** \\(\mathcal{D}_{\text{train}}\\): used to fit \\(\hat{f}\\).  
 - **Calibration set** \\(\mathcal{D}_{\text{cal}}\\): \\(n\\) held-out observations used to calibrate the coverage threshold.
-- **Test set**: new observations for which we want prediction sets.
-
-In practice, the calibration set may be the only set a researcher needs. For example...
+- **Evaluation set**: new observations for which we want prediction sets.
 
 A **non-conformity score** (NCS) \\(s(x, y)\\) measures how "surprising" a label \\(y\\) is given the input \\(x\\) and the model \\(\hat{f}\\). Higher scores mean less conformity: the true label fits the model's predictions poorly. The exact definition of \\(s\\) depends on the task; we will see several variants below.
 
@@ -69,7 +67,7 @@ $$
 \hat{q} = \text{Quantile}\!\left( s_1, \ldots, s_n;\; \frac{\lceil (n+1)(1-\alpha) \rceil}{n} \right)
 $$
 
-The \\((n+1)\\) in the numerator accounts for the fact that the test point is exchangeable with the calibration set: when we ask "where would \\(s_{n+1}\\) fall among \\(s_1, \ldots, s_n, s_{n+1}\\)?", we need the adjusted level. Intuitively, the finite-sample correction inflates \\(\hat{q}\\) slightly so that the threshold is conservative. For large \\(n\\) the adjustment vanishes, but for small calibration sets (say \\(n = 50\\)) it matters substantially.
+The \\((n+1)\\) in the numerator accounts for the fact that the test point is exchangeable with the calibration set: when we ask "where would \\(s_{n+1}\\) fall among \\(s_1, \ldots, s_n, s_{n+1}\\)?", we need the adjusted level. Intuitively, the finite-sample correction inflates \\(\hat{q}\\) slightly so that the threshold is conservative. For large \\(n\\) the adjustment vanishes, but for small calibration sets (say \\(n = 50\\)) it matters more.
 
 ```python
 def adjusted_level(alpha, n):
@@ -88,7 +86,37 @@ $$
 \text{Coverage count} \sim \text{BetaBinomial}\!\left(n_{\text{val}},\; a = n+1-r,\; b = r\right)
 $$
 
-This theoretical distribution provides a useful diagnostic: if a simulation's empirical coverage histogram doesn't match the beta-binomial PMF, something is wrong (perhaps the exchangeability assumption is violated, or there is a bug in the calibration step).
+The conditioning structure is important:
+
+1. Conditional on a realized calibration set \\(\mathcal{D}\_{\text{cal}} = \{(X_i,Y_i)\}^n_{i=1}\\), the threshold \\(\hat{q}\\) is fixed, and each test-point coverage indicator \\(I_j = \mathbf{1}\{Y_j \in \mathcal{C}(X_j)\}\\) is Bernoulli with parameter
+
+$$
+	\theta(\mathcal{D}_{\text{cal}}) \,=\, P\!\left(Y \in \mathcal{C}(X) \mid \mathcal{D}_{\text{cal}}\right).
+$$
+
+If test points are i.i.d. given \\(\mathcal{D}_{\text{cal}}\\), then
+
+$$
+\sum_{j=1}^{n_{\text{val}}} I_j \;\big|\; \mathcal{D}_{\text{cal}} \sim \text{Binomial}\!\left(n_{\text{val}},\; \theta(\mathcal{D}_{\text{cal}})\right).
+$$
+
+2. Marginally (averaging over random calibration draws), \\(\theta(\mathcal{D}_{\text{cal}})\\) follows a Beta distribution. Let \\(S\\) denote the non-conformity score of a fresh test point under the fixed trained model, and let \\(F(s)=P(S\le s)\\). For split conformal, \\(\hat{q}\\) is the \\(k\\)-th order statistic of the \\(n\\) calibration scores, with \\(k=n+1-r\\). Therefore
+
+$$
+	\theta(\mathcal{D}_{\text{cal}}) = P(S\le \hat{q}\mid \mathcal{D}_{\text{cal}})=F(\hat{q}).
+$$
+
+Now consider the probability integral transform: for calibration scores \\(S_i\\), the variables \\(U_i=F(S_i)\\) are i.i.d. Uniform(0,1), so \\(F(\hat{q})\\) is the \\(k\\)-th order statistic of \\(n\\) uniforms. A [standard order-statistics](https://en.wikipedia.org/wiki/Order_statistic) result gives
+
+$$
+F(\hat{q})\sim \text{Beta}\!\left(k,\;n+1-k\right)=\text{Beta}\!\left(n+1-r,\;r\right).
+$$
+
+Hence \\(\theta(\mathcal{D}\_{\text{cal}})\\sim \text{Beta}(a,b)\\) with \\(a=n+1-r,\;b=r\\). Mixing the conditional Binomial distribution over this Beta law yields the Beta-Binomial for the coverage count. In other words, the Binomial statement is conditional on \\(X_{\text{cal}},Y_{\text{cal}}\\), while the Beta-Binomial is the unconditional distribution across repeated calibration samples.
+
+In simulation terms, one replicate is: (i) draw calibration/test data, (ii) compute \\(\hat{q}\\) from calibration, (iii) evaluate coverage on \\(n_{\text{val}}\\) test points, (iv) store the coverage count. Repeating this many times and histogramming the stored counts should match the Beta-Binomial PMF if the implementation and assumptions are correct.
+
+This theoretical distribution provides a useful diagnostic: if a simulation's empirical coverage histogram does not match the beta-binomial PMF, something has gone wrong (perhaps exchangeability is violated, score ties are substantial, or there is a bug in calibration/inversion).
 
 ### (1.5) Full conformal prediction and why it is rarely used
 
@@ -103,13 +131,15 @@ The coverage guarantee is identical to split conformal and holds with *equality*
 
 **Classification.** With \\(k\\) classes and \\(n_{\text{test}}\\) test points, the procedure requires \\(k \times n_{\text{test}}\\) full model refits. For a 10-class problem with 1,000 test points that takes 1 minute per fit, full conformal needs roughly \\(10{,}000\\) minutes ≈ 7 days, versus a single fit for split conformal.
 
-**Regression.** With a continuous outcome \\(Y \in \mathbb{R}\\) the label space is infinite, making the naive approach intractable. Exact full conformal for linear regression has a closed-form solution via the hat matrix — for a model \\(\hat{f}(x) = x^\top\hat{\beta}\\) the leave-one-out residuals can be expressed as:
+**Regression.** With a continuous outcome \\(Y \in \mathbb{R}\\) the label space is infinite, making the naive approach intractable. For models that are **linear smoothers** — where the fitted values can be written as \\(\hat{Y} = H(X) Y\\) for some hat/smoother matrix \\(H\\) that depends only on the inputs, not on \\(Y\\) — exact full conformal has a closed-form solution. The key identity is that the leave-one-out residual for point \\(i\\) can be recovered from the full-data fit without any refitting:
 
 $$
 s_i^y = \frac{|Y_i - \hat{Y}_i|}{1 - H_{ii}}
 $$
 
-where \\(H = X(X^\top X)^{-1}X^\top\\) is the hat matrix and \\(H_{ii}\\) its diagonal entries. This avoids refitting but requires computing and storing the full \\(n \times n\\) hat matrix, which costs \\(O(n^2 p)\\) time and \\(O(n^2)\\) memory — prohibitive for large \\(n\\). For non-linear models no such shortcut exists.
+where \\(H_{ii}\\) is the \\(i\\)-th diagonal entry of \\(H\\). Intuitively, \\(H_{ii}\\) measures how much the prediction at \\(x_i\\) depends on \\(y_i\\) itself — dividing by \\(1 - H_{ii}\\) inflates the residual to approximate what it would have been if \\((x_i, y_i)\\) had been withheld. For OLS, \\(H = X(X^\top X)^{-1}X^\top\\) and the identity follows directly. Adding or removing a single data point corresponds to a rank-1 update of the Gram matrix \\(X^\top X\\), and the [Sherman-Morrison-Woodbury identity](https://en.wikipedia.org/wiki/Woodbury_matrix_identity) shows that such updates can be computed in closed form — this is the algebraic engine behind the shortcut.
+
+The linear-smoother class is broader than it might appear. Gaussian Process Regression (GPR) has smoother matrix \\(H = K(X,X)\bigl(K(X,X) + \sigma^2 I\bigr)^{-1}\\) and admits the same LOO formula — closed-form LOO cross-validation is in fact a standard feature of GPR implementations. Nadaraya-Watson kernel regression, local polynomial regression, splines, and kernel ridge regression are all linear smoothers and inherit the same shortcut. The relevant dividing line is therefore not "linear versus non-linear" in the usual sense, but whether the model's predictions are a **linear function of the training outputs** \\(Y\\). Neural networks, gradient boosted trees, and random forests do not satisfy this condition — their predictions are non-linear in \\(Y\\) through the optimization path — so no such shortcut exists for them, and full conformal requires \\(O(n_{\text{test}})\\) refits in the regression case. Even where the shortcut applies, computing and storing \\(H\\) costs \\(O(n^2 p)\\) time and \\(O(n^2)\\) memory for OLS, and \\(O(n^3)\\) for kernel methods — prohibitive for large \\(n\\) in all cases.
 
 Split conformal sacrifices a fraction of data to the calibration set in exchange for fitting the model exactly once, making it the practical default.
 
@@ -137,17 +167,17 @@ This simply thresholds the predicted probabilities: include all classes whose pr
 
 ### (2.2) APS: Adaptive Prediction Sets
 
-The LAC score can produce sets of unequal statistical efficiency across inputs. For a hard example, many classes may have similar predicted probabilities and LAC will include all of them; for an easy example, only one class is needed but the threshold may still be loose. The **APS score** (RSC20) is designed to adapt the set size to the local difficulty of the prediction.
+LAC includes class \\(c\\) if \\(\hat{p}_c(x) \geq 1 - \hat{q}\\), a single global threshold applied uniformly across all inputs. Because \\(\hat{q}\\) must be loose enough to cover difficult inputs (flat predictive distributions), easy inputs (peaked distributions) receive unnecessarily large sets. The nonconformity score carries no information about local uncertainty; set size cannot adapt to input difficulty.
 
-Sort the classes in descending order of predicted probability: \\(\pi_1, \pi_2, \ldots, \pi_k\\) where \\(\hat{p}\_{\pi_1}(x) \geq \hat{p}\_{\pi_2}(x) \geq \cdots\\). The APS score for the true label \\(y\\) is:
 
-$$
-s_{\text{APS}}(x, y) = \sum_{j: \pi_j \prec \pi_y} \hat{p}_{\pi_j}(x) + U \cdot \hat{p}_{\pi_y}(x), \quad U \sim \text{Uniform}(0,1)
-$$
+First, the softmax probabilities are sorted in descending order: \\(\hat{p}\_{\pi_1}(x) \geq \hat{p}\_{\pi_2}(x) \geq \cdots \geq \hat{p}\_{\pi_K}(x)\\). The textbook randomized APS nonconformity score for true label \\(y\\) is the cumulative probability mass through \\(y\\) minus a uniform fraction of \\(y\\)'s own probability:
 
-where the sum runs over all classes ranked *above* \\(y\\), and \\(U\\) is a uniform random noise term. The noise plays a crucial role: it breaks ties in the cumulative probability ordering and allows the procedure to achieve *exact* \\(1-\alpha\\) coverage (rather than just conservative coverage). Without it, the discrete nature of the score means the attainable coverage levels are a lattice, and one might overshoot \\(1-\alpha\\) by more than \\(1/(n+1)\\). With the noise, the marginal coverage guarantee holds with equality in expectation.
+$$s_\text{APS}(x, y) = \sum_{j:\, \pi_j \text{ ranked at or above } y} \hat{p}_{\pi_j}(x) \;-\; U \cdot \hat{p}_{\pi_y}(x), \quad U \sim \text{Uniform}(0,1)$$
 
-The prediction set inverts the score: include classes in descending probability order until the cumulative probability exceeds \\(\hat{q}\\). Easy examples (where one class dominates) get small sets; hard examples (where probability is spread across many classes) get larger sets.
+A low score indicates \\(y\\) appeared near the top of the ranking; a high score indicates substantial probability mass was exhausted before reaching \\(y\\). Setting \\(U=0\\) yields the deterministic variant often used in practice, which is slightly more conservative because it cannot interpolate within the marginal class.
+
+**Role of the \\(U\\) term.** Without randomization, the score takes values on a discrete grid induced by the cumulative class probabilities, constraining the achievable coverage levels to a lattice. The uniform term continuously interpolates within the probability mass of the marginal class, making the score distribution continuous and enabling exact \\(1-\alpha\\) marginal coverage rather than conservative \\(\geq 1-\alpha\\) coverage. The same device appears at prediction time: only the boundary class can be random, and it is included precisely when its randomized score falls below \\(\hat{q}\\). In the code below, `noise=0.0` gives the deterministic APS score, while `noise='uniform'` gives the textbook randomized version. The prediction set is still \\(\mathcal{C}(x) = \\{c : s_\text{APS}(x, c) \leq \hat{q} \\}\\).
+
 
 ```python
 # External
@@ -162,7 +192,7 @@ from sklearn.linear_model import LogisticRegression
 from conformal import conformal_sets, score_lac, score_aps
 
 raw_X, raw_y = load_digits(return_X_y=True)
-rng = np.random.default_rng(7)
+rng = np.random.default_rng(42)
 # Add noise to make predictions less certain
 raw_X = raw_X + 8.0 * rng.random(raw_X.shape)
 
@@ -180,7 +210,8 @@ f.fit(X_tr, y_tr)
 cp_lac = conformal_sets(f_theta=f, score_fun=score_lac, alpha=alpha)
 cp_lac.fit(x=X_cal, y=y_cal)
 
-cp_aps = conformal_sets(f_theta=f, score_fun=score_aps, alpha=alpha)
+cp_aps = conformal_sets(f_theta=f, score_fun=score_aps, alpha=alpha,
+                        noise='uniform', random_state=0)
 cp_aps.fit(x=X_cal, y=y_cal)
 
 lac_sets = cp_lac.predict(X_te)
@@ -192,6 +223,8 @@ lac_sz  = np.mean([len(s) for s in lac_sets])
 aps_sz  = np.mean([len(s) for s in aps_sets])
 print(f'LAC: coverage={lac_cov:.2%}  avg set size={lac_sz:.2f}')
 print(f'APS: coverage={aps_cov:.2%}  avg set size={aps_sz:.2f}')
+# LAC: coverage=90.00%  avg set size=0.94
+# APS: coverage=91.00%  avg set size=1.08
 ```
 
 ### (2.3) Digits example: what do prediction sets look like?
@@ -200,14 +233,14 @@ The figure below shows eight test images from the digits dataset (with added noi
 
 <center><h4>Figure 1: LAC prediction sets on noisy digits  (α=0.10)</h4>
 <p><img src="/figures/conformal_digits_sets.png" width="90%"></p>
-<p><i>Each panel shows predicted probabilities for a test image. Blue = true label, green = other classes in prediction set, grey = excluded. The prediction set always includes the true label (by the coverage guarantee, in expectation across calibration draws).</i></p>
+<p><i>Each panel shows predicted probabilities for a test image. Blue = true label, green = other classes in prediction set, grey = excluded. The dashed black line marks the LAC inclusion cutoff \(1-\hat{q}\): classes above this line are included in the prediction set.</i></p>
 </center>
 
 <br>
 
 ### (2.4) Simulation: LAC vs APS — same coverage, different efficiency
 
-The following simulation compares LAC and APS across 500 independent trials on a synthetic \\(k=6\\) class multinomial problem. In each trial, a logistic regression is trained on \\(n_{\text{train}}=250\\) observations, calibrated on \\(n_{\text{cal}}=500\\), and evaluated on \\(n_{\text{val}}=100\\) test points.
+The following simulation compares LAC, deterministic APS (`noise=0`), and the textbook randomized APS (`noise=U(0,1)`) across 500 independent trials on a synthetic \\(k=6\\) class multinomial problem. In each trial, a logistic regression is trained on \\(n_{\text{train}}=250\\) observations, calibrated on \\(n_{\text{cal}}=500\\), and evaluated on \\(n_{\text{val}}=100\\) test points.
 
 ```python
 from utils import dgp_multinomial, NoisyGLM, simulation_cp
@@ -215,27 +248,32 @@ from utils import dgp_multinomial, NoisyGLM, simulation_cp
 p, k, alpha = 5, 6, 0.10
 dgp = dgp_multinomial(p, k, snr=0.6*k, seeder=42)
 
-for score_name, score_cls in [('LAC', score_lac), ('APS', score_aps)]:
+for score_name, score_cls, score_kwargs in [
+    ('LAC', score_lac, {}),
+    ('APS (noise=0)', score_aps, {'noise': 0.0, 'random_state': 42}),
+    ('APS (noise=U(0,1))', score_aps, {'noise': 'uniform', 'random_state': 42}),
+]:
     mdl = NoisyGLM(max_iter=250, noise_std=0.0, seeder=42,
                    subestimator=LogisticRegression, penalty=None)
-    cp  = conformal_sets(f_theta=mdl, score_fun=score_cls, alpha=alpha)
+    cp  = conformal_sets(f_theta=mdl, score_fun=score_cls, alpha=alpha, **score_kwargs)
     sim = simulation_cp(dgp=dgp, ml_mdl=mdl, cp_mdl=cp, is_classification=True)
     res = sim.run_simulation(n_train=250, n_calib=500, n_test=100, nsim=500, seeder=42)
     print(f'{score_name}: cover={100*res.cover.mean():.1f}%  set_size={res.set_size.mean():.2f}')
 # LAC: cover=90.1%  set_size=1.18
-# APS: cover=90.2%  set_size=2.65
+# APS (noise=0): cover=90.2%  set_size=2.65
+# APS (noise=U(0,1)): cover=90.3%  set_size=1.34
 ```
 
-The figure below shows two things: (a) the empirical coverage histogram against the theoretical beta-binomial distribution, and (b) the distribution of average set sizes. Both LAC and APS achieve the nominal 90% marginal coverage and match the beta-binomial prediction closely. Their difference is in set size: LAC produces sets of average size 1.18 here, while APS averages 2.65. This seems to suggest LAC is more efficient — but the comparison depends on the problem. When the model is well-calibrated and classes are well-separated, LAC's sharp thresholding is efficient. When the model is uncertain, APS produces sets that better reflect the local uncertainty structure by adding classes in order of decreasing probability.
+The figure below shows two things: (a) the empirical coverage histogram against the theoretical beta-binomial distribution, and (b) the distribution of average set sizes. All three methods shown here — LAC, deterministic APS, and randomized APS — achieve the nominal 90% marginal coverage and match the beta-binomial prediction closely. The additional comparison above isolates the effect of APS randomization itself: here the deterministic version (`noise=0`) is slightly more conservative and materially less efficient, with average set size 2.65 versus 1.34 for the textbook randomized version. The broader efficiency comparison with LAC still depends on the problem. When the model is well-calibrated and classes are well-separated, LAC's sharp thresholding is efficient. When the model is uncertain, APS produces sets that better reflect the local uncertainty structure by adding classes in order of decreasing probability.
 
 <center><h4>Figure 2a: Empirical coverage vs beta-binomial theory</h4>
 <p><img src="/figures/conformal_class_coverage.png" width="85%"></p>
-<p><i>Histogram of empirical coverage counts (out of 100 test points) across 500 simulations. Red line shows the theoretical beta-binomial PMF. Both LAC and APS match closely, confirming the finite-sample guarantee holds.</i></p>
+<p><i>Histogram of empirical coverage counts (out of 100 test points) across 500 simulations for LAC, deterministic APS, and randomized APS. The red line shows the theoretical beta-binomial PMF, and all three methods track it closely.</i></p>
 </center>
 
-<center><h4>Figure 2b: Prediction set size — LAC vs APS</h4>
+<center><h4>Figure 2b: Prediction set size — LAC vs APS variants</h4>
 <p><img src="/figures/conformal_class_setsize.png" width="60%"></p>
-<p><i>Distribution of average prediction set sizes. Both methods satisfy the same coverage constraint; APS tends to produce larger sets on this synthetic problem because it includes classes in cumulative-probability order rather than thresholding.</i></p>
+<p><i>Overlaid histogram of average prediction set sizes with semi-transparent bars. All three methods satisfy the same coverage constraint; deterministic APS is the least efficient here, while randomized APS removes much of that excess conservatism.</i></p>
 </center>
 
 <br>
@@ -371,25 +409,39 @@ The Diabetes dataset (Efron et al. 2004) has \\(n=442\\) observations and 10 qua
 
 ## (4) Limitations
 
+### (4.1) Exchangeability is the load-bearing assumption
+
 The coverage guarantee rests on a single probabilistic assumption: that the calibration and test data are exchangeable. Everything else — the choice of model, the non-conformity score, the data distribution — is unconstrained. The framework's breadth therefore lives or dies with this one condition, and in practice it is the condition most likely to fail.
 
-Exchangeability is roughly the requirement that no ordering structure distinguishes calibration points from test points: if you shuffled all of them together, no statistical test could tell which were which. This holds automatically when both sets are i.i.d. draws from the same distribution, but fails in many common deployment patterns. Consider temporal drift: a model calibrated on data from one quarter of the year may face a shifted input distribution several months later due to seasonality, policy changes, or population evolution. The calibration scores were computed under one regime; the test scores arise under another. The quantile threshold \(\hat{q}\) is miscalibrated for the new regime, and the nominal \(1-\alpha\) guarantee no longer holds — coverage can be substantially below target without any warning from the procedure itself. The same logic applies to covariate shift more broadly, where \(P(X)\) changes between calibration and deployment while \(P(Y \mid X)\) may or may not remain stable. It also applies to batch effects in scientific data: if calibration samples were processed in one laboratory or on one instrument run and test samples arrive from a different batch, systematic technical variation can create a distributional gap even when the underlying signal is identical. Transfer learning settings introduce a related problem: a model pre-trained on a source domain and calibrated on a small target-domain set may have well-calibrated coverage within the target domain, but if the target domain itself is heterogeneous the exchangeability assumption may still be only approximate.
+Exchangeability is roughly the requirement that no ordering structure distinguishes calibration points from test points: if you shuffled all of them together, no statistical test could tell which were which. This holds automatically when both sets are i.i.d. draws from the same distribution, but fails in many common deployment patterns. Consider temporal drift: a model calibrated on data from one quarter of the year may face a shifted input distribution several months later due to seasonality, policy changes, or population evolution. The calibration scores were computed under one regime; the test scores arise under another. The quantile threshold \\(\hat{q}\\) is miscalibrated for the new regime, and the nominal \\(1-\alpha\\) guarantee no longer holds — coverage can be substantially below target without any warning from the procedure itself. The same logic applies to covariate shift more broadly, where \\(P(X)\\) changes between calibration and deployment while \\(P(Y \mid X)\\) may or may not remain stable. It also applies to batch effects in scientific data: if calibration samples were processed in one laboratory or on one instrument run and test samples arrive from a different batch, systematic technical variation can create a distributional gap even when the underlying signal is identical. Transfer learning settings introduce a related problem: a model pre-trained on a source domain and calibrated on a small target-domain set may have well-calibrated coverage within the target domain, but if the target domain itself is heterogeneous the exchangeability assumption may still be only approximate.
+
+### (4.2) Violations are often silent and can hide subgroup failures
 
 An important subtlety is that violations of exchangeability are often silent. The conformal procedure will produce a prediction set for every test input regardless; it does not flag that its own guarantee has lapsed. A practitioner who does not actively monitor marginal coverage on recent holdout data could be operating outside the guarantee without realising it. Worse, because the guarantee is marginal, even correct average coverage can conceal systematic under-coverage in the subpopulations that matter most — a model deployed in a hospital might achieve 90% coverage on the overall test population while covering only 80% for the sickest patients, if those patients are systematically underrepresented in the calibration data.
 
-There is a large and active literature working to relax or adapt the exchangeability requirement. Weighted conformal prediction ([Tibshirani et al., 2019](https://arxiv.org/abs/1904.06019)) re-weights calibration scores by an estimated likelihood ratio between the calibration and test distributions, recovering approximate coverage under covariate shift when the density ratio can be estimated. Mondrian conformal prediction stratifies calibration by a grouping variable and constructs separate thresholds per stratum, trading off global calibration size for within-group coverage. Online and adaptive conformal prediction methods ([Gibbs & Candès, 2021](https://arxiv.org/abs/2106.00170)) update \(\hat{q}\) sequentially as new observations arrive, allowing the coverage level to track a drifting distribution over time. Calibration under label shift, conformal risk control, and various robust variants address yet other departures from the basic setup. A detailed treatment of these methods and the conditions under which they provide guarantees is left for a future post; the take-away here is that exchangeability should always be treated as an assumption to be actively scrutinised rather than a background fact about the data.
+### (4.3) Coverage is a property of the procedure, not a given interval
+
+Two further gotchas are worth stating explicitly, because they are frequently misunderstood in practice.
+
+The first concerns what "coverage" actually means. The guarantee \\(P(Y_{n+1} \in \mathcal{C}(X_{n+1})) \geq 1 - \alpha\\) is a statement about the *procedure*, not about any individual prediction set. More precisely, it is a statement about the *next* exchangeable draw: if you re-ran the entire process — drawing a fresh calibration set, recomputing \\(\hat{q}\\), and predicting on a new test point — the resulting set would contain the true label at least \\(1-\alpha\\) fraction of the time *in expectation over that randomness*. Once \\(\hat{q}\\) has been fixed and a specific \\(\mathcal{C}(x)\\) has been produced, that interval either covers the true value or it does not. There is no probability left; the uncertainty has collapsed. This is directly analogous to the classical confidence interval misconception: a 95% confidence interval does not mean there is a 95% probability that the true parameter lies inside *this particular interval* — it means that the interval-construction procedure would capture the true value in 95% of repeated applications. A conformal prediction set carries exactly the same caveat. Researchers who interpret \\(\mathcal{C}(x)\\) as having a \\(1-\alpha\\) posterior probability of covering \\(Y\\) are importing a Bayesian interpretation into a frequentist guarantee that does not support it.
+
+The second concerns batches of predictions. Suppose you deploy the model and observe \\(m\\) new test points simultaneously. Each individual coverage event \\(\mathbf{1}[Y_i \in \mathcal{C}(X_i)]\\) has marginal probability at least \\(1-\alpha\\), but the *joint* distribution of the \\(m\\) coverage indicators is not specified by the conformal guarantee alone. In the simplest case — where the \\(m\\) test points are exchangeable with each other and with the calibration set, and the same \\(\hat{q}\\) is applied to all — the total number of covered test points follows approximately \\(\text{Binomial}(m, 1-\alpha)\\) in expectation. That has mean \\(m(1-\alpha)\\) and standard deviation \\(\sqrt{m \alpha (1-\alpha)}\\), so for any *particular* batch of \\(m\\) predictions the realised coverage rate will deviate from \\(1-\alpha\\) by \\(O(1/\sqrt{m})\\). For \\(m = 100\\) and \\(\alpha = 0.1\\) the standard deviation of the number covered is \\(\sqrt{100 \times 0.1 \times 0.9} \approx 3\\), meaning the realised coverage rate for that batch routinely fluctuates between roughly 87% and 93%. This is not a failure of conformal prediction — it is binomial sampling noise — but it means that evaluating a deployed system on a single batch of moderate size and concluding it "achieves 90% coverage" or "misses the target" requires care. The beta-binomial distribution described in Section 1.4 makes this sampling variability precise and provides a rigorous diagnostic for whether observed deviations are consistent with the nominal guarantee.
+
+### (4.4) Methods that relax exchangeability
+
+There is a large and active literature working to relax or adapt the exchangeability requirement. Weighted conformal prediction ([Tibshirani et al., 2019](https://arxiv.org/abs/1904.06019)) re-weights calibration scores by an estimated likelihood ratio between the calibration and test distributions, recovering approximate coverage under covariate shift when the density ratio can be estimated. Mondrian conformal prediction stratifies calibration by a grouping variable and constructs separate thresholds per stratum, trading off global calibration size for within-group coverage. Online and adaptive conformal prediction methods ([Gibbs & Candès, 2021](https://arxiv.org/abs/2106.00170)) update \\(\hat{q}\\) sequentially as new observations arrive, allowing the coverage level to track a drifting distribution over time. Calibration under label shift, conformal risk control, and various robust variants address yet other departures from the basic setup. A detailed treatment of these methods and the conditions under which they provide guarantees is left for a future post; the take-away here is that exchangeability should always be treated as an assumption to be actively scrutinised rather than a background fact about the data.
 
 <br>
 
 ## (5) Discussion
 
-**What conformal prediction gives you.** The marginal coverage guarantee holds with no assumptions on the data distribution, the model class, or the model's calibration. It is valid for neural networks, gradient boosting, or any other black-box predictor (including a random number generator). The guarantee is finite-sample and non-asymptotic — 90% means 90% with \(n = 100\) calibration points, not just in the limit (although again this is *in expectation*).
+**What conformal prediction gives you.** The marginal coverage guarantee holds with no assumptions on the data distribution, the model class, or the model's calibration. It is valid for neural networks, gradient boosting, or any other black-box predictor (including a random number generator). The guarantee is finite-sample and non-asymptotic — 90% means 90% with \\(n = 100\\) calibration points, not just in the limit (although again this is *in expectation*).
 
-**What it does not give you.** Marginal coverage is an average over test inputs. If the prediction set is very wide in some regions and narrow in others, it can still satisfy the marginal guarantee while being practically useless for individual predictions. The studentized and CQR methods move closer to *conditional* coverage by adapting intervals to local uncertainty, but neither achieves exact conditional coverage. This is not a limitation of the specific methods chosen — it is a fundamental impossibility result[[^3]]: no distribution-free method can guarantee \(P(Y \in \mathcal{C}(X) \mid X = x) \geq 1 - \alpha\) for all \(x\) without placing assumptions on the underlying distribution (**BCRT21**). Intuitively, estimating coverage at a specific \(x\) requires enough calibration points in the neighbourhood of \(x\), which for a continuous covariate space is never finite.
+**What it does not give you.** Marginal coverage is an average over test inputs. If the prediction set is very wide in some regions and narrow in others, it can still satisfy the marginal guarantee while being practically useless for individual predictions. The studentized and CQR methods move closer to *conditional* coverage by adapting intervals to local uncertainty, but neither achieves exact conditional coverage. This is not a limitation of the specific methods chosen — it is a fundamental impossibility result[[^4]]: no distribution-free method can guarantee \\(P(Y \in \mathcal{C}(X) \mid X = x) \geq 1 - \alpha\\) for all \\(x\\) without placing assumptions on the underlying distribution (**BCRT21**). Intuitively, estimating coverage at a specific \\(x\\) requires enough calibration points in the neighbourhood of \\(x\\), which for a continuous covariate space is never finite.
 
-**Epistemic vs aleatoric uncertainty.** The width of a conformal prediction interval reflects *total* predictive uncertainty and cannot be decomposed into epistemic uncertainty (arising from limited data or a mis-specified model) and aleatoric uncertainty (irreducible noise in \(Y \mid X\)). A wide interval might mean the model is poorly identified, the training set is too small, or simply that \(Y \mid X\) is inherently noisy — conformal prediction cannot distinguish these. Separating the two components requires stronger scaffolding: explicit distributional assumptions about the DGP, an auxiliary source of variance information (e.g. replicate measurements of the same \(x\), which directly reveal \(\text{Var}(Y \mid X = x)\)), or a full probabilistic model whose posterior can be used to estimate parameter uncertainty separately. None of this is available within the distribution-free conformal framework, which is precisely what makes the coverage guarantee so broadly applicable.
+**Epistemic vs aleatoric uncertainty.** The width of a conformal prediction interval reflects *total* predictive uncertainty and cannot be decomposed into epistemic uncertainty (arising from limited data or a mis-specified model) and aleatoric uncertainty (irreducible noise in \\(Y \mid X\\)). A wide interval might mean the model is poorly identified, the training set is too small, or simply that \\(Y \mid X\\) is inherently noisy — conformal prediction cannot distinguish these. Separating the two components requires stronger scaffolding: explicit distributional assumptions about the DGP, an auxiliary source of variance information (e.g. replicate measurements of the same \\(x\\), which directly reveal \\(\text{Var}(Y \mid X = x)\\)), or a full probabilistic model whose posterior can be used to estimate parameter uncertainty separately. None of this is available within the distribution-free conformal framework, which is precisely what makes the coverage guarantee so broadly applicable.
 
-**Large prediction sets are usually not the fault of the conformal model.** If prediction intervals are too wide to be actionable, the right diagnosis is that the base model's errors are simply too variable — or that the signal in the data is too hard for any model to pick up — and conformal calibration is faithfully reporting that uncertainty. A conformal predictor that outputs \(\{3, 5, 7\}\) for an ambiguous digit, or a regression interval spanning half the response range, is likely an honest signal that the underlying model cannot make precise predictions for those inputs. The remedy is a better model, more informative features, or more training data — not discarding the coverage guarantee. That being said, we have shown how different non-conformity scores can improve efficiency, but these gains will always be dwarfed by improvements to the base model.
+**Large prediction sets are usually not the fault of the conformal model.** If prediction intervals are too wide to be actionable, the right diagnosis is that the base model's errors are simply too variable — or that the signal in the data is too hard for any model to pick up — and conformal calibration is faithfully reporting that uncertainty. A conformal predictor that outputs \\(\{3, 5, 7\}\\) for an ambiguous digit, or a regression interval spanning half the response range, is likely an honest signal that the underlying model cannot make precise predictions for those inputs. The remedy is a better model, more informative features, or more training data — not discarding the coverage guarantee. That being said, we have shown how different non-conformity scores can improve efficiency, but these gains will always be dwarfed by improvements to the base model.
 
 <br>
 
@@ -397,4 +449,6 @@ There is a large and active literature working to relax or adapt the exchangeabi
 
 [^2]: Every i.i.d. sequence is exchangeable, but not every exchangeable sequence is i.i.d. A canonical counterexample is a finite population sample without replacement: if \\((X\_1, \ldots, X\_n)\\) are drawn without replacement from a fixed urn, any permutation of the draws has the same joint distribution, so the sequence is exchangeable — but the draws are not independent (knowing \\(X\_1\\) changes the distribution of \\(X\_2\\)). Conformal prediction only requires the calibration and test points to be exchangeable with one another, which holds whenever they are an i.i.d. sample but also in the without-replacement setting and other non-i.i.d. scenarios.
 
-[^3]: The impossibility of exact distribution-free conditional coverage was formally established by Foygel Barber, Candès, Ramdas & Tibshirani, [*"The limits of distribution-free conditional predictive inference"*](https://arxiv.org/abs/1903.04684), Bernoulli 2021. In their Section 2.2 they credit two prior sources for the underlying observation: [Vovk (2012)](http://proceedings.mlr.press/v25/vovk12.html), *"Conditional validity of inductive conformal predictors"* (ACML 2012), who first raised the issue in the conformal prediction setting; and [Lei & Wasserman (2014)](https://doi.org/10.1111/rssb.12021), *"Distribution-free prediction bands for non-parametric regression"* (JRSS-B), who discuss the marginal/conditional gap in the context of nonparametric regression bands.
+[^3]: In practice, the calibration set may be the only set a researcher needs. For example, the fitted model may be model weights downloaded from an external source, and there's no requirement *per se* to test if the coverage guarantees hold on an evaluation set.
+
+[^4]: The impossibility of exact distribution-free conditional coverage was formally established by Foygel Barber, Candès, Ramdas & Tibshirani, [*"The limits of distribution-free conditional predictive inference"*](https://arxiv.org/abs/1903.04684), Bernoulli 2021. In their Section 2.2 they credit two prior sources for the underlying observation: [Vovk (2012)](http://proceedings.mlr.press/v25/vovk12.html), *"Conditional validity of inductive conformal predictors"* (ACML 2012), who first raised the issue in the conformal prediction setting; and [Lei & Wasserman (2014)](https://doi.org/10.1111/rssb.12021), *"Distribution-free prediction bands for non-parametric regression"* (JRSS-B), who discuss the marginal/conditional gap in the context of nonparametric regression bands.

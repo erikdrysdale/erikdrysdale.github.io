@@ -13,39 +13,52 @@ class score_aps:
     Adaptive Prediction Sets (APS) score.
 
     Introduced in Romano, Sesia & Candès (NeurIPS 2020) "Classification with
-    Valid and Adaptive Coverage". The score is the cumulative probability mass
-    needed to include the true label, summing from most-to-least probable class.
+    Valid and Adaptive Coverage". If the class probabilities are sorted in
+    descending order, the APS score for label y is the cumulative probability
+    mass up to y, minus a random fraction of y's own probability:
 
-    A uniform noise term o ~ U(0, p_{pi(y)}) is subtracted before computing
-    the cumulative sum, so the score is:
-        s(x, y) = sum_{j: pi_j < pi_y} p_{pi_j}  +  U * p_{pi_y}
-    where pi is the descending probability ordering. This randomization breaks
-    ties and allows exact (rather than merely conservative) marginal coverage.
+        s(x, y) = sum_{j <= rank(y)} p_{pi_j}(x) - U * p_y(x)
+
+    where U ~ Uniform(0, 1). Setting noise=0 recovers the deterministic,
+    non-randomized version often used in practice.
     """
-    def __init__(self, f_theta: Any) -> None:
+    def __init__(
+        self,
+        f_theta: Any,
+        noise: float | str = 'uniform',
+        random_state: int | None = None,
+    ) -> None:
         # Input checks
         assert hasattr(f_theta, 'predict_proba')
         self.f_theta = f_theta
+        if isinstance(noise, str):
+            assert noise == 'uniform', 'noise must be either a float in [0, 1] or "uniform"'
+        else:
+            assert 0.0 <= noise <= 1.0, 'numeric noise must lie in [0, 1]'
+        self.noise = noise
+        self.rng = np.random.default_rng(random_state)
 
-    def noisy_scores(self, scores: np.ndarray, shift: float = 0.0):
-        noise = np.random.uniform(low=0.5-shift, high=0.5+shift, size=scores.shape[0])
-        if len(scores.shape) == 2:
-            noise = noise.reshape([noise.shape[0], 1])
-        return scores * noise
+    def draw_noise(self, shape: int | tuple[int, ...]) -> np.ndarray:
+        if self.noise == 'uniform':
+            return self.rng.random(shape)
+        return np.full(shape, float(self.noise))
 
     def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Generate the scores"""
         phat = self.f_theta.predict_proba(x)
         # Determine the order to sort from largest to smallest
         idx_ord = np.argsort(-phat, axis=1)
-        phat_sorted_cusum = np.cumsum(np.take_along_axis(phat, idx_ord, axis=1), axis=1)
+        phat_sorted = np.take_along_axis(phat, idx_ord, axis=1)
+        phat_sorted_cusum = np.cumsum(phat_sorted, axis=1)
         # Determine which sorting position corresponds to y (the label)
         idx_ord_y = idx_ord == np.atleast_2d(y).T
         # Find out the relative order y falls within
         idx_y_sorted = idx_ord_y.argmax(axis=1)
-        # Generate the scores based on cumulative probability
-        scores = phat_sorted_cusum[np.arange(x.shape[0]), idx_y_sorted]
-        scores = self.noisy_scores(scores)
+        rows = np.arange(x.shape[0])
+        cum_prob_y = phat_sorted_cusum[rows, idx_y_sorted]
+        prob_y = phat_sorted[rows, idx_y_sorted]
+        noise = self.draw_noise(x.shape[0])
+        scores = cum_prob_y - noise * prob_y
         return scores
     
     @staticmethod
@@ -62,10 +75,10 @@ class score_aps:
         phat = self.f_theta.predict_proba(x)
         # Sort in descending order
         idx_ord = np.argsort(-phat, axis=1)
-        scores = np.cumsum(np.take_along_axis(phat, idx_ord, axis=1), axis=1)
-        scores = self.noisy_scores(scores)
+        phat_sorted = np.take_along_axis(phat, idx_ord, axis=1)
+        scores = np.cumsum(phat_sorted, axis=1) - self.draw_noise(phat_sorted.shape) * phat_sorted
         # Find the cumulative phat cut-off
-        idx_find = scores < qhat
+        idx_find = scores <= qhat
         # Get the sets
         tau = self.find_sets(idx_bool=idx_find, idx_sort=idx_ord)
         return tau
