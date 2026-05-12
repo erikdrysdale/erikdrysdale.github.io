@@ -492,6 +492,107 @@ On California Housing, this approach achieved empirical coverage 0.904 on a held
 
 <br>
 
+### (3.7) Localized conformal prediction (baseLCP + LOO PIT)
+
+The adaptive methods described so far — studentized and CQR — keep the conformal quantile \\(\hat{q}\\) *global* (a single number calibrated once on the whole calibration set) and instead adapt the interval by learning an auxiliary model for local scale or quantiles. An alternative strategy is to adapt the *quantile itself*: rather than asking "what is the \\((1-\alpha)\\)-quantile of all calibration scores?", ask "what is the \\((1-\alpha)\\)-quantile of scores near \\(x\\)?". **Localized conformal prediction** pursues this idea by computing a covariate-specific threshold \\(\hat{q}(x)\\) that varies continuously across the input space.
+
+#### The baseLCP idea
+
+The core idea (Guan, 2023) is to replace the flat empirical quantile with a Nadaraya–Watson (NW) kernel-weighted quantile. A **kernel** \\(H(x_i, x)\\) is a measure of similarity between two points: it returns a large value when \\(x_i\\) is close to \\(x\\) and a small value when they are far apart. Normalizing these similarities gives a probability weight for each calibration point:
+
+$$
+w_i(x) = \frac{H(X_i, x)}{\sum_{j=1}^{n} H(X_j, x)},
+$$
+
+and the local threshold is the weighted \\((1-\alpha)\\)-quantile of the calibration scores under those weights:
+
+$$
+\hat{q}_{1-\alpha}(x) = \text{Quantile}_{1-\alpha}\!\left(\sum_{i=1}^{n} w_i(x)\,\delta_{V_i}\right).
+$$
+
+This is a weighted empirical quantile: calibration points near \\(x\\) dominate, distant ones are down-weighted, so the threshold adapts to the local distribution of scores. The standard choice is the **Gaussian RBF kernel** \\(H(x_i, x) = \exp(-\|x_i - x\|^2 / 2h^2)\\), which assigns similarity that decays smoothly with squared Euclidean distance; the bandwidth \\(h\\) controls how quickly that decay happens. We use this kernel throughout.
+
+#### LOO PIT: debiased calibration scores
+
+Directly applying a kernel-weighted quantile of \\(V_i\\) at test points works, but produces calibration scores that are not well-calibrated to \\(\text{Unif}(0,1)\\) because the kernel CDF evaluated at its own training points is biased upward (an in-sample effect analogous to training-set R²). To reduce this bias we transform calibration scores to **probability integral transform (PIT)** values using leave-one-out (LOO) kernel CDFs.
+
+The entire calibration split \\(\{(X_i, V_i)\}_{i=1}^n\\) is used for two steps:
+
+**Step A — bandwidth selection.** We grid-search over \\(h\\) and choose
+
+$$
+h^* = \arg\min_h \sum_{i=1}^n \bigl(V_i - \hat{m}_{-i,h}(X_i)\bigr)^2,
+$$
+
+where \\(\hat{m}_{-i,h}(x)\\) is the LOO NW regression estimate of \\(V\\) at \\(x\\), computed from all calibration points *except* \\(i\\). This is the standard LOO cross-validation criterion for NW regression, and it selects the bandwidth that best predicts NCS in new-to-the-neighborhood points.
+
+**Step B — LOO PIT scores.** With \\(h^*\\) fixed, compute
+
+$$
+\tilde{V}_i = \hat{F}_{-i}(V_i \mid X_i;\, h^*)
+\;=\;
+\sum_{j \neq i} w_j^{(-i)}(X_i)\,\mathbf{1}(V_j \leq V_i),
+$$
+
+where \\(w_j^{(-i)}\\) are kernel weights from \\(X_i\\) to all other calibration points. Standard split-conformal calibration is then run on \\(\tilde{V}_1,\ldots,\tilde{V}_n\\) to obtain \\(\hat{q}\\).
+
+> **Bias caveat.** Using the same calibration set for both bandwidth selection (Step A) and PIT scoring (Step B) leaves a mild bias: \\(h^*\\) is fit to the same points whose LOO PIT scores we then evaluate. The LOO construction removes the most egregious within-sample optimism, but does not eliminate it entirely. A fully unbiased procedure would estimate \\(h\\) on a separate training fold; here we accept the residual bias as a practical tradeoff and call it out explicitly.
+
+#### Test-time inversion
+
+At a new test point \\(x_{\text{new}}\\), the full calibration set (no LOO needed) is used to estimate the kernel CDF:
+
+$$
+\hat{F}(v \mid x_{\text{new}};\,h^*)
+= \sum_{i=1}^{n} w_i(x_{\text{new}})\,\mathbf{1}(V_i \leq v).
+$$
+
+The local threshold is \\(\tau(x_{\text{new}}) = \hat{F}^{-1}(\hat{q} \mid x_{\text{new}})\\), inverted by finding the smallest calibration NCS value whose cumulative kernel weight reaches \\(\hat{q}\\). The final interval is
+
+$$
+\mathcal{C}(x_{\text{new}}) = \bigl[\hat{\mu}(x_{\text{new}}) - \tau(x_{\text{new}}),\;\hat{\mu}(x_{\text{new}}) + \tau(x_{\text{new}})\bigr],
+$$
+
+where \\(\hat{\mu}\\) is the mean model's prediction.
+
+#### What baseLCP does not guarantee — and how variants fix it
+
+baseLCP does *not* guarantee marginal coverage in general. The PIT-calibrated quantile \\(\hat{q}\\) is chosen on transformed scores and produces a test-time threshold that adapts locally, but the exchangeability argument that underlies conformal validity does not apply when the threshold itself is a function of \\(x\\).
+
+The main methods that address this small but real gap are:
+
+| Variant | Core fix | Key tradeoff |
+|---|---|---|
+| **calLCP** (Guan 2023) | Recalibrates the effective level \\(\tilde\alpha\\) so the marginal empirical coverage over calibration points hits \\(1-\alpha\\) exactly | May over-cover in low-noise regions to compensate for under-coverage elsewhere |
+| **RLCP** (Hore & Barber 2025) | Centers kernel weights at a *randomized* prototype \\(\tilde{X}\_{n+1}\sim p_H(\cdot\mid X_{n+1})\\) rather than at the true test point; restores exchangeability | Intervals are averages over the random prototype draw, so local adaptation is slightly smoothed |
+| **DCP / HPD-split** (Chernozhukov et al. 2021; Izbicki et al. 2022) | Transform scores via \\(\tilde V_i=\hat F_Y(Y_i\mid X_i)\\) (the full conditional CDF of \\(Y\\)); asymptotically \\(\tilde V\sim\text{Unif}(0,1)\\) for all \\(X\\) simultaneously, making a single global threshold work locally | Requires estimating \\(\hat F_Y(\cdot\mid x)\\), e.g. via quantile regression; gains are asymptotic, not finite-sample |
+
+#### Results on California Housing
+
+On the same California Housing split used for the Bayes section (same train/calibration/test partition and scaler), the localized method selected \\(h^*=0.406\\), achieved empirical coverage 0.906 at \\(\alpha=0.10\\), and produced mean interval width 1.783. Across 200 repeated resamples, the coverage distribution follows the beta-binomial reference closely.
+
+<center><h4>Figure 7a: Localized conformal interval widths</h4>
+<p><img src="/figures/conformal_local_width.png" width="65%"></p>
+</center>
+*Distribution of per-test-point interval widths from baseLCP + LOO PIT on California Housing (single split). Width variability reflects how much \\(\tau(x)\\) adapts to local density of calibration scores.*
+
+<center><h4>Figure 7b: Example localized prediction intervals</h4>
+<p><img src="/figures/conformal_local_examples.png" width="92%"></p>
+</center>
+*Four test instances at the 10th, 35th, 65th, and 90th percentile of the true response. Blue bar = localized interval; red ✕ = observed \\(y\\). In-panel annotation uses ✓ for covered and \\(\times\\) for missed.*
+
+<center><h4>Figure 7c: Width correlation — Bayes vs Localized</h4>
+<p><img src="/figures/conformal_local_corr.png" width="60%"></p>
+<p><i>Scatter of per-test-point interval widths from conformalizing Bayes (x-axis) vs baseLCP + LOO PIT (y-axis) on the same test set. Points near the 1:1 line (dashed) indicate the two methods agree on which inputs are uncertain; deviations reflect different uncertainty decompositions (density-model vs kernel-quantile).</i></p>
+</center>
+
+<center><h4>Figure 7d: Coverage distribution vs beta-binomial reference</h4>
+<p><img src="/figures/conformal_local_coverage.png" width="85%"></p>
+<p><i>Coverage-count histogram across 200 repeated resamples. The red line is the beta-binomial reference. baseLCP + LOO PIT tracks the reference well despite the lack of a formal marginal-coverage guarantee.</i></p>
+</center>
+
+<br>
+
 ## (4) Limitations
 
 ### (4.1) Exchangeability is the load-bearing assumption

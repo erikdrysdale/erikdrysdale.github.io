@@ -30,12 +30,14 @@ from _rmd.extra_conformal.utils import (
     StudentizedEstimator,
     TemperatureScaledClassifier,
     GaussianConditionalDensity,
+    LocalizedKernelCDF,
 )
 from _rmd.extra_conformal.conformal import (
     conformal_sets,
     score_lac, score_aps,
     score_mae, score_mse, score_pinpall, score_studentized,
     score_bayes_density,
+    score_localized_regression,
 )
 
 # Resolve repo root from this file location so outputs do not depend on cwd.
@@ -60,7 +62,8 @@ def parse_targets() -> set:
             'Figure(s) to generate. Can be repeated or comma-separated. '
             'Choices: all, digits, digits_v2, class, class_coverage, class_setsize, '
             'coverage_vs_alpha, reg, reg_coverage, reg_width, diabetes, '
-            'bayes, bayes_coverage, bayes_width, bayes_hdr_examples'
+            'bayes, bayes_coverage, bayes_width, bayes_hdr_examples, '
+            'local, local_coverage, local_width, local_examples, local_corr'
         ),
     )
     args = parser.parse_args()
@@ -69,7 +72,8 @@ def parse_targets() -> set:
         return {
             'digits', 'digits_v2', 'class_coverage', 'class_setsize',
             'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes',
-            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'
+            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples',
+            'local_coverage', 'local_width', 'local_examples', 'local_corr',
         }
 
     requested = set()
@@ -81,7 +85,8 @@ def parse_targets() -> set:
         return {
             'digits', 'digits_v2', 'class_coverage', 'class_setsize',
             'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes',
-            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'
+            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples',
+            'local_coverage', 'local_width', 'local_examples', 'local_corr',
         }
 
     expanded = set()
@@ -94,10 +99,13 @@ def parse_targets() -> set:
             expanded.add('diabetes')
         elif item == 'bayes':
             expanded.update({'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'})
+        elif item == 'local':
+            expanded.update({'local_coverage', 'local_width', 'local_examples', 'local_corr'})
         elif item in {
             'digits', 'digits_v2', 'class_coverage', 'class_setsize',
             'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes',
-            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'
+            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples',
+            'local_coverage', 'local_width', 'local_examples', 'local_corr',
         }:
             expanded.add(item)
         else:
@@ -1050,6 +1058,236 @@ if 'bayes_coverage' in targets or 'bayes_width' in targets or 'bayes_hdr_example
         gg_cov_b.save(fn6a, width=8, height=4, verbose=False)
         saved_files.append(fn6a)
         print(f'  saved {fn6a}')
+
+
+# =========================================================================== #
+# FIGURE 7 — Localized Conformal Regression (baseLCP + LOO PIT)
+# =========================================================================== #
+
+if any(t in targets for t in ('local_coverage', 'local_width', 'local_examples', 'local_corr')):
+    print("=== Figure 7: Localized Conformal Regression (baseLCP + LOO PIT) ===")
+
+    # Reuse same Cal Housing data and split strategy as Bayes section
+    try:
+        _cal_housing = fetch_california_housing()
+        X_all_l = _cal_housing.data.astype(float)
+        y_all_l = _cal_housing.target.astype(float)
+        dataset_name_l = 'California Housing'
+    except Exception:
+        from sklearn.datasets import load_diabetes
+        _dset = load_diabetes()
+        X_all_l = _dset.data.astype(float)
+        y_all_l = _dset.target.astype(float)
+        dataset_name_l = 'Diabetes'
+
+    n_total_l = X_all_l.shape[0]
+    alpha_l = 0.10
+    rng_l = np.random.default_rng(seed)
+
+    # Fixed single split for point estimates and example panels
+    n_train_l  = min(3000, int(0.60 * n_total_l))
+    n_calib_l  = min(1500, int(0.28 * n_total_l))
+    n_test_l   = n_total_l - n_train_l - n_calib_l
+
+    idx_l = rng_l.permutation(n_total_l)
+    tr_l  = idx_l[:n_train_l]
+    ca_l  = idx_l[n_train_l:n_train_l + n_calib_l]
+    te_l  = idx_l[n_train_l + n_calib_l:]
+
+    sc_l = StandardScaler()
+    X_tr_l  = sc_l.fit_transform(X_all_l[tr_l])
+    X_ca_l  = sc_l.transform(X_all_l[ca_l])
+    X_te_l  = sc_l.transform(X_all_l[te_l])
+    y_tr_l  = y_all_l[tr_l]
+    y_ca_l  = y_all_l[ca_l]
+    y_te_l  = y_all_l[te_l]
+
+    # Fit shared mean model — same hyperparameters as Figure 6 Bayes section
+    mean_mdl_l = GBR(random_state=seed, n_estimators=250, max_depth=3)
+    mean_mdl_l.fit(X_tr_l, y_tr_l)
+
+    # Fit localized conformal (bandwidth selection + LOO PIT happen inside gen_score)
+    cp_l = conformal_sets(
+        f_theta=mean_mdl_l,
+        score_fun=score_localized_regression,
+        alpha=alpha_l,
+        upper=True,
+    )
+    cp_l.fit(x=X_ca_l, y=y_ca_l)
+
+    # Report key diagnostics
+    h_star_l = cp_l.score_fun.h_star_
+    tau_l = cp_l.predict(X_te_l)        # (n_test, 2)
+    width_l = tau_l[:, 1] - tau_l[:, 0]
+    covered_l = ((y_te_l >= tau_l[:, 0]) & (y_te_l <= tau_l[:, 1]))
+    cov_l = float(covered_l.mean())
+    print(f'  h*={h_star_l:.4f}, qhat={cp_l.qhat:.4f}, '
+          f'coverage={cov_l:.3f}, mean_width={float(width_l.mean()):.3f}')
+
+    # Bayes density model reuses the same fitted mean model as the localized method
+    mdl_b_l = GaussianConditionalDensity(
+        mean_estimator=mean_mdl_l,
+        scale_estimator=GBR(random_state=seed),
+        scale_target='abs',
+    )
+    mdl_b_l.fit(X_tr_l, y_tr_l, prefit_mean=True)
+    y_pad_l = 2.0 * float(np.std(y_ca_l))
+    y_bounds_l = (float(y_all_l.min()) - y_pad_l, float(y_all_l.max()) + y_pad_l)
+    cp_b_l = conformal_sets(
+        f_theta=mdl_b_l,
+        score_fun=score_bayes_density,
+        alpha=alpha_l,
+        upper=True,
+        y_bounds=y_bounds_l,
+    )
+    cp_b_l.fit(x=X_ca_l, y=y_ca_l)
+    tau_b_l = cp_b_l.predict(X_te_l)    # (n_test, 2)
+    finite_b_l = np.isfinite(tau_b_l[:, 0]) & np.isfinite(tau_b_l[:, 1])
+    width_b_l = np.where(finite_b_l, tau_b_l[:, 1] - tau_b_l[:, 0], np.nan)
+
+    # ---- Figure 7a: Width distribution ------------------------------------
+    if 'local_width' in targets:
+        dat_lw = pd.DataFrame({'width': width_l})
+        bw_lw = max(1e-3, float(dat_lw['width'].std()) / 20)
+        gg_lw = (
+            pn.ggplot(dat_lw, pn.aes(x='width'))
+            + pn.theme_bw()
+            + pn.geom_histogram(binwidth=bw_lw, fill='#3182BD', alpha=0.7, color='white')
+            + pn.labs(x='Interval width', y='Count')
+            + pn.ggtitle(f'Localized conformal interval widths ({dataset_name_l})\n'
+                         f'α={alpha_l}, h*={h_star_l:.4f}, qhat={cp_l.qhat:.4f}')
+        )
+        fn7a = os.path.join(dir_figs, 'conformal_local_width.png')
+        gg_lw.save(fn7a, width=7, height=4, verbose=False)
+        saved_files.append(fn7a)
+        print(f'  saved {fn7a}')
+
+    # ---- Figure 7b: Example inference panels (single consolidated plot) -----
+    if 'local_examples' in targets:
+        sort_idx_l = np.argsort(y_te_l)
+        q_pts = np.quantile(np.arange(len(sort_idx_l)), [0.10, 0.35, 0.65, 0.90])
+        ex_idx = sort_idx_l[np.round(q_pts).astype(int)]
+
+        ex_rows = []
+        for j, i in enumerate(ex_idx, start=1):
+            cov_i = bool(covered_l[i])
+            label_i = r'$\checkmark\ \mathrm{covered}$' if cov_i else r'$\times\ \mathrm{missed}$'
+            status_i = 'covered' if cov_i else 'missed'
+            lo_i = float(tau_l[i, 0])
+            up_i = float(tau_l[i, 1])
+            ex_rows.append({
+                'x_label': f'Ex {j}\ny={y_te_l[i]:.2f}, w={width_l[i]:.2f}',
+                'y_true': float(y_te_l[i]),
+                'lower': lo_i,
+                'upper': up_i,
+                'mu': float(mean_mdl_l.predict(X_te_l[i:i+1])[0]),
+                'cov_label': label_i,
+                'status': status_i,
+            })
+
+        dat_ex = pd.DataFrame(ex_rows)
+        # Preserve left-to-right ordering (Ex 1 = lowest y, Ex 4 = highest)
+        dat_ex['x_label'] = pd.Categorical(
+            dat_ex['x_label'], categories=dat_ex['x_label'].tolist(), ordered=True
+        )
+
+        gg_ex = (
+            pn.ggplot(dat_ex, pn.aes(x='x_label'))
+            + pn.theme_bw()
+            + pn.geom_linerange(pn.aes(ymin='lower', ymax='upper'), color='#3182BD', size=1.5)
+            + pn.geom_point(pn.aes(y='mu'), color='#3182BD', size=3)
+            + pn.geom_point(pn.aes(y='y_true'), color='#D62728', size=3, shape='x')
+            + pn.geom_text(
+                pn.aes(y='upper', label='cov_label', color='status'),
+                va='bottom',
+                size=8,
+                show_legend=False,
+            )
+            + pn.scale_color_manual(values={'covered': '#1B9E77', 'missed': '#D95F02'})
+            + pn.labs(x='Test instance', y='Response y')
+            + pn.ggtitle(
+                f'Localized conformal: example intervals ({dataset_name_l})\n'
+                'Blue bar = interval, blue dot = mean pred, red \u00d7 = observed y'
+            )
+        )
+        fn7b = os.path.join(dir_figs, 'conformal_local_examples.png')
+        gg_ex.save(fn7b, width=8, height=5, verbose=False)
+        saved_files.append(fn7b)
+        print(f'  saved {fn7b}')
+
+    # ---- Figure 7c: Correlation vs Bayes -----------------------------------
+    if 'local_corr' in targets:
+        # Use only test points where Bayes width is finite
+        mask_both = finite_b_l & np.isfinite(width_l)
+        w_loc_plot = width_l[mask_both]
+        w_bay_plot = width_b_l[mask_both]
+        corr_lc = float(np.corrcoef(w_bay_plot, w_loc_plot)[0, 1])
+        dat_corr = pd.DataFrame({'bayes_width': w_bay_plot, 'local_width': w_loc_plot})
+        gg_corr = (
+            pn.ggplot(dat_corr, pn.aes(x='bayes_width', y='local_width'))
+            + pn.theme_bw()
+            + pn.geom_point(alpha=0.25, size=0.8, color='#2C7FB8')
+            + pn.geom_abline(slope=1, intercept=0, linetype='dashed', color='black', size=0.6)
+            + pn.labs(x='Bayes HDR width', y='Localized (baseLCP) width')
+            + pn.ggtitle(
+                f'Interval width: Bayes vs Localized ({dataset_name_l}, n_test={mask_both.sum()})\n'
+                f'Pearson r = {corr_lc:.3f}'
+            )
+        )
+        fn7c = os.path.join(dir_figs, 'conformal_local_corr.png')
+        gg_corr.save(fn7c, width=6, height=5, verbose=False)
+        saved_files.append(fn7c)
+        print(f'  saved {fn7c}')
+
+    # ---- Figure 7d: Coverage histogram -------------------------------------
+    if 'local_coverage' in targets:
+        n_train_sim_l = min(2500, int(0.55 * n_total_l))
+        n_calib_sim_l = min(1200, int(0.25 * n_total_l))
+        n_test_sim_l  = min(150, n_total_l - n_train_sim_l - n_calib_sim_l)
+        nsim_l = 200
+        rows_cov_l = []
+        for i in range(nsim_l):
+            rng_i = np.random.default_rng(seed + 1000 + i)
+            idx_i = rng_i.permutation(n_total_l)
+            tr_i = idx_i[:n_train_sim_l]
+            ca_i = idx_i[n_train_sim_l:n_train_sim_l + n_calib_sim_l]
+            te_i = idx_i[n_train_sim_l + n_calib_sim_l:n_train_sim_l + n_calib_sim_l + n_test_sim_l]
+            sc_i = StandardScaler()
+            Xtr_i = sc_i.fit_transform(X_all_l[tr_i])
+            Xca_i = sc_i.transform(X_all_l[ca_i])
+            Xte_i = sc_i.transform(X_all_l[te_i])
+            ytr_i, yca_i, yte_i = y_all_l[tr_i], y_all_l[ca_i], y_all_l[te_i]
+            try:
+                m_i = GBR(random_state=seed)
+                m_i.fit(Xtr_i, ytr_i)
+                cp_i = conformal_sets(
+                    f_theta=m_i, score_fun=score_localized_regression,
+                    alpha=alpha_l, upper=True,
+                )
+                cp_i.fit(x=Xca_i, y=yca_i)
+                tau_i = cp_i.predict(Xte_i)
+                n_cov = int(((yte_i >= tau_i[:, 0]) & (yte_i <= tau_i[:, 1])).sum())
+                rows_cov_l.append({'n_cover': n_cov})
+            except Exception:
+                continue
+
+        dat_cov_l = pd.DataFrame(rows_cov_l)
+        mean_cover_l = float(dat_cov_l['n_cover'].mean())
+        dat_pmf_l = betabinom_pmf_df(n_calib_sim_l, n_test_sim_l, alpha_l)
+        gg_cov_l = (
+            pn.ggplot(dat_cov_l, pn.aes(x='n_cover', y='..density..'))
+            + pn.theme_bw()
+            + pn.geom_histogram(binwidth=1, fill='#6BAED6', color='white', alpha=0.75)
+            + pn.geom_line(pn.aes(x='x', y='pmf'), data=dat_pmf_l, color='red', size=0.8, inherit_aes=False)
+            + pn.geom_vline(xintercept=mean_cover_l, linetype='dashed', color='black', size=0.7)
+            + pn.labs(x=f'Number covered (out of {n_test_sim_l})', y='Density')
+            + pn.ggtitle(f'Localized conformal coverage vs beta-binomial ({dataset_name_l})\n'
+                         f'nsim={nsim_l}, n_calib={n_calib_sim_l}, α={alpha_l}')
+        )
+        fn7d = os.path.join(dir_figs, 'conformal_local_coverage.png')
+        gg_cov_l.save(fn7d, width=8, height=4, verbose=False)
+        saved_files.append(fn7d)
+        print(f'  saved {fn7d}')
 
 
 # =========================================================================== #

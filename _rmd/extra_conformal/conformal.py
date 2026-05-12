@@ -6,7 +6,7 @@ Conformal utility functions
 import numpy as np
 from typing import Callable, Any
 from scipy.optimize import brentq
-from .utils import check_callable_method, check_named_args
+from .utils import check_callable_method, check_named_args, LocalizedKernelCDF
 
 
 class score_aps:
@@ -326,6 +326,100 @@ class score_bayes_density:
         for i in range(x.shape[0]):
             tau[i, :] = self._solve_interval(x_i=x[i], log_tau=log_tau)
         return tau
+
+
+class score_localized_regression:
+    """
+    Localized conformal prediction for regression (baseLCP-style with LOO PIT).
+
+    The base nonconformity score is the absolute residual:
+        V_i = |y_i - mu(x_i)|
+
+    Bandwidth selection and LOO PIT scoring both use the same calibration split.
+
+    Step A — bandwidth selection:
+        h* = argmin_h LOO-NW squared prediction error of V on the calibration set.
+
+    Step B — LOO PIT calibration scores:
+        tilde_V_i = F_{-i}(V_i | X_i; h*)   (kernel CDF excluding point i)
+
+    Standard split-conformal quantile is then taken on tilde_V.
+    Because h* is chosen on the same calibration set the LOO PIT scores carry
+    a mild bias; this is analogous to any data-driven smoothing step applied
+    without a further held-out fold.
+
+    At test time:
+        weights_new  = kernel weights from X_new to X_cal with h*
+        tau(x_new)   = invert F(. | x_new) at the calibrated PIT quantile
+        interval     = [mu(x_new) - tau(x_new), mu(x_new) + tau(x_new)]
+    """
+
+    def __init__(
+        self,
+        f_theta: Any,
+        h_grid: np.ndarray | None = None,
+        random_state: int | None = None,
+    ) -> None:
+        """
+        Parameters
+        ----------
+        f_theta : fitted mean estimator with a .predict(X) method.
+        h_grid  : array of bandwidths to search over.  None => auto from data.
+        """
+        check_callable_method(f_theta, 'predict')
+        self.f_theta = f_theta
+        self.h_grid = h_grid
+        self.random_state = random_state
+        self._kde = LocalizedKernelCDF(h_grid=h_grid, random_state=random_state)
+
+    # ------------------------------------------------------------------
+    # gen_score: called by conformal_sets.fit on calibration data
+    # ------------------------------------------------------------------
+
+    def gen_score(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Return LOO PIT scores on the calibration set.
+
+        1. Compute base NCS V_i = |y_i - mu(x_i)|
+        2. Select h* via LOO NW on V
+        3. Compute LOO PIT scores tilde_V_i = F_{-i}(V_i | X_i; h*)
+
+        Stores h*, X_cal, V_cal on self for use in invert_score.
+        """
+        mu = self.f_theta.predict(x)
+        V = np.abs(y - mu)  # base NCS
+
+        # Step A: bandwidth selection
+        self.h_star_ = self._kde.select_bandwidth(x, V)
+        # Step B: LOO PIT scores
+        pit = self._kde.loo_pit_scores(x, V, self.h_star_)
+
+        # Cache calibration data for test-time inversion
+        self._X_cal = x
+        self._V_cal = V
+
+        return pit
+
+    # ------------------------------------------------------------------
+    # invert_score: called by conformal_sets.predict on test data
+    # ------------------------------------------------------------------
+
+    def invert_score(self, qhat: float, x: np.ndarray) -> np.ndarray:
+        """
+        For each test point in x, invert the localized CDF at `qhat`
+        to obtain a local V-threshold tau(x), then form interval
+        [mu(x) - tau(x), mu(x) + tau(x)].
+
+        Returns (n_test, 2) array of [lower, upper] bounds.
+        """
+        mu_new = self.f_theta.predict(x)
+        # Kernel weights from test points to calibration points
+        weights = self._kde.eval_cdf(x, self._X_cal, self._V_cal, self.h_star_)
+        # Invert at the calibrated quantile level to get per-test tau
+        tau = self._kde.invert_cdf(weights, self._V_cal, qhat)
+        lower = mu_new - tau
+        upper = mu_new + tau
+        return np.column_stack([lower, upper])
 
 
 class conformal_sets:
