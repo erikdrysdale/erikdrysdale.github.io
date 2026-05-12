@@ -5,10 +5,10 @@
 // IMPORTS
 //
 
-@use "reset";
-@use "variables" as *;
-@use "highlights";
-@use "svg-icons";
+@import "reset";
+@import "variables";
+@import "highlights";
+@import "svg-icons";
 
 
 /**********/
