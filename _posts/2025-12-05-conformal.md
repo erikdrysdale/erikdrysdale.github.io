@@ -147,7 +147,7 @@ Split conformal sacrifices a fraction of data to the calibration set in exchange
 
 ## (2) Classification: LAC and APS scores
 
-For classification with \\(k\\) classes, \\(\hat{f}\\) is any model that outputs softmax probabilities \\(\hat{p}(x) \in \Delta^{k-1}\\). Two non-conformity scores are widely used.
+For classification with \\(k\\) classes, \\(\hat{f}\\) is any model that outputs a \\(k\\)-dimensional softmax probability vector \\(\hat{p}(x)=(\hat{p}_1(x),\ldots,\hat{p}_k(x))\\) with nonnegative entries summing to 1 (mathematically, this vector lies in \\(\Delta^{k-1}\\)). Two non-conformity scores are widely used.
 
 ### (2.1) LAC: Least Ambiguous Classifier score
 
@@ -347,12 +347,20 @@ $$
 With a single calibration quantile \\(\hat{q}\\), the prediction interval becomes:
 
 $$
-\mathcal{C}_{\text{stud}}(x) = \left[ \hat{f}(x) - \hat{q}\,\hat{\sigma}(x),\; \hat{f}(x) + \hat{q}\,\hat{\sigma}(x) \right]
+\mathcal{C}_{\text{stud}}(x) = \left[ \hat{f}(x) - \hat{q}\cdot\hat{\sigma}(x),\; \hat{f}(x) + \hat{q}\cdot\hat{\sigma}(x) \right]
 $$
 
 Now interval width *scales with* \\(\hat{\sigma}(x)\\): regions where the model is locally uncertain get wider intervals, and confident regions get narrower ones. The marginal coverage guarantee still holds exactly as before — the studentized score is just a different NCS, and the conformal calibration is agnostic to the form of the score.
 
-In practice, \\(\hat{\sigma}(x)\\) is fit on the absolute training residuals \\(\|y\_i - \hat{f}(x_i)\|\\) after training \\(\hat{f}\\). A ridge or gradient boosting regressor works well.
+In practice, there are at least three common ways to obtain \\(\hat{\sigma}(x)\\):
+
+1. **Native model support.** Some models directly output both a mean and uncertainty/scale estimate (for example, Gaussian Process Regression or a neural network trained with a Gaussian likelihood that predicts mean and log-variance jointly).
+2. **Implied model variance.** Some pipelines derive uncertainty from model randomness or posterior structure (for example, MC-dropout dispersion, ensemble variance, or Bayesian posterior predictive variance).
+3. **Auxiliary scale model.** Fit a second model to first-stage errors, usually \\(\|y\_i - \hat{f}(x_i)\|\\), so the first model learns location and the second learns local scale (stacking-style).
+
+This post uses the third option because it is simple, model-agnostic, and works with any base regressor that has a `predict` method. A ridge or gradient boosting regressor is a reasonable second-stage choice for the auxiliary scale model.
+
+In practice, the second-stage target is often one of three transforms of first-stage errors: \(|e_i|\), \(e_i^2\), or \(\log(e_i^2+\varepsilon)\), where \(e_i = y_i-\hat{f}(x_i)\). These are all monotone surrogates of local noise scale and therefore carry similar information about where uncertainty is high or low. Importantly, studentized conformal is scale-equivariant: if \(\hat{\sigma}(x)\) is off by a constant factor \(c>0\), then scores \(|e|/\hat{\sigma}(x)\) are rescaled by \(1/c\), and the calibrated quantile \(\hat{q}\) rescales by the same factor. The final interval width \(\hat{q}\cdot\hat{\sigma}(x)\) is therefore unchanged up to this global constant, so getting the relative shape of \(\hat{\sigma}(x)\) over \(x\) is usually more important than perfect absolute calibration.
 
 ```python
 from sklearn.linear_model import LinearRegression, Ridge
@@ -452,6 +460,8 @@ Two further gotchas are worth stating explicitly, because they are frequently mi
 
 The first concerns what "coverage" actually means. The guarantee \\(P(Y_{n+1} \in \mathcal{C}(X_{n+1})) \geq 1 - \alpha\\) is a statement about the *procedure*, not about any individual prediction set. More precisely, it is a statement about the *next* exchangeable draw: if you re-ran the entire process — drawing a fresh calibration set, recomputing \\(\hat{q}\\), and predicting on a new test point — the resulting set would contain the true label at least \\(1-\alpha\\) fraction of the time *in expectation over that randomness*. Once \\(\hat{q}\\) has been fixed and a specific \\(\mathcal{C}(x)\\) has been produced, that interval either covers the true value or it does not. There is no probability left; the uncertainty has collapsed. This is directly analogous to the classical confidence interval misconception: a 95% confidence interval does not mean there is a 95% probability that the true parameter lies inside *this particular interval* — it means that the interval-construction procedure would capture the true value in 95% of repeated applications. A conformal prediction set carries exactly the same caveat. Researchers who interpret \\(\mathcal{C}(x)\\) as having a \\(1-\alpha\\) posterior probability of covering \\(Y\\) are importing a Bayesian interpretation into a frequentist guarantee that does not support it.
 
+This is also why larger calibration sets are so valuable in practice, even for the simplest \\(\pm\hat{q}\\) interval. The deployment-level coverage for a fixed fitted model, \\(\theta(\mathcal{D}\_{\text{cal}})=P(Y\in\mathcal{C}(X)\mid\mathcal{D}\_{\text{cal}})\\), is random because \\(\hat{q}\\) is random. Across repeated calibrations, some deployed models will over-cover and some will under-cover relative to 90% (with a slight conservative tilt from finite-sample quantile adjustment). Increasing \\(n_{\text{calib}}\\) concentrates this distribution of \\(\theta(\mathcal{D}\_{\text{cal}})\\) around \\(1-\alpha\\), so typical realized coverage gets closer to target: e.g., the kind of miss that might be 86% with a very small calibration set can move much closer to 89–90% when calibration is larger.
+
 The second concerns batches of predictions. Suppose you deploy the model and observe \\(m\\) new test points simultaneously. Each individual coverage event \\(\mathbf{1}[Y_i \in \mathcal{C}(X_i)]\\) has marginal probability at least \\(1-\alpha\\), but the *joint* distribution of the \\(m\\) coverage indicators is not specified by the conformal guarantee alone. In the simplest case — where the \\(m\\) test points are exchangeable with each other and with the calibration set, and the same \\(\hat{q}\\) is applied to all — the total number of covered test points follows approximately \\(\text{Binomial}(m, 1-\alpha)\\) in expectation. That has mean \\(m(1-\alpha)\\) and standard deviation \\(\sqrt{m \alpha (1-\alpha)}\\), so for any *particular* batch of \\(m\\) predictions the realised coverage rate will deviate from \\(1-\alpha\\) by \\(O(1/\sqrt{m})\\). For \\(m = 100\\) and \\(\alpha = 0.1\\) the standard deviation of the number covered is \\(\sqrt{100 \times 0.1 \times 0.9} \approx 3\\), meaning the realised coverage rate for that batch routinely fluctuates between roughly 87% and 93%. This is not a failure of conformal prediction — it is binomial sampling noise — but it means that evaluating a deployed system on a single batch of moderate size and concluding it "achieves 90% coverage" or "misses the target" requires care. The beta-binomial distribution described in Section 1.4 makes this sampling variability precise and provides a rigorous diagnostic for whether observed deviations are consistent with the nominal guarantee.
 
 ### (4.4) Methods that relax exchangeability
@@ -468,7 +478,11 @@ There is a large and active literature working to relax or adapt the exchangeabi
 
 **Epistemic vs aleatoric uncertainty.** The width of a conformal prediction interval reflects *total* predictive uncertainty and cannot be decomposed into epistemic uncertainty (arising from limited data or a mis-specified model) and aleatoric uncertainty (irreducible noise in \\(Y \mid X\\)). A wide interval might mean the model is poorly identified, the training set is too small, or simply that \\(Y \mid X\\) is inherently noisy — conformal prediction cannot distinguish these. Separating the two components requires stronger scaffolding: explicit distributional assumptions about the DGP, an auxiliary source of variance information (e.g. replicate measurements of the same \\(x\\), which directly reveal \\(\text{Var}(Y \mid X = x)\\)), or a full probabilistic model whose posterior can be used to estimate parameter uncertainty separately. None of this is available within the distribution-free conformal framework, which is precisely what makes the coverage guarantee so broadly applicable.
 
-**Large prediction sets are usually not the fault of the conformal model.** If prediction intervals are too wide to be actionable, the right diagnosis is that the base model's errors are simply too variable — or that the signal in the data is too hard for any model to pick up — and conformal calibration is faithfully reporting that uncertainty. A conformal predictor that outputs \\(\{3, 5, 7\}\\) for an ambiguous digit, or a regression interval spanning half the response range, is likely an honest signal that the underlying model cannot make precise predictions for those inputs. The remedy is a better model, more informative features, or more training data — not discarding the coverage guarantee. That being said, we have shown how different non-conformity scores can improve efficiency, but these gains will always be dwarfed by improvements to the base model.
+**Average prediction set size is mostly driven by the base model; conformal mostly controls adaptivity.** If prediction intervals are too wide to be actionable, the dominant driver is *usually* base-model error scale (or weak signal in the features), and conformal calibration is reporting that uncertainty under a valid coverage constraint. A conformal predictor that outputs \\(\{3, 5, 7\}\\) for an ambiguous digit, or a regression interval spanning half the response range, is often an honest signal that the underlying predictor cannot localize outcomes well for those inputs. Better features, better model class, or more data typically move the average set size the most. Different conformal scores/methods can still produce meaningful efficiency gains — as we showed in this post — but these gains are often more about *where* width is allocated (better local adaptivity) than large changes in overall average width.
+
+<br>
+
+---
 
 <br>
 
