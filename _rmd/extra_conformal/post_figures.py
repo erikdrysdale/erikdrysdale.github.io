@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import plotnine as pn
 from scipy.stats import betabinom
-from sklearn.datasets import load_digits, load_diabetes
+from sklearn.datasets import load_digits, load_diabetes, fetch_california_housing
 from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from sklearn.exceptions import ConvergenceWarning
@@ -29,11 +29,13 @@ from _rmd.extra_conformal.utils import (
     LinearQuantileRegressor, QuantileRegressors,
     StudentizedEstimator,
     TemperatureScaledClassifier,
+    GaussianConditionalDensity,
 )
 from _rmd.extra_conformal.conformal import (
     conformal_sets,
     score_lac, score_aps,
     score_mae, score_mse, score_pinpall, score_studentized,
+    score_bayes_density,
 )
 
 # Resolve repo root from this file location so outputs do not depend on cwd.
@@ -57,7 +59,8 @@ def parse_targets() -> set:
         help=(
             'Figure(s) to generate. Can be repeated or comma-separated. '
             'Choices: all, digits, digits_v2, class, class_coverage, class_setsize, '
-            'coverage_vs_alpha, reg, reg_coverage, reg_width, diabetes'
+            'coverage_vs_alpha, reg, reg_coverage, reg_width, diabetes, '
+            'bayes, bayes_coverage, bayes_width, bayes_hdr_examples'
         ),
     )
     args = parser.parse_args()
@@ -65,7 +68,8 @@ def parse_targets() -> set:
     if not args.figure:
         return {
             'digits', 'digits_v2', 'class_coverage', 'class_setsize',
-            'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes'
+            'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes',
+            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'
         }
 
     requested = set()
@@ -76,7 +80,8 @@ def parse_targets() -> set:
     if 'all' in requested:
         return {
             'digits', 'digits_v2', 'class_coverage', 'class_setsize',
-            'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes'
+            'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes',
+            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'
         }
 
     expanded = set()
@@ -87,9 +92,12 @@ def parse_targets() -> set:
             expanded.update({'reg_coverage', 'reg_width'})
         elif item == 'diabetes':
             expanded.add('diabetes')
+        elif item == 'bayes':
+            expanded.update({'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'})
         elif item in {
             'digits', 'digits_v2', 'class_coverage', 'class_setsize',
-            'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes'
+            'coverage_vs_alpha', 'reg_coverage', 'reg_width', 'diabetes',
+            'bayes_coverage', 'bayes_width', 'bayes_hdr_examples'
         }:
             expanded.add(item)
         else:
@@ -798,6 +806,250 @@ if 'diabetes' in targets:
 
 # Summary table of interval widths
     print(dat_dia.groupby('method')[['width', 'covered']].agg(['mean', 'std']).round(2))
+
+
+# =========================================================================== #
+# FIGURE 6 — Conformalizing Bayes (density NCS) on California Housing
+# =========================================================================== #
+
+if 'bayes_coverage' in targets or 'bayes_width' in targets or 'bayes_hdr_examples' in targets:
+    print("=== Figure 6: Conformalizing Bayes (density superlevel sets) ===")
+
+    try:
+        X_all, y_all = fetch_california_housing(return_X_y=True)
+        dataset_name = 'California Housing'
+    except Exception as e:
+        print(f'  warning: fetch_california_housing failed ({e}); falling back to Diabetes')
+        X_all, y_all = load_diabetes(return_X_y=True)
+        dataset_name = 'Diabetes (fallback)'
+
+    alpha_b = 0.10
+    rng_b = np.random.default_rng(seed)
+    n_total_b = X_all.shape[0]
+    n_train_b = min(12000, int(0.60 * n_total_b))
+    n_calib_b = min(4000, int(0.20 * n_total_b))
+    n_test_b = n_total_b - n_train_b - n_calib_b
+
+    idx_b = rng_b.permutation(n_total_b)
+    idx_tr_b = idx_b[:n_train_b]
+    idx_ca_b = idx_b[n_train_b:n_train_b+n_calib_b]
+    idx_te_b = idx_b[n_train_b+n_calib_b:]
+
+    X_tr_b, y_tr_b = X_all[idx_tr_b], y_all[idx_tr_b]
+    X_ca_b, y_ca_b = X_all[idx_ca_b], y_all[idx_ca_b]
+    X_te_b, y_te_b = X_all[idx_te_b], y_all[idx_te_b]
+
+    scaler_b = StandardScaler()
+    X_tr_bs = scaler_b.fit_transform(X_tr_b)
+    X_ca_bs = scaler_b.transform(X_ca_b)
+    X_te_bs = scaler_b.transform(X_te_b)
+
+    y_pad = 2.0 * np.std(y_ca_b)
+    y_bounds = (float(np.min(y_ca_b) - y_pad), float(np.max(y_ca_b) + y_pad))
+
+    mdl_b = GaussianConditionalDensity(
+        mean_estimator=GBR(random_state=seed, n_estimators=250, max_depth=3),
+        scale_estimator=GBR(random_state=seed+1, n_estimators=250, max_depth=3),
+        scale_target='log_sq',
+        random_state=seed,
+    )
+    mdl_b.fit(X_tr_bs, y_tr_b)
+
+    cp_b = conformal_sets(
+        f_theta=mdl_b,
+        score_fun=score_bayes_density,
+        alpha=alpha_b,
+        upper=True,
+        n_grid=400,
+        y_bounds=y_bounds,
+        search_mult=8.0,
+    )
+    cp_b.fit(x=X_ca_bs, y=y_ca_b)
+    tau_b = cp_b.predict(X_te_bs)
+
+    finite_b = np.isfinite(tau_b).all(axis=1)
+    covered_b = np.zeros_like(y_te_b, dtype=bool)
+    covered_b[finite_b] = (y_te_b[finite_b] >= tau_b[finite_b, 0]) & (y_te_b[finite_b] <= tau_b[finite_b, 1])
+    width_b = np.where(finite_b, tau_b[:, 1] - tau_b[:, 0], np.nan)
+    empty_rate_b = 1.0 - finite_b.mean()
+    print(f'  {dataset_name}: qhat={cp_b.qhat:.3f}, coverage={covered_b.mean():.3f}, '
+          f'mean_width={np.nanmean(width_b):.3f}, empty_rate={empty_rate_b:.3%}')
+
+    if 'bayes_width' in targets:
+        dat_bw = pd.DataFrame({'width': width_b[np.isfinite(width_b)]})
+        gg_bw = (
+            pn.ggplot(dat_bw, pn.aes(x='width'))
+            + pn.theme_bw()
+            + pn.geom_histogram(binwidth=max(1e-3, dat_bw['width'].std()/20), fill='#3182BD', alpha=0.7, color='white')
+            + pn.labs(x='HDR interval width', y='Count')
+            + pn.ggtitle(f'Conformalizing Bayes width distribution ({dataset_name})\n'
+                         f'α={alpha_b}, qhat={cp_b.qhat:.3f}, empty_rate={100*empty_rate_b:.1f}%')
+        )
+        fn6b = os.path.join(dir_figs, 'conformal_bayes_width.png')
+        gg_bw.save(fn6b, width=7, height=4, verbose=False)
+        saved_files.append(fn6b)
+        print(f'  saved {fn6b}')
+
+    if 'bayes_hdr_examples' in targets:
+        finite_idx = np.where(finite_b)[0]
+        if finite_idx.shape[0] >= 4:
+            width_f = width_b[finite_idx]
+            q_idx = np.quantile(np.arange(finite_idx.shape[0]), [0.10, 0.35, 0.65, 0.90]).round().astype(int)
+            q_idx = np.clip(q_idx, 0, finite_idx.shape[0]-1)
+            pick_idx = finite_idx[np.sort(np.unique(q_idx))]
+            if pick_idx.shape[0] < 4:
+                extra = finite_idx[:(4-pick_idx.shape[0])]
+                pick_idx = np.concatenate([pick_idx, extra])
+        else:
+            pick_idx = np.arange(min(4, X_te_bs.shape[0]))
+
+        log_tau_b = -cp_b.qhat
+        curve_rows = []
+        band_rows = []
+        text_rows = []
+        for j, i_te in enumerate(pick_idx, start=1):
+            x_i = X_te_bs[i_te:i_te+1]
+            mu_i = float(mdl_b.predict_mean(x_i)[0])
+            sig_i = float(mdl_b.predict_sigma(x_i)[0])
+            lb_i, ub_i = tau_b[i_te, 0], tau_b[i_te, 1]
+            covered_i = np.isfinite(lb_i) and np.isfinite(ub_i) and (y_te_b[i_te] >= lb_i) and (y_te_b[i_te] <= ub_i)
+            y_lb = max(y_bounds[0], mu_i - 6.0 * sig_i)
+            y_ub = min(y_bounds[1], mu_i + 6.0 * sig_i)
+            y_grid = np.linspace(y_lb, y_ub, 450)
+            x_rep = np.repeat(x_i, y_grid.shape[0], axis=0)
+            logd = mdl_b.log_density(x_rep, y_grid)
+            panel = f'Example {j}: y={y_te_b[i_te]:.2f}, width={width_b[i_te]:.2f}'
+            logd_min, logd_max = float(np.min(logd)), float(np.max(logd))
+            y_rng = max(1e-8, y_ub - y_lb)
+            l_rng = max(1e-8, logd_max - logd_min)
+            text_rows.append({
+                'example': panel,
+                'x_annot': float(y_lb + 0.04 * y_rng),
+                'y_annot': float(logd_max - 0.08 * l_rng),
+                'label': r'$\checkmark\ \mathrm{covered}$' if covered_i else r'$\times\ \mathrm{missed}$',
+                'status': 'covered' if covered_i else 'missed',
+            })
+            if np.isfinite(lb_i) and np.isfinite(ub_i):
+                band_rows.append({'example': panel, 'xmin': float(lb_i), 'xmax': float(ub_i)})
+            for yg, lg in zip(y_grid, logd):
+                curve_rows.append({
+                    'example': panel,
+                    'y': float(yg),
+                    'log_density': float(lg),
+                    'log_tau': float(log_tau_b),
+                    'y_true': float(y_te_b[i_te]),
+                })
+        dat_hdr = pd.DataFrame(curve_rows)
+        dat_band = pd.DataFrame(band_rows)
+        dat_text = pd.DataFrame(text_rows)
+
+        gg_hdr = (
+            pn.ggplot(dat_hdr, pn.aes(x='y', y='log_density'))
+            + pn.theme_bw()
+            + pn.geom_rect(
+                pn.aes(xmin='xmin', xmax='xmax', ymin=-np.inf, ymax=np.inf),
+                data=dat_band,
+                inherit_aes=False,
+                fill='#31A354',
+                alpha=0.15,
+            )
+            + pn.geom_line(color='#2C7FB8', size=0.9)
+            + pn.geom_hline(pn.aes(yintercept='log_tau'), linetype='dashed', color='black', size=0.6)
+            + pn.geom_vline(pn.aes(xintercept='y_true'), color='#D62728', linetype='dashdot', size=0.6)
+            + pn.geom_text(
+                pn.aes(x='x_annot', y='y_annot', label='label', color='status'),
+                data=dat_text,
+                inherit_aes=False,
+                ha='left',
+                va='top',
+                size=8,
+                show_legend=False,
+            )
+            + pn.scale_color_manual(values={'covered': '#1B9E77', 'missed': '#D95F02'})
+            + pn.facet_wrap('~example', ncol=2, scales='free_x')
+            + pn.labs(x='Outcome y', y='log f(y | x)')
+            + pn.ggtitle(f'HDR root-solving examples ({dataset_name})\n'
+                         'Green vertical band = conformal set in y; dashed = log_tau; red = observed y')
+        )
+        fn6c = os.path.join(dir_figs, 'conformal_bayes_hdr_examples.png')
+        gg_hdr.save(fn6c, width=10, height=6, verbose=False)
+        saved_files.append(fn6c)
+        print(f'  saved {fn6c}')
+
+    if 'bayes_coverage' in targets:
+        n_train_sim = min(2500, int(0.55 * n_total_b))
+        n_calib_sim = min(1200, int(0.25 * n_total_b))
+        n_test_sim = min(150, n_total_b - n_train_sim - n_calib_sim)
+        nsim_b = 250
+        rows_cov = []
+        for i in range(nsim_b):
+            rng_i = np.random.default_rng(seed + i)
+            idx_i = rng_i.permutation(n_total_b)
+            tr_i = idx_i[:n_train_sim]
+            ca_i = idx_i[n_train_sim:n_train_sim+n_calib_sim]
+            te_i = idx_i[n_train_sim+n_calib_sim:n_train_sim+n_calib_sim+n_test_sim]
+
+            X_tr_i, y_tr_i = X_all[tr_i], y_all[tr_i]
+            X_ca_i, y_ca_i = X_all[ca_i], y_all[ca_i]
+            X_te_i, y_te_i = X_all[te_i], y_all[te_i]
+
+            sc_i = StandardScaler()
+            X_tr_i = sc_i.fit_transform(X_tr_i)
+            X_ca_i = sc_i.transform(X_ca_i)
+            X_te_i = sc_i.transform(X_te_i)
+
+            y_pad_i = 2.0 * np.std(y_ca_i)
+            y_bounds_i = (float(np.min(y_ca_i) - y_pad_i), float(np.max(y_ca_i) + y_pad_i))
+
+            mdl_i = GaussianConditionalDensity(
+                mean_estimator=LinearRegression(),
+                scale_estimator=Ridge(alpha=1.0),
+                scale_target='log_sq',
+                random_state=seed + i,
+            )
+            mdl_i.fit(X_tr_i, y_tr_i)
+
+            cp_i = conformal_sets(
+                f_theta=mdl_i,
+                score_fun=score_bayes_density,
+                alpha=alpha_b,
+                upper=True,
+                n_grid=220,
+                y_bounds=y_bounds_i,
+                search_mult=8.0,
+            )
+            cp_i.fit(x=X_ca_i, y=y_ca_i)
+            tau_i = cp_i.predict(X_te_i)
+            finite_i = np.isfinite(tau_i).all(axis=1)
+            cover_i = np.zeros(n_test_sim, dtype=bool)
+            cover_i[finite_i] = (y_te_i[finite_i] >= tau_i[finite_i, 0]) & (y_te_i[finite_i] <= tau_i[finite_i, 1])
+            width_i = np.where(finite_i, tau_i[:, 1] - tau_i[:, 0], np.nan)
+
+            rows_cov.append({
+                'n_cover': int(cover_i.sum()),
+                'cover': float(cover_i.mean()),
+                'set_size': float(np.nanmean(width_i)),
+            })
+
+        dat_cov_b = pd.DataFrame(rows_cov)
+        dat_pmf_b = betabinom_pmf_df(n_calib_sim, n_test_sim, alpha_b)
+        mean_cover_b = dat_cov_b['n_cover'].mean()
+        print(f'  bayes sims: cover={100*dat_cov_b.cover.mean():.1f}%  width={dat_cov_b.set_size.mean():.3f}')
+
+        gg_cov_b = (
+            pn.ggplot(dat_cov_b, pn.aes(x='n_cover', y='..density..'))
+            + pn.theme_bw()
+            + pn.geom_histogram(binwidth=1, fill='#6BAED6', color='white', alpha=0.75)
+            + pn.geom_line(pn.aes(x='x', y='pmf'), data=dat_pmf_b, color='red', size=0.8, inherit_aes=False)
+            + pn.geom_vline(xintercept=mean_cover_b, linetype='dashed', color='black', size=0.7)
+            + pn.labs(x=f'Number covered (out of {n_test_sim})', y='Density')
+            + pn.ggtitle(f'Conformalizing Bayes coverage vs beta-binomial ({dataset_name})\n'
+                         f'nsim={nsim_b}, n_calib={n_calib_sim}, α={alpha_b}')
+        )
+        fn6a = os.path.join(dir_figs, 'conformal_bayes_coverage.png')
+        gg_cov_b.save(fn6a, width=8, height=4, verbose=False)
+        saved_files.append(fn6a)
+        print(f'  saved {fn6a}')
 
 
 # =========================================================================== #

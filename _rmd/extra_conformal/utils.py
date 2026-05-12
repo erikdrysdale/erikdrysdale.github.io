@@ -9,6 +9,8 @@ from scipy.stats import norm
 from inspect import signature
 from scipy.special import softmax
 from sklearn.base import BaseEstimator
+from sklearn.base import clone
+from sklearn.ensemble import GradientBoostingRegressor
 from typing import Tuple, Any, Callable
 from statsmodels.regression.quantile_regression import QuantReg
 
@@ -254,6 +256,80 @@ class StudentizedEstimator:
     # Convenience alias so NoisyGLM wrappers can be dropped in
     def predict(self, X: np.ndarray) -> np.ndarray:
         return self.predict_mean(X)
+
+
+class GaussianConditionalDensity(BaseEstimator):
+    """
+    Two-stage conditional Gaussian density model:
+      mean model:    mu(x)
+      scale model: sigma(x) from first-stage residual transforms
+
+    Supports three scale targets via `scale_target`:
+      - 'abs'    : |e|
+      - 'squared': e^2   (sigma = sqrt(pred))
+      - 'log_sq' : log(e^2 + eps)  (sigma = sqrt(exp(pred)))
+    """
+    def __init__(
+        self,
+        mean_estimator: Any | None = None,
+        scale_estimator: Any | None = None,
+        scale_target: str = 'abs',
+        eps: float = 1e-6,
+        random_state: int | None = None,
+    ) -> None:
+        if mean_estimator is None:
+            mean_estimator = GradientBoostingRegressor(random_state=random_state)
+        if scale_estimator is None:
+            scale_estimator = GradientBoostingRegressor(random_state=random_state)
+        self.mean_estimator = mean_estimator
+        self.scale_estimator = scale_estimator
+        self.scale_target = scale_target
+        self.eps = eps
+        self.random_state = random_state
+
+    def _transform_residuals(self, resid: np.ndarray) -> np.ndarray:
+        if self.scale_target == 'abs':
+            return np.abs(resid)
+        if self.scale_target == 'squared':
+            return np.power(resid, 2)
+        if self.scale_target == 'log_sq':
+            return np.log(np.power(resid, 2) + self.eps)
+        raise ValueError("scale_target must be one of {'abs', 'squared', 'log_sq'}")
+
+    def _inverse_scale_prediction(self, pred: np.ndarray) -> np.ndarray:
+        if self.scale_target == 'abs':
+            sigma = pred
+        elif self.scale_target == 'squared':
+            sigma = np.sqrt(np.maximum(pred, self.eps))
+        elif self.scale_target == 'log_sq':
+            sigma = np.sqrt(np.exp(pred))
+        else:
+            raise ValueError("scale_target must be one of {'abs', 'squared', 'log_sq'}")
+        return np.maximum(sigma, self.eps)
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
+        self.mean_est_ = clone(self.mean_estimator)
+        self.scale_est_ = clone(self.scale_estimator)
+        self.mean_est_.fit(X, y)
+        resid = y - self.mean_est_.predict(X)
+        scale_target = self._transform_residuals(resid)
+        self.scale_est_.fit(X, scale_target)
+
+    def predict_mean(self, X: np.ndarray) -> np.ndarray:
+        return self.mean_est_.predict(X)
+
+    def predict_sigma(self, X: np.ndarray) -> np.ndarray:
+        raw_scale = self.scale_est_.predict(X)
+        return self._inverse_scale_prediction(raw_scale)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self.predict_mean(X)
+
+    def log_density(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        y = np.asarray(y).reshape(-1)
+        mu = self.predict_mean(x)
+        sigma = self.predict_sigma(x)
+        return norm.logpdf(y, loc=mu, scale=sigma)
 
 
 class dgp_heteroskedastic:

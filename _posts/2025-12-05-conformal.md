@@ -442,6 +442,56 @@ The Diabetes dataset (Efron et al. 2004) has \\(n=442\\) observations and 10 qua
 
 <br>
 
+### (3.6) Conformalizing Bayes: density NCS and HDR sets
+
+When a model natively defines a conditional density \\(f(y \mid x;\theta)\\), conformalization can be done directly in density space using
+
+$$
+s_{\text{dens}}(x,y) = -\log f(y \mid x;\theta).
+$$
+
+After calibration, let \\(\hat{q}\\) be the conformal quantile of these scores and define \\(\log\tau = -\hat{q}\\). The conformal prediction set is then the density superlevel set
+
+$$
+\mathcal{C}(x) = \{y: \log f(y\mid x;\theta) \ge \log\tau\},
+$$
+
+which is exactly a highest-density-region (HDR)-style construction under a data-driven threshold chosen to enforce finite-sample marginal coverage.
+
+The geometric shape of this set depends on posterior shape:
+
+| Posterior shape | Prediction set |
+|---|---|
+| Unimodal symmetric (e.g. Gaussian) | Single interval \\([a, b]\\) |
+| Unimodal asymmetric (e.g. log-normal) | Single interval \\([a, b]\\), often touching a support boundary |
+| Monotone decreasing (e.g. Exponential) | \\([0, b]\\) with left endpoint at support boundary |
+| \\(k\\)-modal | Union of \\(k\\) disjoint intervals \\([a_1,b_1] \cup \cdots \cup [a_k,b_k]\\) |
+| Threshold above density peak | Empty set (degenerate; rare under well-calibrated in-distribution use) |
+
+For this first implementation, I use a unimodal interval solver: evaluate \\(g(y)=\log f(y\mid x)-\log\tau\\) on a grid, bracket sign changes, refine roots with Brent's method, and return the interval hull of the superlevel region.
+
+On California Housing, this approach achieved empirical coverage 0.904 on a held-out test split at \\(\alpha=0.10\\) (so target 0.90), with mean interval width 1.342 and empty-set rate 0.0%. Across 250 repeated train/calibration/test resamples, mean coverage was 90.2%, consistent with conformal validity.
+
+<center><h4>Figure 6a: Conformalizing Bayes coverage vs beta-binomial reference</h4>
+<p><img src="/figures/conformal_bayes_coverage.png" width="85%"></p>
+<p><i>Coverage-count histogram across repeated resamples for density-based conformal intervals on California Housing. The red line is the beta-binomial reference induced by calibration quantile randomness.</i></p>
+</center>
+
+<center><h4>Figure 6b: Distribution of HDR interval widths</h4>
+<p><img src="/figures/conformal_bayes_width.png" width="65%"></p>
+</center>
+*Width distribution for test-set HDR intervals from the conformalized density model (single split). Width variability reflects local uncertainty captured by \\(f(y\mid x;\theta)\\).*
+
+
+<center><h4>Figure 6c: Root-solved HDR examples on individual instances</h4>
+</center>
+<p><img src="/figures/conformal_bayes_hdr_examples.png" width="92%"></p>
+*Each panel shows \\( \log f(y\mid x) \\) vs. \\(y\\) for one test instance. The dashed horizontal line is \\(\log\tau\\). The green vertical band marks the conformal prediction set in \\(y\\) (the superlevel set projected to the x-axis), and the red vertical line is the observed response. The in-panel annotation uses ✓ for covered and \\(\times\\) for missed.*
+
+
+
+<br>
+
 ## (4) Limitations
 
 ### (4.1) Exchangeability is the load-bearing assumption
