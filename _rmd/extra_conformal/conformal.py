@@ -6,6 +6,7 @@ Conformal utility functions
 import numpy as np
 from typing import Callable, Any
 from scipy.optimize import brentq
+from sklearn.preprocessing import StandardScaler
 from .utils import check_callable_method, check_named_args, LocalizedKernelCDF
 
 
@@ -359,17 +360,29 @@ class score_localized_regression:
         f_theta: Any,
         h_grid: np.ndarray | None = None,
         random_state: int | None = None,
+        use_yhat: bool | str = False,
+        normalize: bool = True,
     ) -> None:
         """
         Parameters
         ----------
-        f_theta : fitted mean estimator with a .predict(X) method.
-        h_grid  : array of bandwidths to search over.  None => auto from data.
+        f_theta   : fitted mean estimator with a .predict(X) method.
+        h_grid    : array of bandwidths to search over.  None => auto from data.
+        use_yhat  : controls the kernel feature space.
+                    False      – use raw X (original covariates).
+                    True / 'replace' – replace X with scalar yhat.
+                    'append'   – append yhat as an extra column to X.
+        normalize : if True (default), apply a StandardScaler to the feature
+                    matrix before passing to the kernel.  The RBF kernel
+                    assumes equal variance across dimensions, so normalizing
+                    is important whenever use_yhat=False or 'append'.
         """
         check_callable_method(f_theta, 'predict')
         self.f_theta = f_theta
         self.h_grid = h_grid
         self.random_state = random_state
+        self.use_yhat = use_yhat
+        self.normalize = normalize
         self._kde = LocalizedKernelCDF(h_grid=h_grid, random_state=random_state)
 
     # ------------------------------------------------------------------
@@ -384,18 +397,34 @@ class score_localized_regression:
         2. Select h* via LOO NW on V
         3. Compute LOO PIT scores tilde_V_i = F_{-i}(V_i | X_i; h*)
 
-        Stores h*, X_cal, V_cal on self for use in invert_score.
+        Stores h*, X_cal (or yhat_cal), V_cal on self for use in invert_score.
         """
         mu = self.f_theta.predict(x)
         V = np.abs(y - mu)  # base NCS
 
+        # Build feature matrix according to use_yhat mode
+        yhat_col = mu.reshape(-1, 1)
+        if self.use_yhat in (True, 'replace'):
+            feat = yhat_col
+        elif self.use_yhat == 'append':
+            feat = np.hstack([x, yhat_col])
+        else:  # False
+            feat = x
+
+        # Normalize so RBF kernel treats all dimensions equally
+        if self.normalize:
+            self._feat_scaler = StandardScaler().fit(feat)
+            feat = self._feat_scaler.transform(feat)
+        else:
+            self._feat_scaler = None
+
         # Step A: bandwidth selection
-        self.h_star_ = self._kde.select_bandwidth(x, V)
+        self.h_star_ = self._kde.select_bandwidth(feat, V)
         # Step B: LOO PIT scores
-        pit = self._kde.loo_pit_scores(x, V, self.h_star_)
+        pit = self._kde.loo_pit_scores(feat, V, self.h_star_)
 
         # Cache calibration data for test-time inversion
-        self._X_cal = x
+        self._X_cal = feat
         self._V_cal = V
 
         return pit
@@ -413,8 +442,17 @@ class score_localized_regression:
         Returns (n_test, 2) array of [lower, upper] bounds.
         """
         mu_new = self.f_theta.predict(x)
+        yhat_col_new = mu_new.reshape(-1, 1)
+        if self.use_yhat in (True, 'replace'):
+            feat_new = yhat_col_new
+        elif self.use_yhat == 'append':
+            feat_new = np.hstack([x, yhat_col_new])
+        else:
+            feat_new = x
+        if self._feat_scaler is not None:
+            feat_new = self._feat_scaler.transform(feat_new)
         # Kernel weights from test points to calibration points
-        weights = self._kde.eval_cdf(x, self._X_cal, self._V_cal, self.h_star_)
+        weights = self._kde.eval_cdf(feat_new, self._X_cal, self._V_cal, self.h_star_)
         # Invert at the calibrated quantile level to get per-test tau
         tau = self._kde.invert_cdf(weights, self._V_cal, qhat)
         lower = mu_new - tau

@@ -1107,11 +1107,14 @@ if any(t in targets for t in ('local_coverage', 'local_width', 'local_examples',
     mean_mdl_l.fit(X_tr_l, y_tr_l)
 
     # Fit localized conformal (bandwidth selection + LOO PIT happen inside gen_score)
+    # Features: X concatenated with yhat (normalized before kernel computation)
     cp_l = conformal_sets(
         f_theta=mean_mdl_l,
         score_fun=score_localized_regression,
         alpha=alpha_l,
         upper=True,
+        use_yhat='append',
+        normalize=True,
     )
     cp_l.fit(x=X_ca_l, y=y_ca_l)
 
@@ -1144,6 +1147,38 @@ if any(t in targets for t in ('local_coverage', 'local_width', 'local_examples',
     tau_b_l = cp_b_l.predict(X_te_l)    # (n_test, 2)
     finite_b_l = np.isfinite(tau_b_l[:, 0]) & np.isfinite(tau_b_l[:, 1])
     width_b_l = np.where(finite_b_l, tau_b_l[:, 1] - tau_b_l[:, 0], np.nan)
+
+    # ---- Decile coverage table: Bayes HDR vs Localized --------------------
+    decile_edges_l = np.quantile(y_te_l, np.linspace(0, 1, 11))
+    dlabels_l = [f'[{decile_edges_l[i]:.2f},{decile_edges_l[i+1]:.2f})' for i in range(10)]
+    dlabels_l[-1] = dlabels_l[-1].replace(')', ']')
+    bins_l = np.digitize(y_te_l, decile_edges_l[1:-1])
+    covered_b_l = np.where(
+        finite_b_l,
+        (y_te_l >= tau_b_l[:, 0]) & (y_te_l <= tau_b_l[:, 1]),
+        False,
+    )
+    dec_rows = []
+    for d in range(10):
+        mask_d = bins_l == d
+        dec_rows.append({
+            'Decile': f'D{d+1}  {dlabels_l[d]}',
+            'n': int(mask_d.sum()),
+            'Bayes_cov':  f'{covered_b_l[mask_d].mean():.3f}',
+            'Bayes_w':    f'{np.nanmean(width_b_l[mask_d]):.3f}',
+            'Local_cov':  f'{covered_l[mask_d].mean():.3f}',
+            'Local_w':    f'{width_l[mask_d].mean():.3f}',
+        })
+    dec_rows.append({
+        'Decile': 'Overall',
+        'n': len(y_te_l),
+        'Bayes_cov':  f'{covered_b_l.mean():.3f}',
+        'Bayes_w':    f'{np.nanmean(width_b_l):.3f}',
+        'Local_cov':  f'{covered_l.mean():.3f}',
+        'Local_w':    f'{width_l.mean():.3f}',
+    })
+    print('\n  Decile table: Bayes HDR vs Localized (X+yhat)')
+    print(pd.DataFrame(dec_rows).to_string(index=False))
 
     # ---- Figure 7a: Width distribution ------------------------------------
     if 'local_width' in targets:
@@ -1263,6 +1298,7 @@ if any(t in targets for t in ('local_coverage', 'local_width', 'local_examples',
                 cp_i = conformal_sets(
                     f_theta=m_i, score_fun=score_localized_regression,
                     alpha=alpha_l, upper=True,
+                    use_yhat='append', normalize=True,
                 )
                 cp_i.fit(x=Xca_i, y=yca_i)
                 tau_i = cp_i.predict(Xte_i)

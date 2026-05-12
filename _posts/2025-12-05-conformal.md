@@ -360,7 +360,7 @@ In practice, there are at least three common ways to obtain \\(\hat{\sigma}(x)\\
 
 This post uses the third option because it is simple, model-agnostic, and works with any base regressor that has a `predict` method. A ridge or gradient boosting regressor is a reasonable second-stage choice for the auxiliary scale model.
 
-In practice, the second-stage target is often one of three transforms of first-stage errors: \(|e_i|\), \(e_i^2\), or \(\log(e_i^2+\varepsilon)\), where \(e_i = y_i-\hat{f}(x_i)\). These are all monotone surrogates of local noise scale and therefore carry similar information about where uncertainty is high or low. Importantly, studentized conformal is scale-equivariant: if \(\hat{\sigma}(x)\) is off by a constant factor \(c>0\), then scores \(|e|/\hat{\sigma}(x)\) are rescaled by \(1/c\), and the calibrated quantile \(\hat{q}\) rescales by the same factor. The final interval width \(\hat{q}\cdot\hat{\sigma}(x)\) is therefore unchanged up to this global constant, so getting the relative shape of \(\hat{\sigma}(x)\) over \(x\) is usually more important than perfect absolute calibration.
+In practice, the second-stage target is often one of three transforms of first-stage errors: \\(\|e_i\|\\), \\(e_i^2\\), or \\(\log(e_i^2+\varepsilon)\\), where \\(e_i = y_i-\hat{f}(x_i)\\). These are all monotone surrogates of local noise scale and therefore carry similar information about where uncertainty is high or low. Importantly, studentized conformal is scale-equivariant: if \\(\hat{\sigma}(x)\\) is off by a constant factor \\(c>0\\), then scores \\(\|e\|/\hat{\sigma}(x)\\) are rescaled by \\(1/c\\), and the calibrated quantile \\(\hat{q}\\) rescales by the same factor. The final interval width \\(\hat{q}\cdot\hat{\sigma}(x)\\) is therefore unchanged up to this global constant, so getting the relative shape of \\(\hat{\sigma}(x)\\) over \\(x\\) is usually more important than perfect absolute calibration.
 
 ```python
 from sklearn.linear_model import LinearRegression, Ridge
@@ -569,7 +569,25 @@ The main methods that address this small but real gap are:
 
 #### Results on California Housing
 
-On the same California Housing split used for the Bayes section (same train/calibration/test partition and scaler), the localized method selected \\(h^*=0.406\\), achieved empirical coverage 0.906 at \\(\alpha=0.10\\), and produced mean interval width 1.783. Across 200 repeated resamples, the coverage distribution follows the beta-binomial reference closely.
+On the same California Housing split used for the Bayes section (same train/calibration/test partition and scaler), the localized method uses the concatenated feature vector \\((X, \hat{\mu}(X))\\) as the kernel input (normalized before computing distances). It selected \\(h^*=0.714\\), achieved empirical coverage 0.902 at \\(\alpha=0.10\\), and produced mean interval width 1.504 — narrower than the Bayes HDR method (1.519). Across 200 repeated resamples, the coverage distribution follows the beta-binomial reference closely.
+
+The table below breaks down coverage and mean width by decile of the true response, comparing the Bayes HDR (Section 3.6) and localized methods on the same test set.
+
+| Decile | *y* range | *n* | Bayes cov | Bayes width | Local cov | Local width |
+|:---|:---|---:|---:|---:|---:|---:|
+| D1 | [0.15, 0.82) | 1611 | 0.932 | 1.138 | 0.918 | 1.078 |
+| D2 | [0.82, 1.07) | 1616 | 0.951 | 1.221 | 0.934 | 1.140 |
+| D3 | [1.07, 1.34) | 1612 | 0.952 | 1.289 | 0.937 | 1.208 |
+| D4 | [1.34, 1.57) | 1611 | 0.944 | 1.341 | 0.926 | 1.259 |
+| D5 | [1.57, 1.80) | 1615 | 0.950 | 1.411 | 0.946 | 1.346 |
+| D6 | [1.80, 2.09) | 1615 | 0.940 | 1.529 | 0.933 | 1.502 |
+| D7 | [2.09, 2.42) | 1616 | 0.939 | 1.646 | 0.935 | 1.671 |
+| D8 | [2.42, 2.91) | 1615 | 0.915 | 1.759 | 0.903 | 1.843 |
+| D9 | [2.91, 3.80) | 1615 | 0.848 | 1.899 | 0.854 | 2.035 |
+| D10 | [3.80, 5.00] | 1614 | 0.709 | 1.952 | 0.731 | 1.952 |
+| **Overall** | | **16140** | **0.908** | **1.519** | **0.902** | **1.504** |
+
+Both methods struggle at the high end of the response (D10: \\(y > 3.8\\)), reflecting genuinely harder cases. The localized method achieves narrower widths in D1–D5 (low-response region) and is modestly wider in D7–D9, with comparable overall coverage. The 1% reduction in mean width relative to Bayes comes from the kernel adapting to residual structure in \\((X, \hat{\mu})\\)-space.
 
 <center><h4>Figure 7a: Localized conformal interval widths</h4>
 <p><img src="/figures/conformal_local_width.png" width="65%"></p>
