@@ -6,6 +6,6 @@ permalink: /about/
 
 <p> My name is Erik Drysdale and I work as a Data Scientist at Eli Lilly. I have an expertise in developing and statistically validating machine learning models, particularly in a healthcare context. Previously, I worked as Senior Data Scientist with Boston Consulting Group, as a Machine Learning Specialist at the Hospital for Sick Children, as a Bioinformatician at the Ontario Institute for Cancer Research, and as an Economist with the Bank of Canada. My research interests include conformal prediction, selective inference, and survival analysis. </p>
 
-<p>For additional information see my <a href="http://www.erikdrysdale.com/indexbrief">blog posts</a>, <a href="https://scholar.google.com/citations?user=x8h3qioAAAAJ&hl=en" target="_blank" rel="noopener">Google scholar</a> page, and <a href="https://drive.google.com/file/d/131NGwgiaJRBBqyd0IV8J-813pDoVgKt_/view?usp=sharing" target="_blank" rel="noopener">CV</a>. You can contact me at <a href="mailto:erikinwest@gmail.com">erikinwest@gmail.com</a>.</p>
+<p>For additional information see my <a href="http://www.erikdrysdale.com/indexbrief">blog posts</a>, <a href="https://scholar.google.com/citations?user=x8h3qioAAAAJ&hl=en" target="_blank" rel="noopener">Google scholar</a> page, and <a href="/assets/CV_EDrysdale.pdf" target="_blank" rel="noopener">CV</a>. You can contact me at <a href="mailto:erikinwest@gmail.com">erikinwest@gmail.com</a>.</p>
 
 <p> I also keep an informal blog <a href="http://bioeconometrician.github.io" target="_blank" rel="noopener">here</a>.</p>
